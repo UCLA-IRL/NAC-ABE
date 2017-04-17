@@ -1,0 +1,9 @@
+prefix=@PREFIX@
+libdir=@LIBDIR@
+includedir=@INCLUDEDIR@
+
+Name: ndn-abac
+Description: ndn-abac library
+Version: @VERSION@
+Libs: -L${libdir} -lndn-abac
+Cflags: -I${includedir}
