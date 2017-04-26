@@ -18,32 +18,9 @@
  * See AUTHORS.md for complete list of ndnabac authors and contributors.
  */
 
-#ifndef NDNABAC_ATTRIBUTE_AUTHORITY_HPP
-#define NDNABAC_ATTRIBUTE_AUTHORITY_HPP
+#ifndef NDNABAC_ALGO_COMMON_HPP
+#define NDNABAC_ALGO_COMMON_HPP
 
-namespace ndn {
-namespace ndnabac {
+// include bswabe library
 
-class AttributeAuthority
-{
-public:
-  AttributeAuthority();
-
-  void
-  onDecryptionKeyRequest(const Interest& interest);
-
-  void
-  onPublicParamsRequest(const Interest& interest);
-
-  algo::PrivateKey
-  issueDecryptionKey(const std::list<std::string>& attrList);
-
-private:
-  algo::PublicParams m_pubParams;
-  algo::MasterKey m_masterKey;
-};
-
-} // namespace ndnabac
-} // namespace ndn
-
-#endif // NDNABAC_ATTRIBUTE_AUTHORITY_HPP
+#endif // NDNABAC_ALGO_COMMON_HPP

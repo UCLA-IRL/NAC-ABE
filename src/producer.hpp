@@ -21,8 +21,59 @@
 #ifndef NDNABAC_PRODUCER_HPP
 #define NDNABAC_PRODUCER_HPP
 
+#include "public-params.hpp"
+
 namespace ndn {
 namespace ndnabac {
+
+class Producer
+{
+public:
+  class Error : public std::runtime_error
+  {
+  public:
+    using std::runtime_error::runtime_error;
+  };
+
+  using ErrorCallback = function<void (const std::string&)>;
+  using SuccessCallback = function<void (const Data&)>;
+
+public:
+  /**
+   * @brief Constructor
+   *
+   * @param identityCert the certificate for data signing
+   * @param face the face for publishing data and sending interests
+   * @param repeatAttempts the max retry times when timeout or nack
+   */
+  Producer(const security::v2::Certificate& identityCert, Face& face,
+           uint8_t repeatAttempts = 3);
+
+  /**
+   * @brief Producing data packet
+   *
+   * @param accessPolicy
+   * @param content
+   * @param contentLen
+   * @param errorCallBack
+   */
+  void
+  produce(const std::string& accessPolicy, const Name& attrAuthorityPrefix,
+          const uint8_t* content, size_t contentLen,
+          const SuccessCallback& onDataProduceCb, const ErrorCallback& errorCallback);
+
+private:
+  void
+  FetchAuthorityPubParams(const Name& attrAuthorityPrefix, const SuccessCallback& onPublicParamsCb);
+
+private:
+  Face& m_face;
+  security::v2::Ceritificate m_cert;
+
+  std::map<Name, PublicParams> m_pubParamsCache;
+  Name m_identity;
+  uint8_t m_maxRepeatAttempts;
+};
 
 } // namespace ndnabac
 } // namespace ndn

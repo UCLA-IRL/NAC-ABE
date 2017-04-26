@@ -18,48 +18,8 @@
  * See AUTHORS.md for complete list of ndnabac authors and contributors.
  */
 
-#ifndef NDNABAC_CONSUMER_HPP
-#define NDNABAC_CONSUMER_HPP
-
 namespace ndn {
 namespace ndnabac {
 
-class Consumer
-{
-public:
-  class Error : public std::runtime_error
-  {
-  public:
-    using std::runtime_error::runtime_error;
-  };
-
-  using ErrorCallback = function<void (const std::string&)>;
-  using ConsumptionCallback = function<void (const Buffer&)>;
-  using SuccessCallback = function<void (const Data&)>;
-
-public:
-  Consumer(const security::v2::Certificate& identityCert, Face& face,
-           uint8_t repeatAttempts = 3);
-
-  void
-  consume(const Name& dataName, const ConsumptionCallback& consumptionCb,
-          const ErrorCallback& errorCb);
-
-  void
-  fetchDecryptionKey(const Name& attrAuthorityPrefix, const Data& token);
-
-private:
-  void
-  FetchAttributePubParams(const Name& attrAuthorityPrefix, const SuccessCallback& onPublicParamsCb);
-
-private:
-  security::v2::Certificate m_cert;
-  algo::PrivateKey m_privateKey;
-  std::map<Name, Data> m_tokens;
-  algo::PublicParams m_pubParamsCache;
-};
-
 } // namespace ndnabac
 } // namespace ndn
-
-#endif // NDNABAC_CONSUMER_HPP
