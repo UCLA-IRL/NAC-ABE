@@ -18,8 +18,18 @@
  * See AUTHORS.md for complete list of ndnabac authors and contributors.
  */
 
+#include "token-issure.hpp"
+
 namespace ndn {
 namespace ndnabac {
+
+//public
+TokenIssuer::TokenIssuer()
+{}
+
+void
+TokenIssuer::onTokenRequest()
+{}
 
 } // namespace ndnabac
 } // namespace ndn

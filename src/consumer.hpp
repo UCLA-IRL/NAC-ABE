@@ -50,10 +50,13 @@ public:
 
 private:
   void
-  FetchAttributePubParams(const Name& attrAuthorityPrefix, const SuccessCallback& onPublicParamsCb);
+  fetchAttributePubParams(const Name& attrAuthorityPrefix, const SuccessCallback& onPublicParamsCb);
 
 private:
   security::v2::Certificate m_cert;
+  Face& m_face;
+  uint8_t m_repeatAttempts;
+
   algo::PrivateKey m_privateKey;
   std::map<Name, Data> m_tokens;
   algo::PublicParams m_pubParamsCache;

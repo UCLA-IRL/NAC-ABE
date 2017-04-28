@@ -18,8 +18,32 @@
  * See AUTHORS.md for complete list of ndnabac authors and contributors.
  */
 
+#include "producer.hpp"
+
 namespace ndn {
 namespace ndnabac {
+
+//public
+Producer::Producer(const security::v2::Certificate& identityCert,
+				   Face& face, uint8_t repeatAttempts = 3)
+  : m_cert(identityCert)
+  , m_face(face)
+  , m_repeatAttempts(repeatAttempts)
+{}
+
+void
+Producer::produce(const std::string& accessPolicy,
+	              const Name& attrAuthorityPrefix,
+          		  const uint8_t* content, size_t contentLen,
+                  const SuccessCallback& onDataProduceCb,
+                  const ErrorCallback& errorCallback)
+{}
+
+//private:
+void
+Producer::fetchAuthorityPubParams(const Name& attrAuthorityPrefix,
+	                              const SuccessCallback& onPublicParamsCb)
+{}
 
 } // namespace ndnabac
 } // namespace ndn

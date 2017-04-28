@@ -17,9 +17,26 @@
  *
  * See AUTHORS.md for complete list of ndnabac authors and contributors.
  */
+#include "attribute-authority.hpp"
 
 namespace ndn {
 namespace ndnabac {
+
+//public
+AttributeAuthority::AttributeAuthority()
+{}
+
+void
+AttributeAuthority::onDecryptionKeyRequest(const Interest& interest)
+{}
+
+void
+AttributeAuthority::onPublicParamsRequest(const Interest& interest)
+{}
+
+algo::PrivateKey
+AttributeAuthority::issueDecryptionKey(const std::list<std::string>& attrList)
+{}
 
 } // namespace ndnabac
 } // namespace ndn

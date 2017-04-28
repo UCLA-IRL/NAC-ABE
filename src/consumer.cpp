@@ -18,8 +18,37 @@
  * See AUTHORS.md for complete list of ndnabac authors and contributors.
  */
 
+#include "consumer.hpp"
+
 namespace ndn {
 namespace ndnabac {
+
+// public
+Consumer::Consumer(const security::v2::Certificate& identityCert,
+				   Face& face, uint8_t repeatAttempts = 3)
+  : m_identityCert(identityCert)
+  , m_face(face)
+  , m_repeatAttempts(repeatAttempts)
+{}
+
+void
+Consumer::consume(const Name& dataName,
+				  const ConsumptionCallback& consumptionCb,
+				  const ErrorCallback& errorCb)
+{}
+
+void
+Consumer::fetchDecryptionKey(const Name& attrAuthorityPrefix,
+							 const Data& token)
+{}
+
+//private
+void
+Consumer::fetchAttributePubParams(const Name& attrAuthorityPrefix,
+								  const SuccessCallback& onPublicParamsCb)
+{}
+
+
 
 } // namespace ndnabac
 } // namespace ndn

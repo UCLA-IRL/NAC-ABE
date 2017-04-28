@@ -64,15 +64,15 @@ public:
 
 private:
   void
-  FetchAuthorityPubParams(const Name& attrAuthorityPrefix, const SuccessCallback& onPublicParamsCb);
+  fetchAuthorityPubParams(const Name& attrAuthorityPrefix, const SuccessCallback& onPublicParamsCb);
 
 private:
-  Face& m_face;
   security::v2::Ceritificate m_cert;
+  Face& m_face;
+  uint8_t m_repeatAttempts;
 
   std::map<Name, PublicParams> m_pubParamsCache;
   Name m_identity;
-  uint8_t m_maxRepeatAttempts;
 };
 
 } // namespace ndnabac
