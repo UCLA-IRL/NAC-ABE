@@ -21,13 +21,16 @@
 #ifndef NDNABAC_ATTRIBUTE_AUTHORITY_HPP
 #define NDNABAC_ATTRIBUTE_AUTHORITY_HPP
 
+#include "ndnabac-common.hpp"
+#include <stdarg.h>
+
 namespace ndn {
 namespace ndnabac {
 
 class AttributeAuthority
 {
 public:
-  AttributeAuthority();
+  AttributeAuthority(Face& m_face);
 
   void
   onDecryptionKeyRequest(const Interest& interest);
@@ -38,7 +41,21 @@ public:
   algo::PrivateKey
   issueDecryptionKey(const std::list<std::string>& attrList);
 
+  bool
+  createKey(const std::string keyName, ...);
+
 private:
+  void
+  filterAndServe(const InterestFilter& forwardingHint, const Interest& interest);
+
+  void
+  cpabeSetup();
+
+  void
+  cpabaKeygen(const std::string keyName, ...);
+
+private:
+  Face& m_face;
   algo::PublicParams m_pubParams;
   algo::MasterKey m_masterKey;
 };

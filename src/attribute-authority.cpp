@@ -22,9 +22,18 @@
 namespace ndn {
 namespace ndnabac {
 
+static const Name ATTR_AUTHORITY_PREFIX = "/VO/aa";
+
 //public
-AttributeAuthority::AttributeAuthority()
-{}
+AttributeAuthority::AttributeAuthority(Face& face)
+  : m_face(face)
+{
+	m_face.setInterestFilter(InterestFilter(ATTR_AUTHORITY_PREFIX),
+							 						 bind(&ContentServer::filterAndServe, this, _1, _2),
+							 						 RegisterPrefixSuccessCallback(),
+							 						 RegisterPrefixFailureCallback());
+	cpabeSetup();
+}
 
 void
 AttributeAuthority::onDecryptionKeyRequest(const Interest& interest)
@@ -37,6 +46,24 @@ AttributeAuthority::onPublicParamsRequest(const Interest& interest)
 algo::PrivateKey
 AttributeAuthority::issueDecryptionKey(const std::list<std::string>& attrList)
 {}
+
+bool
+AttributeAuthority::createKey(const std::string keyName, ...)
+{}
+
+//private
+void
+AttributeAuthority::filterAndServe(const InterestFilter& forwardingHint, const Interest& interest)
+{}
+
+void
+AttributeAuthority::cpabeSetup()
+{}
+
+void
+AttributeAuthority::cpabaKeygen(const std::string keyName, ...)
+{
+}
 
 } // namespace ndnabac
 } // namespace ndn

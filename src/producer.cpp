@@ -24,25 +24,38 @@ namespace ndn {
 namespace ndnabac {
 
 //public
-Producer::Producer(const security::v2::Certificate& identityCert,
-				   Face& face, uint8_t repeatAttempts = 3)
+Producer::Producer(const security::v2::Certificate& identityCert, Face& face,
+				   				 const Name producerName, uint8_t repeatAttempts = 3)
   : m_cert(identityCert)
   , m_face(face)
+  , m_producerName(producerName)
   , m_repeatAttempts(repeatAttempts)
-{}
+{
+	m_face.setInterestFilter(InterestFilter(producerName),
+							 						 bind(&Producer::onInterest, this, _1, _2),
+							 						 RegisterPrefixSuccessCallback(),
+							 						 RegisterPrefixFailureCallback());
+}
 
 void
 Producer::produce(const std::string& accessPolicy,
-	              const Name& attrAuthorityPrefix,
-          		  const uint8_t* content, size_t contentLen,
+	              	const Name& attrAuthorityPrefix,
+          		  	const uint8_t* content, size_t contentLen,
                   const SuccessCallback& onDataProduceCb,
                   const ErrorCallback& errorCallback)
 {}
 
 //private:
 void
+onInterest(const InterestFilter& forwardingHint, const Interest& interest)
+{
+	
+}
+
+
+void
 Producer::fetchAuthorityPubParams(const Name& attrAuthorityPrefix,
-	                              const SuccessCallback& onPublicParamsCb)
+	                	              const SuccessCallback& onPublicParamsCb)
 {}
 
 } // namespace ndnabac

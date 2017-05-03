@@ -21,16 +21,26 @@
 #ifndef NDNABAC_TOKEN_ISSUER_HPP
 #define NDNABAC_TOKEN_ISSUER_HPP
 
+#include "ndnabac-common.hpp"
+
 namespace ndn {
 namespace ndnabac {
 
 class TokenIssuer
 {
 public:
-  TokenIssuer();
+  TokenIssuer(Face& face, const Name ownerPrefix);
 
   void
   onTokenRequest(const Interest& request);
+
+  void
+  createProducer(const Name producerName);
+
+private:
+  void
+  onInterest(const InterestFilter& forwardingHint, const Interest& interest);
+
 
 public:
   const static std::string TOKEN_USER;
@@ -39,8 +49,11 @@ public:
   const static std::string TOKEN_ATTR_VALUE;
 
 private:
+	Face& m_face;
+	Name m_ownerPrefix;
   security::v2::Certificate m_cert;
   std::list<Name, Data> m_tokens;
+  std::list<std::shared_ptr<Producer>> producers;
 };
 
 } // namespace ndnabac

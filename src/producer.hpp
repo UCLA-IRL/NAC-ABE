@@ -21,6 +21,7 @@
 #ifndef NDNABAC_PRODUCER_HPP
 #define NDNABAC_PRODUCER_HPP
 
+#include "ndnabac-common.hpp"
 #include "public-params.hpp"
 
 namespace ndn {
@@ -47,7 +48,7 @@ public:
    * @param repeatAttempts the max retry times when timeout or nack
    */
   Producer(const security::v2::Certificate& identityCert, Face& face,
-           uint8_t repeatAttempts = 3);
+           const Name producerName, uint8_t repeatAttempts = 3);
 
   /**
    * @brief Producing data packet
@@ -64,11 +65,16 @@ public:
 
 private:
   void
-  fetchAuthorityPubParams(const Name& attrAuthorityPrefix, const SuccessCallback& onPublicParamsCb);
+  onInterest(const InterestFilter& forwardingHint, const Interest& interest);
+
+  void
+  fetchAuthorityPubParams(const Name& attrAuthorityPrefix,
+                          const SuccessCallback& onPublicParamsCb);
 
 private:
   security::v2::Ceritificate m_cert;
   Face& m_face;
+  Name m_producerName;
   uint8_t m_repeatAttempts;
 
   std::map<Name, PublicParams> m_pubParamsCache;

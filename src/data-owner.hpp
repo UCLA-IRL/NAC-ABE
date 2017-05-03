@@ -21,6 +21,8 @@
 #ifndef NDNABAC_DATA_OWNER_HPP
 #define NDNABAC_DATA_OWNER_HPP
 
+#include "ndnabac-common.hpp"
+
 namespace ndn {
 namespace ndnabac {
 

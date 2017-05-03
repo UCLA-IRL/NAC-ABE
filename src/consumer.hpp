@@ -21,6 +21,8 @@
 #ifndef NDNABAC_CONSUMER_HPP
 #define NDNABAC_CONSUMER_HPP
 
+#include "ndnabac-common.hpp"
+
 namespace ndn {
 namespace ndnabac {
 
@@ -33,28 +35,44 @@ public:
     using std::runtime_error::runtime_error;
   };
 
+  using OnDataCallback = function<void (const Interest&, const Data&)>;
   using ErrorCallback = function<void (const std::string&)>;
   using ConsumptionCallback = function<void (const Buffer&)>;
   using SuccessCallback = function<void (const Data&)>;
 
 public:
   Consumer(const security::v2::Certificate& identityCert, Face& face,
-           uint8_t repeatAttempts = 3);
+           const Name& consumerPrefix, uint8_t repeatAttempts = 3);
 
   void
-  consume(const Name& dataName, const ConsumptionCallback& consumptionCb,
+  consume(const Name& dataName,
+          const ConsumptionCallback& consumptionCb,
           const ErrorCallback& errorCb);
 
   void
   fetchDecryptionKey(const Name& attrAuthorityPrefix, const Data& token);
 
+  void
+  requestToken(const Name overPrefix);
+
+  void
+  handleTokenData(const Interest& interest, Data& data);
+
+  void
+  handleTokenTimeout(const Interest& interest);
+
+  void
+  sendTokenInterest(const Interest& interest);
+
 private:
   void
-  fetchAttributePubParams(const Name& attrAuthorityPrefix, const SuccessCallback& onPublicParamsCb);
+  fetchAttributePubParams(const Name& attrAuthorityPrefix,
+                          const SuccessCallback& onPublicParamsCb);
 
 private:
   security::v2::Certificate m_cert;
   Face& m_face;
+  Name m_prefix;
   uint8_t m_repeatAttempts;
 
   algo::PrivateKey m_privateKey;
