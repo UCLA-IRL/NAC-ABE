@@ -29,6 +29,8 @@ namespace algo {
 
 class PrivateKey
 {
+public:
+  bswabe_prv_t* prv
 };
 
 } // namespace algo

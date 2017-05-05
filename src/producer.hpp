@@ -22,7 +22,7 @@
 #define NDNABAC_PRODUCER_HPP
 
 #include "ndnabac-common.hpp"
-#include "public-params.hpp"
+#include "algo/public-params.hpp"
 
 namespace ndn {
 namespace ndnabac {

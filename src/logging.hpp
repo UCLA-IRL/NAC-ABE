@@ -18,23 +18,23 @@
  * See AUTHORS.md for complete list of ndnabac authors and contributors.
  */
 
-#ifndef NDNABAC_ALGO_MASKER_KEY_HPP
-#define NDNABAC_ALGO_MASKER_KEY_HPP
+#ifndef NDNABAC_LOGGING_HPP
+#define NDNABAC_LOGGING_HPP
 
-#include "algo-common.hpp"
+#include <ndn-cxx/util/logger.hpp>
 
 namespace ndn {
 namespace ndnabac {
-namespace algo {
 
-class MasterKey
-{
-public:
-  bswabe_msk_t* msk;
-};
+#define _LOG_INIT(name) NDN_LOG_INIT(ndncert.name)
 
-} // namespace algo
-} // namespace ndnabac
-} // namespace ndn
+#define _LOG_DEBUG(x) NDN_LOG_DEBUG(__FILE__ << ":" << __LINE__ << ":" << " " << x)
 
-#endif // NDNABAC_ALGO_MASKER_KEY_HPP
+#define _LOG_TRACE(x) NDN_LOG_TRACE(__FILE__ << ":" << __LINE__ << ":" << " " << x)
+
+#define _LOG_ERROR(x) NDN_LOG_ERROR(x)
+
+} // ndnabac
+} // ndn
+
+#endif // NDNABAC_LOGGING_HPP

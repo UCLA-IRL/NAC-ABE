@@ -27,6 +27,12 @@ namespace ndn {
 namespace ndnabac {
 namespace algo {
 
+class PublicParams
+{
+public:
+  bswabe_pub_t* pub;
+};
+
 } // namespace algo
 } // namespace ndnabac
 } // namespace ndn

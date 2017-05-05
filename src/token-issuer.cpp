@@ -18,7 +18,7 @@
  * See AUTHORS.md for complete list of ndnabac authors and contributors.
  */
 
-#include "token-issure.hpp"
+#include "token-issuer.hpp"
 
 namespace ndn {
 namespace ndnabac {
@@ -28,10 +28,10 @@ TokenIssuer::TokenIssuer(Face& face, const Name ownerPrefix)
   : m_face(face)
   , m_ownerPrefix(ownerPrefix)
 {
-	m_face.setInterestFilter(InterestFilter(m_ownerPrefix),
-							 						 bind(&TokenIssuer::onInterest, this, _1, _2),
-							 						 RegisterPrefixSuccessCallback(),
-							 						 RegisterPrefixFailureCallback());
+  m_face.setInterestFilter(InterestFilter(m_ownerPrefix),
+                           bind(&TokenIssuer::onInterest, this, _1, _2),
+                           RegisterPrefixSuccessCallback(),
+                           RegisterPrefixFailureCallback());
 }
 
 void
@@ -42,10 +42,10 @@ TokenIssuer::onTokenRequest()
 void
 createProducer(const Name producerName)
 {
-	Name producerPrefix = m_ownerPrefix.append(producerName);
-	std::shared_ptr<Face> face = std::make_shared<Face>();
-	std::shared_ptr<Producer> producer = std::make_shared<Producer>(cert, *face, producerPrefix);
-	producers.push_back(producer);
+  Name producerPrefix = m_ownerPrefix.append(producerName);
+  std::shared_ptr<Face> face = std::make_shared<Face>();
+  std::shared_ptr<Producer> producer = std::make_shared<Producer>(cert, *face, producerPrefix);
+  producers.push_back(producer);
 }
 
 //private

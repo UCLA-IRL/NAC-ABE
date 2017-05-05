@@ -21,6 +21,9 @@
 #ifndef NDNABAC_ALGO_COMMON_HPP
 #define NDNABAC_ALGO_COMMON_HPP
 
-// include bswabe library
+#include <pbc.h>
+#include <glib.h>
+
+#include <bswabe.h>
 
 #endif // NDNABAC_ALGO_COMMON_HPP

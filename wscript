@@ -8,7 +8,7 @@ import os
 
 def options(opt):
     opt.load(['compiler_cxx', 'gnu_dirs'])
-    opt.load(['boost', 'default-compiler-flags', 'sqlite3',
+    opt.load(['boost', 'default-compiler-flags', 'sqlite3', 'glib2',
               'coverage', 'sanitizers',
               'doxygen', 'sphinx_build'], tooldir=['.waf-tools'])
 
@@ -18,7 +18,7 @@ def options(opt):
 
 def configure(conf):
     conf.load(['compiler_cxx', 'gnu_dirs',
-               'boost', 'default-compiler-flags', 'sqlite3',
+               'boost', 'default-compiler-flags', 'sqlite3', 'glib2',
                'doxygen', 'sphinx_build'])
 
     if 'PKG_CONFIG_PATH' not in os.environ:
@@ -54,6 +54,17 @@ def configure(conf):
     # system has a different version of the ndnabac library installed.
     conf.env['STLIBPATH'] = ['.'] + conf.env['STLIBPATH']
 
+    conf.check_cfg (package='glib-2.0', uselib_store='GLIB', atleast_version='2.25.0',
+	                args='--cflags --libs')
+
+    conf.env.LIBPATH_PBC = ['/usr/local/Cellar/pbc/0.5.14/lib']
+    conf.env.INCLUDES_PBC  = ['/usr/local/Cellar/pbc/0.5.14/include/pbc']
+    conf.check_cxx(lib = 'pbc', use = 'PBC', args='--cflags --libs')
+
+    conf.env.LIBPATH_BSWABE = ['/usr/local/lib']
+    conf.env.INCLUDES_BSWABE  = ['/usr/local/include']
+    conf.check_cxx(stlib = 'bswabe', use = 'BSWABE')
+
     conf.write_config_header('src/ndnabac-config.hpp')
 
 def build(bld):
@@ -63,7 +74,7 @@ def build(bld):
         source =  bld.path.ant_glob(['src/**/*.cpp']),
         vnum = VERSION,
         cnum = VERSION,
-        use = 'NDN_CXX BOOST',
+        use = 'NDN_CXX BOOST GLIB PBC BSWABE',
         includes = ['src'],
         export_includes=['src'],
     )
