@@ -17,24 +17,25 @@
  *
  * See AUTHORS.md for complete list of ndnabac authors and contributors.
  */
+#ifndef NDNABAC_TRUST_CONFIG_HPP
+#define NDNABAC_TRUST_CONFIG_HPP
 
-#ifndef NDNABAC_ALGO_PRIVATE_KEY_HPP
-#define NDNABAC_ALGO_PRIVATE_KEY_HPP
-
-#include "algo-common.hpp"
+#include "ndnabac-common.hpp"
 
 namespace ndn {
 namespace ndnabac {
-namespace algo {
 
-class PrivateKey
+class TrustConfig
 {
 public:
-  bswabe_prv_t* prv;
+  class Error : public std::runtime_error
+  {
+  public:
+    using std::runtime_error::runtime_error;
+  };
 };
 
-} // namespace algo
 } // namespace ndnabac
 } // namespace ndn
 
-#endif // NDNABAC_ALGO_PRIVATE_KEY_HPP
+#endif // NDNABAC_TRUST_CONFIG_HPP

@@ -22,6 +22,7 @@
 #define NDNABAC_TOKEN_ISSUER_HPP
 
 #include "ndnabac-common.hpp"
+#include <list>
 
 namespace ndn {
 namespace ndnabac {
@@ -53,9 +54,10 @@ public:
   const static std::string TOKEN_ATTR_NAME;
 
 private:
-  Face& m_face;
   security::v2::Certificate m_cert;
-  std::list<Name/* userIdentity */, JsonSection> m_tokens;
+  Face& m_face;
+  security::v2::KeyChain& m_keyChain;
+  std::map<Name/* Consumer Identity */, JsonSection/* JSON */> m_tokens;
 };
 
 } // namespace ndnabac

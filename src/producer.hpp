@@ -47,7 +47,7 @@ public:
    * @param face the face for publishing data and sending interests
    * @param repeatAttempts the max retry times when timeout or nack
    */
-  Producer(const security::v2::Certificate& identityCert, Face& face
+  Producer(const security::v2::Certificate& identityCert, Face& face,
            security::v2::KeyChain& keyChain, const Name& attrAuthorityPrefix,
            uint8_t repeatAttempts = 3);
 
@@ -72,13 +72,14 @@ private:
   fetchAuthorityPubParams(const Name& attrAuthorityPrefix);
 
 private:
-  security::v2::Ceritificate m_cert;
+  security::v2::Certificate m_cert;
   Face& m_face;
-  Name m_producerName;
+  security::v2::KeyChain& m_keyChain;
+  Name m_attrAuthorityPrefix;
   uint8_t m_repeatAttempts;
 
   std::map<Name/* data prefix */, std::string/* policy */> m_policyCache;
-  PublicParams m_pubParamsCache;
+  algo::PublicParams m_pubParamsCache;
   std::list<security::v2::Certificate> m_trustAnchors;
 };
 

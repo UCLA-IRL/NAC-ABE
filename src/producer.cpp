@@ -25,37 +25,36 @@ namespace ndnabac {
 
 //public
 Producer::Producer(const security::v2::Certificate& identityCert, Face& face,
-				   				 const Name producerName, uint8_t repeatAttempts = 3)
+                   security::v2::KeyChain& keyChain, const Name& attrAuthorityPrefix,
+                   uint8_t repeatAttempts)
   : m_cert(identityCert)
   , m_face(face)
-  , m_producerName(producerName)
+  , m_keyChain(keyChain)
+  , m_attrAuthorityPrefix(attrAuthorityPrefix)
   , m_repeatAttempts(repeatAttempts)
 {
-	m_face.setInterestFilter(InterestFilter(producerName),
-							 						 bind(&Producer::onInterest, this, _1, _2),
-							 						 RegisterPrefixSuccessCallback(),
-							 						 RegisterPrefixFailureCallback());
+  // m_face.setInterestFilter(InterestFilter(producerName),
+  //                          bind(&Producer::onInterest, this, _1, _2),
+  //                          RegisterPrefixSuccessCallback(),
+  //                          RegisterPrefixFailureCallback());
 }
 
 void
-Producer::produce(const std::string& accessPolicy,
-	              	const Name& attrAuthorityPrefix,
-          		  	const uint8_t* content, size_t contentLen,
-                  const SuccessCallback& onDataProduceCb,
-                  const ErrorCallback& errorCallback)
+Producer::produce(const Name& dataName, const std::string& accessPolicy,
+                  const uint8_t* content, size_t contentLen,
+                  const SuccessCallback& onDataProduceCb, const ErrorCallback& errorCallback)
 {}
 
 //private:
 void
-onInterest(const InterestFilter& forwardingHint, const Interest& interest)
+Producer::onPolicyInterest(const Interest& interest)
 {
-	
+
 }
 
 
 void
-Producer::fetchAuthorityPubParams(const Name& attrAuthorityPrefix,
-	                	              const SuccessCallback& onPublicParamsCb)
+Producer::fetchAuthorityPubParams(const Name& attrAuthorityPrefix)
 {}
 
 } // namespace ndnabac

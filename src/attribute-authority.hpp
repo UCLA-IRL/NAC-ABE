@@ -22,7 +22,9 @@
 #define NDNABAC_ATTRIBUTE_AUTHORITY_HPP
 
 #include "ndnabac-common.hpp"
-#include <stdarg.h>
+#include "algo/private-key.hpp"
+#include "algo/public-params.hpp"
+#include "algo/master-key.hpp"
 
 namespace ndn {
 namespace ndnabac {

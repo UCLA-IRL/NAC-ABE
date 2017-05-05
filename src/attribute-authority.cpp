@@ -26,14 +26,17 @@ static const Name ATTR_AUTHORITY_PREFIX = "/VO/aa";
 
 //public
 AttributeAuthority::AttributeAuthority(const security::v2::Certificate& identityCert,
-                                       Face& face)
-  : m_face(face)
+                                       Face& face,
+                                       security::v2::KeyChain& keyChain)
+  : m_cert(identityCert)
+  , m_face(face)
+  , m_keyChain(keyChain)
 {
-  m_face.setInterestFilter(InterestFilter(identityCert.getIdentityName()),
-                           bind(&ContentServer::filterAndServe, this, _1, _2),
-                           RegisterPrefixSuccessCallback(),
-                           RegisterPrefixFailureCallback());
-  cpabeSetup();
+  // m_face.setInterestFilter(InterestFilter(identityCert.getIdentityName()),
+  //                          bind(&ContentServer::filterAndServe, this, _1, _2),
+  //                          RegisterPrefixSuccessCallback(),
+  //                          RegisterPrefixFailureCallback());
+  // cpabeSetup();
 }
 
 void
@@ -46,27 +49,13 @@ AttributeAuthority::onPublicParamsRequest(const Interest& interest)
 
 algo::PrivateKey
 AttributeAuthority::issueDecryptionKey(const std::list<std::string>& attrList)
-{}
-
-bool
-AttributeAuthority::createKey(const std::string keyName, ...)
-{}
-
-//private
-void
-AttributeAuthority::filterAndServe(const InterestFilter& forwardingHint, const Interest& interest)
 {
-  // check the interest name
+  return algo::PrivateKey();
 }
 
 void
-AttributeAuthority::cpabeSetup()
+AttributeAuthority::init()
 {}
-
-void
-AttributeAuthority::cpabaKeygen(const std::string keyName, ...)
-{
-}
 
 } // namespace ndnabac
 } // namespace ndn

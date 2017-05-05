@@ -27,69 +27,45 @@ static const Name REQUEST_TOKEN = "/token";
 
 // public
 Consumer::Consumer(const security::v2::Certificate& identityCert, Face& face,
-									 const Name& consumerPrefix, uint8_t repeatAttempts = 3)
-  : m_identityCert(identityCert)
+                   uint8_t repeatAttempts)
+  : m_cert(identityCert)
   , m_face(face)
-  , m_prefix(consumerPrefix)
   , m_repeatAttempts(repeatAttempts)
 {
 }
 
 void
 Consumer::consume(const Name& dataName,
-				  				const ConsumptionCallback& consumptionCb,
-				  				const ErrorCallback& errorCb)
+                  const ConsumptionCallback& consumptionCb,
+                  const ErrorCallback& errorCb)
 {
-	shared_ptr<Interest> interest = make_shared<Interest>(dataName);
-	sendInterest(*Interest);
+  // shared_ptr<Interest> interest = make_shared<Interest>(dataName);
+  // sendInterest(*Interest);
 }
 
 void
-Consumer::requestToken(const Name ownerPrefix)
-{
-	Name requestPrefix = Name(ownerPrefix);
-	requestPrefix.append(REQUEST_TOKEN);
-	//add certificate
-	sendTokenInterest(Interest(requestPrefix), m_repeatAttempts);
-}
-
-void
-Consumer::sendTokenInterest(const Interest& interest, uint8_t repeatTimes)
-{
-	m_face.expressInterest(interest,
-												 bind(&Consumer::handleTokenData, this, _1, _2),
-												 bind(&Consumer::handleTokenTimeout, this, repeatTimes, _1));
-
-}
-
-void
-Consumer::handleTokenData(const Interest& interest, Data& data)
-{
-}
-
-void
-Consumer::handleTokenTimeout(uint8_t repeatTimes, const Interest& interest)
-{
-	if (repeatTimes == 0) {
-		//throw exception
-	}
-	else {
-		repeatTimes--;
-		sendTokenInterest(interest, repeatTimes);
-	}
-}
-
-void
-Consumer::fetchDecryptionKey(const Name& attrAuthorityPrefix,
-							 							 const Data& token)
+Consumer::loadTrustConfig(const TrustConfig& config)
 {}
 
-//private
 void
-Consumer::fetchAttributePubParams(const Name& attrAuthorityPrefix,
-								  								const SuccessCallback& onPublicParamsCb)
-{ew
-}
+Consumer::fetchDecryptionKey(const Name& attrAuthorityPrefix, const Data& token)
+{}
+
+void
+Consumer::requestToken(const Name& tokenIssuerPrefix)
+{}
+
+void
+Consumer::tokenDataCallback(const Interest& interest, Data& data)
+{}
+
+void
+Consumer::tokenTimeoutCb(const Interest& interest)
+{}
+
+void
+Consumer::fetchAttributePubParams(const Name& attrAuthorityPrefix)
+{}
 
 
 
