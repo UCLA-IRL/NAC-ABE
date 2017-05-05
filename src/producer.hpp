@@ -47,8 +47,9 @@ public:
    * @param face the face for publishing data and sending interests
    * @param repeatAttempts the max retry times when timeout or nack
    */
-  Producer(const security::v2::Certificate& identityCert, Face& face,
-           const Name producerName, uint8_t repeatAttempts = 3);
+  Producer(const security::v2::Certificate& identityCert, Face& face
+           security::v2::KeyChain& keyChain, const Name& attrAuthorityPrefix,
+           uint8_t repeatAttempts = 3);
 
   /**
    * @brief Producing data packet
@@ -59,17 +60,16 @@ public:
    * @param errorCallBack
    */
   void
-  produce(const std::string& accessPolicy, const Name& attrAuthorityPrefix,
+  produce(const Name& dataName, const std::string& accessPolicy,
           const uint8_t* content, size_t contentLen,
           const SuccessCallback& onDataProduceCb, const ErrorCallback& errorCallback);
 
 private:
   void
-  onInterest(const InterestFilter& forwardingHint, const Interest& interest);
+  onPolicyInterest(const Interest& interest);
 
   void
-  fetchAuthorityPubParams(const Name& attrAuthorityPrefix,
-                          const SuccessCallback& onPublicParamsCb);
+  fetchAuthorityPubParams(const Name& attrAuthorityPrefix);
 
 private:
   security::v2::Ceritificate m_cert;
@@ -77,8 +77,9 @@ private:
   Name m_producerName;
   uint8_t m_repeatAttempts;
 
-  std::map<Name, PublicParams> m_pubParamsCache;
-  Name m_identity;
+  std::map<Name/* data prefix */, std::string/* policy */> m_policyCache;
+  PublicParams m_pubParamsCache;
+  std::list<security::v2::Certificate> m_trustAnchors;
 };
 
 } // namespace ndnabac

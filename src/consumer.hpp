@@ -42,7 +42,7 @@ public:
 
 public:
   Consumer(const security::v2::Certificate& identityCert, Face& face,
-           const Name& consumerPrefix, uint8_t repeatAttempts = 3);
+           uint8_t repeatAttempts = 3);
 
   void
   consume(const Name& dataName,
@@ -50,34 +50,41 @@ public:
           const ErrorCallback& errorCb);
 
   void
-  fetchDecryptionKey(const Name& attrAuthorityPrefix, const Data& token);
-
-  void
-  requestToken(const Name overPrefix);
-
-  void
-  handleTokenData(const Interest& interest, Data& data);
-
-  void
-  handleTokenTimeout(const Interest& interest);
-
-  void
-  sendTokenInterest(const Interest& interest);
+  loadTrustConfig(const TrustConfig& config);
 
 private:
   void
-  fetchAttributePubParams(const Name& attrAuthorityPrefix,
-                          const SuccessCallback& onPublicParamsCb);
+  fetchDecryptionKey(const Name& attrAuthorityPrefix, const Data& token);
+
+  /**
+   * interest naming convention:
+   *  /tokenIssuerPrefix/TOKEN/[identity-name block]/[sig]
+   */
+  void
+  requestToken(const Name& tokenIssuerPrefix);
+
+  /**
+   * should invoke fetchDecryptionKey()
+   * callback for requestToken()
+   */
+  void
+  tokenDataCallback(const Interest& interest, Data& data);
+
+  void
+  tokenTimeoutCb(const Interest& interest);
+
+  void
+  fetchAttributePubParams(const Name& attrAuthorityPrefix);
 
 private:
   security::v2::Certificate m_cert;
   Face& m_face;
-  Name m_prefix;
   uint8_t m_repeatAttempts;
 
   algo::PrivateKey m_privateKey;
-  std::map<Name, Data> m_tokens;
+  std::map<Name/* token-issuer-name */, Data/* token */> m_tokens;
   algo::PublicParams m_pubParamsCache;
+  std::list<security::v2::Certificate> m_trustAnchors;
 };
 
 } // namespace ndnabac

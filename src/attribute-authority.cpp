@@ -25,14 +25,15 @@ namespace ndnabac {
 static const Name ATTR_AUTHORITY_PREFIX = "/VO/aa";
 
 //public
-AttributeAuthority::AttributeAuthority(Face& face)
+AttributeAuthority::AttributeAuthority(const security::v2::Certificate& identityCert,
+                                       Face& face)
   : m_face(face)
 {
-	m_face.setInterestFilter(InterestFilter(ATTR_AUTHORITY_PREFIX),
-							 						 bind(&ContentServer::filterAndServe, this, _1, _2),
-							 						 RegisterPrefixSuccessCallback(),
-							 						 RegisterPrefixFailureCallback());
-	cpabeSetup();
+  m_face.setInterestFilter(InterestFilter(identityCert.getIdentityName()),
+                           bind(&ContentServer::filterAndServe, this, _1, _2),
+                           RegisterPrefixSuccessCallback(),
+                           RegisterPrefixFailureCallback());
+  cpabeSetup();
 }
 
 void
@@ -54,7 +55,9 @@ AttributeAuthority::createKey(const std::string keyName, ...)
 //private
 void
 AttributeAuthority::filterAndServe(const InterestFilter& forwardingHint, const Interest& interest)
-{}
+{
+  // check the interest name
+}
 
 void
 AttributeAuthority::cpabeSetup()

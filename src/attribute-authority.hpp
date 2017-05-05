@@ -30,8 +30,10 @@ namespace ndnabac {
 class AttributeAuthority
 {
 public:
-  AttributeAuthority(Face& m_face);
+  AttributeAuthority(const security::v2::Certificate& identityCert, Face& m_face,
+                     security::v2::KeyChain& keyChain);
 
+private:
   void
   onDecryptionKeyRequest(const Interest& interest);
 
@@ -41,23 +43,17 @@ public:
   algo::PrivateKey
   issueDecryptionKey(const std::list<std::string>& attrList);
 
-  bool
-  createKey(const std::string keyName, ...);
+  void
+  init();
 
 private:
-  void
-  filterAndServe(const InterestFilter& forwardingHint, const Interest& interest);
-
-  void
-  cpabeSetup();
-
-  void
-  cpabaKeygen(const std::string keyName, ...);
-
-private:
+  security::v2::Certificate m_cert;
   Face& m_face;
+  security::v2::KeyChain& m_keyChain;
+
   algo::PublicParams m_pubParams;
   algo::MasterKey m_masterKey;
+  std::list<security::v2::Certificate> m_trustAnchors;
 };
 
 } // namespace ndnabac

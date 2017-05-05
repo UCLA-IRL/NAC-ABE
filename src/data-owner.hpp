@@ -26,6 +26,26 @@
 namespace ndn {
 namespace ndnabac {
 
+class DataOwner
+{
+public:
+  DataOwner(const security::v2::Certificate& identityCert, Face& face,
+            security::v2::KeyChain& keyChain);
+
+  /**
+   * send command:
+   *  /producer-prefix/data-prefix/POLICY/<policy string>/[sig]
+   * data-prefix contains the producer prefix and data prefix
+   */
+  void
+  commandProducerPolicy(const Name& prefix, const std::string& policy);
+
+private:
+  security::v2::Certificate m_cert;
+  Face& m_face;
+  security::v2::KeyChain& m_keyChain;
+};
+
 } // namespace ndnabac
 } // namespace ndn
 
