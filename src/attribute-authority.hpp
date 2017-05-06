@@ -35,6 +35,8 @@ public:
   AttributeAuthority(const security::v2::Certificate& identityCert, Face& m_face,
                      security::v2::KeyChain& keyChain);
 
+  ~AttributeAuthority();
+
 private:
   void
   onDecryptionKeyRequest(const Interest& interest);
@@ -56,6 +58,10 @@ private:
   algo::PublicParams m_pubParams;
   algo::MasterKey m_masterKey;
   std::list<security::v2::Certificate> m_trustAnchors;
+
+private:
+  std::list<const RegisteredPrefixId*> m_registeredPrefixIds;
+  std::list<const InterestFilterId*> m_interestFilterIds;
 };
 
 } // namespace ndnabac

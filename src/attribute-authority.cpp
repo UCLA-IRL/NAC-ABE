@@ -22,7 +22,7 @@
 namespace ndn {
 namespace ndnabac {
 
-static const Name ATTR_AUTHORITY_PREFIX = "/VO/aa";
+_LOG_INIT(ndnabac.attribute-authority);
 
 //public
 AttributeAuthority::AttributeAuthority(const security::v2::Certificate& identityCert,
@@ -32,11 +32,30 @@ AttributeAuthority::AttributeAuthority(const security::v2::Certificate& identity
   , m_face(face)
   , m_keyChain(keyChain)
 {
-  // m_face.setInterestFilter(InterestFilter(identityCert.getIdentityName()),
-  //                          bind(&ContentServer::filterAndServe, this, _1, _2),
-  //                          RegisterPrefixSuccessCallback(),
-  //                          RegisterPrefixFailureCallback());
-  // cpabeSetup();
+  const RegisteredPrefixId* prefixId = m_face.registerPrefix(m_cert.getIdentity(),
+        [&] (const Name& name) {
+          _LOG_TRACE("Prefix " << name << " got registered");
+          const InterestFilterId* filterId;
+
+          // public parameter filter
+          filterId = m_face.setInterestFilter(Name(name).append("PUBPARAMS"),
+                                              bind(&CaModule::onPublicParamsRequest, this, _2, item));
+          m_interestFilterIds.push_back(filterId);
+          _LOG_TRACE("InterestFilter " << Name(name).append("PUBPARAMS") << " got set");
+
+          // decryption key filter
+          filterId = m_face.setInterestFilter(Name(name).append("DKEY"),
+                                              bind(&CaModule::onDecryptionKeyRequest, this, _2, item));
+          m_interestFilterIds.push_back(filterId);
+          _LOG_TRACE("InterestFilter " << Name(name).append("PUBPARAMS") << " got set");
+        },
+        bind(&CaModule::onRegisterFailed, this, _2));
+  m_registeredPrefixIds.push_back(prefixId);
+}
+
+AttributeAuthority::~AttributeAuthority()
+{
+
 }
 
 void
