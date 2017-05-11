@@ -61,9 +61,13 @@ def configure(conf):
     conf.env.INCLUDES_PBC  = ['/usr/local/Cellar/pbc/0.5.14/include/pbc']
     conf.check_cxx(lib = 'pbc', use = 'PBC', args='--cflags --libs')
 
-    conf.env.LIBPATH_BSWABE = ['/usr/local/lib']
+    conf.env.LIBPATH_GMP = ['/usr/local/lib']
+    conf.env.INCLUDES_GMP  = ['/usr/local/include']
+    conf.check_cxx(lib = 'gmp', use = 'GMP', args='--cflags --libs')
+
+    conf.env.STLIBPATH_BSWABE = ['/usr/local/lib']
     conf.env.INCLUDES_BSWABE  = ['/usr/local/include']
-    conf.check_cxx(stlib = 'bswabe', use = 'BSWABE')
+    conf.check_cxx(lib = 'bswabe', use = 'BSWABE')
 
     conf.write_config_header('src/ndnabac-config.hpp')
 
@@ -74,7 +78,7 @@ def build(bld):
         source =  bld.path.ant_glob(['src/**/*.cpp']),
         vnum = VERSION,
         cnum = VERSION,
-        use = 'NDN_CXX BOOST GLIB PBC BSWABE',
+        use = 'NDN_CXX BOOST GMP GLIB PBC BSWABE',
         includes = ['src'],
         export_includes=['src'],
     )
