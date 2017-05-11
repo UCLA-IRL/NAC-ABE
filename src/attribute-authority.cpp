@@ -34,6 +34,10 @@ AttributeAuthority::AttributeAuthority(const security::v2::Certificate& identity
   , m_face(face)
   , m_keyChain(keyChain)
 {
+  // ABE setup
+  algo::ABESupport::setup(m_pubParams, m_masterKey);
+
+  // prefix registration
   const RegisteredPrefixId* prefixId = m_face.registerPrefix(m_cert.getIdentity(),
         [&] (const Name& name) {
           _LOG_TRACE("Prefix " << name << " got registered");
@@ -75,6 +79,7 @@ void
 AttributeAuthority::onPublicParamsRequest(const Interest& interest)
 {
   //naming: /AA-prefix/PUBLICPARAMS
+
   // Data result;
   // result.setName(interest.getName());
   // result.setContent();

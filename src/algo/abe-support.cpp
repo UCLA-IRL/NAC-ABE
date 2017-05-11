@@ -18,54 +18,21 @@
  * See AUTHORS.md for complete list of ndnabac authors and contributors.
  */
 
-#ifndef NDNABAC_ATTRIBUTE_AUTHORITY_HPP
-#define NDNABAC_ATTRIBUTE_AUTHORITY_HPP
-
-#include "ndnabac-common.hpp"
-#include "algo/abe-support.hpp"
+#include "abe-support.hpp"
 
 namespace ndn {
 namespace ndnabac {
+namespace algo {
 
-class AttributeAuthority
+void
+ABESupport::setup(PublicParams& pubParams, MasterKey& masterKey)
 {
-public:
-  AttributeAuthority(const security::v2::Certificate& identityCert, Face& m_face,
-                     security::v2::KeyChain& keyChain);
+  bswabe_pub_t* pub = pubParams.m_pub;
+  bswabe_msk_t* msk = masterKey.m_msk;
 
-  ~AttributeAuthority();
+  bswabe_setup(&pub, &msk);
+}
 
-private:
-  void
-  onDecryptionKeyRequest(const Interest& interest);
-
-  void
-  onPublicParamsRequest(const Interest& interest);
-
-  void
-  onRegisterFailed(const std::string& reason);
-
-  algo::PrivateKey
-  issueDecryptionKey(const std::list<std::string>& attrList);
-
-  void
-  init();
-
-private:
-  security::v2::Certificate m_cert;
-  Face& m_face;
-  security::v2::KeyChain& m_keyChain;
-
-  algo::PublicParams m_pubParams;
-  algo::MasterKey m_masterKey;
-  std::list<security::v2::Certificate> m_trustAnchors;
-
-private:
-  std::list<const RegisteredPrefixId*> m_registeredPrefixIds;
-  std::list<const InterestFilterId*> m_interestFilterIds;
-};
-
+} // namespace algo
 } // namespace ndnabac
 } // namespace ndn
-
-#endif // NDNABAC_ATTRIBUTE_AUTHORITY_HPP
