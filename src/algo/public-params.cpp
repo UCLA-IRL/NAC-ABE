@@ -18,9 +18,24 @@
  * See AUTHORS.md for complete list of ndnabac authors and contributors.
  */
 
+#include "public-params.hpp"
+
 namespace ndn {
 namespace ndnabac {
 namespace algo {
+
+Buffer
+PublicParams::toBuffer(const PublicParams& pubParam)
+{
+  // From Glib:
+  // struct GByteArray {
+  //   guint8 *data;
+  //   guint len;
+  // }
+  GByteArray* bytes = bswabe_pub_serialize(pubParam.m_pub);
+  Buffer result(bytes->data, bytes->len);
+  return result;
+}
 
 } // namespace algo
 } // namespace ndnabac

@@ -17,7 +17,9 @@
  *
  * See AUTHORS.md for complete list of ndnabac authors and contributors.
  */
+
 #include "attribute-authority.hpp"
+#include "logging.hpp"
 
 namespace ndn {
 namespace ndnabac {
@@ -39,32 +41,52 @@ AttributeAuthority::AttributeAuthority(const security::v2::Certificate& identity
 
           // public parameter filter
           filterId = m_face.setInterestFilter(Name(name).append("PUBPARAMS"),
-                                              bind(&CaModule::onPublicParamsRequest, this, _2, item));
+                                              bind(&AttributeAuthority::onPublicParamsRequest, this, _2));
           m_interestFilterIds.push_back(filterId);
           _LOG_TRACE("InterestFilter " << Name(name).append("PUBPARAMS") << " got set");
 
           // decryption key filter
           filterId = m_face.setInterestFilter(Name(name).append("DKEY"),
-                                              bind(&CaModule::onDecryptionKeyRequest, this, _2, item));
+                                              bind(&AttributeAuthority::onDecryptionKeyRequest, this, _2));
           m_interestFilterIds.push_back(filterId);
           _LOG_TRACE("InterestFilter " << Name(name).append("PUBPARAMS") << " got set");
         },
-        bind(&CaModule::onRegisterFailed, this, _2));
+        bind(&AttributeAuthority::onRegisterFailed, this, _2));
   m_registeredPrefixIds.push_back(prefixId);
 }
 
 AttributeAuthority::~AttributeAuthority()
 {
-
+  for (auto prefixId : m_interestFilterIds) {
+    m_face.unsetInterestFilter(prefixId);
+  }
+  for (auto prefixId : m_registeredPrefixIds) {
+    m_face.unregisterPrefix(prefixId, nullptr, nullptr);
+  }
 }
 
 void
 AttributeAuthority::onDecryptionKeyRequest(const Interest& interest)
-{}
+{
+  //naming: /AA-prefix/DKEY/<token>
+}
 
 void
 AttributeAuthority::onPublicParamsRequest(const Interest& interest)
-{}
+{
+  //naming: /AA-prefix/PUBLICPARAMS
+  // Data result;
+  // result.setName(interest.getName());
+  // result.setContent();
+  // m_keyChain.sign(result, signingByCertificate(caItem.m_anchor));
+  // m_face.put(result);
+}
+
+void
+AttributeAuthority::onRegisterFailed(const std::string& reason)
+{
+  _LOG_TRACE("Error: failed to register prefix in local hub's daemon, REASON: " << reason);
+}
 
 algo::PrivateKey
 AttributeAuthority::issueDecryptionKey(const std::list<std::string>& attrList)
