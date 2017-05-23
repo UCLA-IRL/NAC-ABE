@@ -75,7 +75,7 @@ def build(bld):
     core = bld(
         target = "ndn-abac",
         features=['cxx', 'cxxshlib'],
-        source =  bld.path.ant_glob(['src/**/*.cpp']),
+        source =  bld.path.ant_glob(['src/**/*.cpp', 'src/**/*.c']),
         vnum = VERSION,
         cnum = VERSION,
         use = 'NDN_CXX BOOST GMP GLIB PBC BSWABE',

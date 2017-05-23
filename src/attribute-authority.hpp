@@ -45,9 +45,6 @@ private:
   void
   onRegisterFailed(const std::string& reason);
 
-  algo::PrivateKey
-  issueDecryptionKey(const std::list<std::string>& attrList);
-
   void
   init();
 

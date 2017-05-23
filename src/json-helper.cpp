@@ -18,31 +18,46 @@
  * See AUTHORS.md for complete list of ndnabac authors and contributors.
  */
 
-#ifndef NDNABAC_ALGO_ABE_SUPPORT_HPP
-#define NDNABAC_ALGO_ABE_SUPPORT_HPP
-
-#include "algo-common.hpp"
-#include "public-params.hpp"
-#include "master-key.hpp"
-#include "private-key.hpp"
+#include "json-helper.hpp"
 
 namespace ndn {
 namespace ndnabac {
-namespace algo {
 
-class ABESupport
+Block
+JsonHelper::dataContentFromJson(const JsonSection& jsonSection)
 {
-public:
-  static void
-  setup(PublicParams& pubParams, MasterKey& masterKey);
+  std::stringstream ss;
+  boost::property_tree::write_json(ss, jsonSection);
+  return makeStringBlock(ndn::tlv::Content, ss.str());
+}
 
-  static PrivateKey
-  prvKeyGen(const PublicParams& pubParams, const MasterKey& masterKey,
-            const std::vector<std::string>& attrList);
-};
+std::string
+JsonHelper::convertJson2String(const JsonSection& json)
+{
+  std::stringstream ss;
+  boost::property_tree::write_json(ss, json);
+  return ss.str();
+}
 
-} // namespace algo
-} // namespace ndnabac
+JsonSection
+JsonHelper::convertString2Json(const std::string& jsonContent)
+{
+  std::istringstream ss(jsonContent);
+  JsonSection json;
+  boost::property_tree::json_parser::read_json(ss, json);
+  return json;
+}
+
+JsonSection
+JsonHelper::getJsonFromDataContent(const Data& data)
+{
+  Block jsonBlock = data.getContent();
+  std::string jsonString = encoding::readString(jsonBlock);
+  std::istringstream ss(jsonString);
+  JsonSection json;
+  boost::property_tree::json_parser::read_json(ss, json);
+  return json;
+}
+
 } // namespace ndn
-
-#endif // NDNABAC_ALGO_ABE_SUPPORT_HPP
+} // namespace ndnabac

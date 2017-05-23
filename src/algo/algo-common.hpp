@@ -25,7 +25,6 @@
 
 #include <pbc.h>
 #include <glib.h>
-
 #include <bswabe.h>
 
 #endif // NDNABAC_ALGO_COMMON_HPP

@@ -18,31 +18,33 @@
  * See AUTHORS.md for complete list of ndnabac authors and contributors.
  */
 
-#ifndef NDNABAC_ALGO_ABE_SUPPORT_HPP
-#define NDNABAC_ALGO_ABE_SUPPORT_HPP
+#ifndef NDNABAC_JSON_HELPER_HPP
+#define NDNABAC_JSON_HELPER_HPP
 
-#include "algo-common.hpp"
-#include "public-params.hpp"
-#include "master-key.hpp"
-#include "private-key.hpp"
+#include "ndnabac-common.hpp"
 
 namespace ndn {
 namespace ndnabac {
-namespace algo {
 
-class ABESupport
+typedef boost::property_tree::ptree JsonSection;
+
+class JsonHelper
 {
 public:
-  static void
-  setup(PublicParams& pubParams, MasterKey& masterKey);
+  static Block
+  dataContentFromJson(const JsonSection& jsonSection);
 
-  static PrivateKey
-  prvKeyGen(const PublicParams& pubParams, const MasterKey& masterKey,
-            const std::vector<std::string>& attrList);
+  static std::string
+  convertJson2String(const JsonSection& json);
+
+  static JsonSection
+  convertString2Json(const std::string& jsonContent);
+
+  static JsonSection
+  getJsonFromDataContent(const Data& data);
 };
 
-} // namespace algo
-} // namespace ndnabac
 } // namespace ndn
+} // namespace ndnabac
 
-#endif // NDNABAC_ALGO_ABE_SUPPORT_HPP
+#endif // NDNABAC_JSON_HELPER_HPP

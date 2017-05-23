@@ -22,18 +22,19 @@
 #define NDNABAC_TOKEN_ISSUER_HPP
 
 #include "ndnabac-common.hpp"
+#include "json-helper.hpp"
 #include <list>
 
 namespace ndn {
 namespace ndnabac {
-
-typedef boost::property_tree::ptree JsonSection;
 
 class TokenIssuer
 {
 public:
   TokenIssuer(const security::v2::Certificate& identityCert, Face& face,
               security::v2::KeyChain& keyChain);
+
+  ~TokenIssuer();
 
 private:
   void
@@ -57,7 +58,10 @@ private:
   security::v2::Certificate m_cert;
   Face& m_face;
   security::v2::KeyChain& m_keyChain;
-  std::map<Name/* Consumer Identity */, JsonSection/* JSON */> m_tokens;
+
+  std::list<security::v2::Certificate> m_trustAnchors;
+  std::list<const InterestFilterId*> m_interestFilterIds;
+  std::map<Name/* Consumer Identity */, std::list<std::string>/* Attr */> m_tokens;
 };
 
 } // namespace ndnabac

@@ -33,6 +33,28 @@ ABESupport::setup(PublicParams& pubParams, MasterKey& masterKey)
   bswabe_setup(&pub, &msk);
 }
 
+PrivateKey
+ABESupport::prvKeyGen(const PublicParams& pubParams, const MasterKey& masterKey,
+                      const std::vector<std::string>& attrList)
+{
+  bswabe_pub_t* pub = pubParams.m_pub;
+  bswabe_msk_t* msk = masterKey.m_msk;
+
+  // change list<string> to char**
+  char* attrs[attrList.size() + 1];
+  for (size_t i = 0; i < attrList.size(); i++) {
+    char *cstr = new char[attrList[i].length() + 1];
+    std::strcpy(cstr, attrList[i].c_str());
+    attrs[i] = cstr;
+  }
+  attrs[attrList.size()] = nullptr;
+
+  bswabe_prv_t* prv = bswabe_keygen(pub, msk, attrs);
+  PrivateKey privateKey;
+  privateKey.m_prv = prv;
+  return privateKey;
+}
+
 } // namespace algo
 } // namespace ndnabac
 } // namespace ndn
