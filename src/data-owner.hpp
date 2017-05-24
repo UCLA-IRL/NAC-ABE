@@ -29,21 +29,30 @@ namespace ndnabac {
 class DataOwner
 {
 public:
+  using ErrorCallback = function<void (const std::string&)>;
+  using SuccessCallback = function<void (const Data&)>;
+
+public:
   DataOwner(const security::v2::Certificate& identityCert, Face& face,
             security::v2::KeyChain& keyChain);
 
   /**
    * send command:
-   *  /producer-prefix/data-prefix/POLICY/<policy string>/[sig]
+   *  /producer-prefix/data-prefix/SET_POLICY/<policy string>/[sig]
    * data-prefix contains the producer prefix and data prefix
    */
   void
-  commandProducerPolicy(const Name& prefix, const std::string& policy);
+  commandProducerPolicy(const Name& prefix, const std::string& policy,
+                        const SuccessCallback& SuccessCb, const ErrorCallback& errorCb);
+
+public:
+  const static Name SET_POLICY;
 
 private:
   security::v2::Certificate m_cert;
   Face& m_face;
   security::v2::KeyChain& m_keyChain;
+  unique_ptr<Validator> m_validator;
 };
 
 } // namespace ndnabac

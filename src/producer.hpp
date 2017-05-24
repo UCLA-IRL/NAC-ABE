@@ -51,6 +51,8 @@ public:
            security::v2::KeyChain& keyChain, const Name& attrAuthorityPrefix,
            uint8_t repeatAttempts = 3);
 
+  ~Producer();
+
   /**
    * @brief Producing data packet
    *
@@ -69,16 +71,21 @@ private:
   onPolicyInterest(const Interest& interest);
 
   void
-  fetchAuthorityPubParams(const Name& attrAuthorityPrefix);
+  fetchAuthorityPubParams(const Name& attrAuthorityPrefix, const ErrorCallback& errorCb);
+
+public:
+  const static Name SET_POLICY;
 
 private:
   security::v2::Certificate m_cert;
+  unique_ptr<Validator> m_validator;
   Face& m_face;
   security::v2::KeyChain& m_keyChain;
   Name m_attrAuthorityPrefix;
   uint8_t m_repeatAttempts;
 
   std::map<Name/* data prefix */, std::string/* policy */> m_policyCache;
+  std::list<const InterestFilterId*> m_interestFilterIds;
   algo::PublicParams m_pubParamsCache;
   std::list<security::v2::Certificate> m_trustAnchors;
 };

@@ -48,6 +48,10 @@ private:
   void
   init();
 
+public:
+  const static Name PUBLIC_PARAMS;
+  const static Name DECRYPT_KEY;
+
 private:
   security::v2::Certificate m_cert;
   Face& m_face;

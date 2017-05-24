@@ -54,6 +54,8 @@ public:
   const static std::string TOKEN_ATTR_SET;
   const static std::string TOKEN_ATTR_NAME;
 
+  const static Name TOKEN_REQUEST;
+
 private:
   security::v2::Certificate m_cert;
   Face& m_face;

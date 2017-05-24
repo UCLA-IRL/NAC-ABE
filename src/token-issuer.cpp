@@ -30,6 +30,8 @@ namespace ndnabac {
 
 _LOG_INIT(ndnabac.token-issuer);
 
+const Name TokenIssuer::TOKEN_REQUEST = "/TOKEN";
+
 const std::string TokenIssuer::TOKEN_USER = "user-pub-key";
 const std::string TokenIssuer::TOKEN_ATTR_SET = "attribute-set";
 const std::string TokenIssuer::TOKEN_ATTR_NAME = "attribute-name";
@@ -42,7 +44,7 @@ TokenIssuer::TokenIssuer(const security::v2::Certificate& identityCert, Face& fa
 {
   // prefix registration
   const InterestFilterId* filterId;
-  filterId = m_face.setInterestFilter(Name(m_cert.getIdentity()).append("TOKEN"),
+  filterId = m_face.setInterestFilter(Name(m_cert.getIdentity()).append(TOKEN_REQUEST),
                                       bind(&TokenIssuer::onTokenRequest, this, _2));
   m_interestFilterIds.push_back(filterId);
 }

@@ -40,12 +40,12 @@ public:
 
   using OnDataCallback = function<void (const Interest&, const Data&)>;
   using ErrorCallback = function<void (const std::string&)>;
-  using ConsumptionCallback = function<void (const Buffer&)>;
+  using ConsumptionCallback = function<void (const Data&)>;
   using SuccessCallback = function<void (const Data&)>;
 
 public:
   Consumer(const security::v2::Certificate& identityCert, Face& face,
-           uint8_t repeatAttempts = 3);
+           Name& consumerName, uint8_t repeatAttempts = 3);
 
   void
   consume(const Name& dataName,
@@ -57,35 +57,51 @@ public:
 
 private:
   void
-  fetchDecryptionKey(const Name& attrAuthorityPrefix, const Data& token);
+  sendInterest(const Interest& interest, int nRetrials,
+               const OnDataValidated& validationCallback,
+               const ErrorCallback& errorCallback);
+
+  void
+  decryptContent(const Data& data,
+                 const SuccessCallback& SuccessCb,
+                 const ErrorCallback& errorCb);
+
+  void
+  handleNack(const Interest& interest, const lp::Nack& nack,
+             const OnDataValidated& callback, const ErrorCallback& errorCallback);
+
+  void
+  handleTimeout(const Interest& interest, int nRetrials,
+                const OnDataValidated& callback, const ErrorCallback& errorCallback);
+
+  void
+  fetchDecryptionKey(const Name& attrAuthorityPrefix, const ErrorCallback& errorCb);
+
+  void
+  onDecryptionKey(const Data& data, const ErrorCallback& errorCb);
 
   /**
    * interest naming convention:
    *  /tokenIssuerPrefix/TOKEN/[identity-name block]/[sig]
    */
   void
-  requestToken(const Name& tokenIssuerPrefix);
-
-  /**
-   * should invoke fetchDecryptionKey()
-   * callback for requestToken()
-   */
-  void
-  tokenDataCallback(const Interest& interest, Data& data);
+  requestToken(const Name& tokenIssuerPrefix, const ErrorCallback& errorCb);
 
   void
-  tokenTimeoutCb(const Interest& interest);
+  fetchAttributePubParams(const Name& attrAuthorityPrefix, const ErrorCallback& errorCb);
 
   void
-  fetchAttributePubParams(const Name& attrAuthorityPrefix);
+  onAttributePubParams(const Data& data,
+                       const ErrorCallback& errorCb);
 
 private:
   security::v2::Certificate m_cert;
+  unique_ptr<Validator> m_validator;
   Face& m_face;
   uint8_t m_repeatAttempts;
 
-  algo::PrivateKey m_privateKey;
-  std::map<Name/* token-issuer-name */, Data/* token */> m_tokens;
+  unique_ptr<algo::PrivateKey> m_privateKey;
+  unique_ptr<Data> m_token;
   algo::PublicParams m_pubParamsCache;
   std::list<security::v2::Certificate> m_trustAnchors;
 };

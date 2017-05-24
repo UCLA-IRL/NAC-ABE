@@ -18,8 +18,72 @@
  * See AUTHORS.md for complete list of ndnabac authors and contributors.
  */
 
+#include "data-owner.hpp"
+
+#include <ndn-cxx/encoding/block-helpers.hpp>
+
 namespace ndn {
 namespace ndnabac {
+
+const Name DataOwner::SET_POLICY = "/SET_POLICY";
+
+DataOwner::DataOwner(const security::v2::Certificate& identityCert, Face& face,
+    				         security::v2::KeyChain& keyChain)
+	: m_cert(identityCert)
+	, m_face(face)
+  , m_keyChain(keyChain)
+{
+}
+
+  /**
+   * send command:
+   *  /producer-prefix/data-prefix/POLICY/<policy string>/[sig]
+   * data-prefix contains the producer prefix and data prefix
+   */
+void
+DataOwner::commandProducerPolicy(const Name& prefix, const std::string& policy,
+										  					 const SuccessCallback& SuccessCb, const ErrorCallback& errorCb)
+{
+	// shared_ptr<Interest> interest = make_shared<Interest>(dataName);
+  // sendInterest(*Interest);
+  Name policyName = prefix;
+  policyName.append(SET_POLICY);
+  policyName.append(policy);
+  //add sig
+
+  shared_ptr<Interest> interest = make_shared<Interest>(policyName);
+
+  // prepare callback functions
+  auto validationCallback =
+    [=] (const shared_ptr<const Data>& validData) {
+      //try to know if register success;
+      if (validData->getContent().type() == 0) {
+      	errorCb("register failed");
+      }
+      else {
+      	SuccessCb(*validData);	
+      }
+  };
+
+	auto dataCallback = [=] (const Interest& contentInterest, const Data& contentData) {
+    if (!contentInterest.matchesData(contentData))
+      return;
+
+    this->m_validator->validate(contentData, validationCallback,
+                                [=] (const shared_ptr<const Data>& d, const std::string& e) {
+                                  errorCb(e);
+                                });
+  };
+
+  // set link object if it is available
+
+
+  m_face.expressInterest(*interest, dataCallback,
+                         [=] (const Interest&) {
+                           errorCb("time out");
+                         });
+
+}
 
 } // namespace ndnabac
 } // namespace ndn

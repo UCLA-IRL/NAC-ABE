@@ -32,6 +32,10 @@ namespace ndnabac {
 
 _LOG_INIT(ndnabac.attribute-authority);
 
+
+const Name AttributeAuthority::PUBLIC_PARAMS = "/PUBPARAMS";
+const Name AttributeAuthority::DECRYPT_KEY = "/DKEY";
+
 //public
 AttributeAuthority::AttributeAuthority(const security::v2::Certificate& identityCert,
                                        Face& face,
@@ -50,16 +54,16 @@ AttributeAuthority::AttributeAuthority(const security::v2::Certificate& identity
       const InterestFilterId* filterId;
 
       // public parameter filter
-      filterId = m_face.setInterestFilter(Name(name).append("PUBPARAMS"),
+      filterId = m_face.setInterestFilter(Name(name).append(PUBLIC_PARAMS),
                                           bind(&AttributeAuthority::onPublicParamsRequest, this, _2));
       m_interestFilterIds.push_back(filterId);
-      _LOG_TRACE("InterestFilter " << Name(name).append("PUBPARAMS") << " got set");
+      _LOG_TRACE("InterestFilter " << Name(name).append(PUBLIC_PARAMS) << " got set");
 
       // decryption key filter
-      filterId = m_face.setInterestFilter(Name(name).append("DKEY"),
+      filterId = m_face.setInterestFilter(Name(name).append(DECRYPT_KEY),
                                           bind(&AttributeAuthority::onDecryptionKeyRequest, this, _2));
       m_interestFilterIds.push_back(filterId);
-      _LOG_TRACE("InterestFilter " << Name(name).append("PUBPARAMS") << " got set");
+      _LOG_TRACE("InterestFilter " << Name(name).append(DECRYPT_KEY) << " got set");
     },
     bind(&AttributeAuthority::onRegisterFailed, this, _2));
   m_registeredPrefixIds.push_back(prefixId);
