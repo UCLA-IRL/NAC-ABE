@@ -25,6 +25,7 @@
 #include "public-params.hpp"
 #include "master-key.hpp"
 #include "private-key.hpp"
+#include "cipher-text.hpp"
 
 namespace ndn {
 namespace ndnabac {
@@ -39,6 +40,12 @@ public:
   static PrivateKey
   prvKeyGen(const PublicParams& pubParams, const MasterKey& masterKey,
             const std::vector<std::string>& attrList);
+
+  static CipherText
+  encrypt(const PublicParams& pubParams, const std::string& policy, const Buffer& plainText);
+
+  static Buffer
+  decrypt(const PublicParams& pubParams, const PrivateKey& prvKey, const CipherText& cipherText);
 };
 
 } // namespace algo

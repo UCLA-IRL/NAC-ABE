@@ -18,30 +18,67 @@
  * See AUTHORS.md for complete list of ndnabac authors and contributors.
  */
 
-#ifndef NDNABAC_ALGO_PUBLIC_PARAMS_HPP
-#define NDNABAC_ALGO_PUBLIC_PARAMS_HPP
+#ifndef NDNABAC_ALGO_CIPHER_TEXT_HPP
+#define NDNABAC_ALGO_CIPHER_TEXT_HPP
 
 #include "algo-common.hpp"
+#include "public-params.hpp"
 
 namespace ndn {
 namespace ndnabac {
 namespace algo {
 
-class PublicParams
+class CipherText
 {
 public:
-  static Buffer
-  toBuffer(const PublicParams& pubParam);
-
-  static PublicParams
-  fromBuffer(Buffer buffer);
+  void
+  setPublicParam(const PublicParams& params)
+  {
+    m_publicParams = params;
+  }
 
 public:
-  bswabe_pub_t* m_pub;
+  /**
+   * @brief Fast encoding or block size estimation
+   */
+  template<encoding::Tag TAG>
+  size_t
+  wireEncode(EncodingImpl<TAG>& encoder) const;
+
+  /**
+   * @brief Encode to a wire format
+   */
+  const Block&
+  wireEncode() const;
+
+  /**
+   * @brief Decode the input from wire format
+   */
+  void
+  wireDecode(const Block& wire);
+
+private:
+  Buffer
+  encryptedAesKeyToBuffer() const;
+
+  void
+  encryptedAesKeyFromBuffer(const PublicParams& params, Buffer buffer);
+
+private:
+  static const uint32_t TLV_EncryptedAesKey;
+  static const uint32_t TLV_EncryptedContent;
+
+public:
+  bswabe_cph_t* m_cph; // encrypted AES key
+  Buffer m_content; // encrypted content
+
+  PublicParams m_publicParams;
+
+  mutable Block m_wire;
 };
 
 } // namespace algo
 } // namespace ndnabac
 } // namespace ndn
 
-#endif // NDNABAC_ALGO_PUBLIC_PARAMS_HPP
+#endif // NDNABAC_ALGO_CIPHER_TEXT_HPP

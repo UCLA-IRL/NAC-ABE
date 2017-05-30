@@ -55,6 +55,20 @@ ABESupport::prvKeyGen(const PublicParams& pubParams, const MasterKey& masterKey,
   return privateKey;
 }
 
+CipherText
+ABESupport::encrypt(const PublicParams& pubParams,
+                    const std::string& policy, const Buffer& plainText)
+{
+  return CipherText;
+}
+
+Buffer
+ABESupport::decrypt(const PublicParams& pubParams,
+                    const PrivateKey& prvKey, const CipherText& cipherText)
+{
+  return Buffer;
+}
+
 } // namespace algo
 } // namespace ndnabac
 } // namespace ndn

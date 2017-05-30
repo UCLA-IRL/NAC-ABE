@@ -37,6 +37,16 @@ PublicParams::toBuffer(const PublicParams& pubParam)
   return result;
 }
 
+PublicParams
+PublicParams::fromBuffer(Buffer buffer)
+{
+  GByteArray bytes{buffer.buf(), static_cast<guint>(buffer.size())};
+
+  PublicParams result;
+  result.m_pub = bswabe_pub_unserialize(&bytes, false);
+  return result;
+}
+
 } // namespace algo
 } // namespace ndnabac
 } // namespace ndn
