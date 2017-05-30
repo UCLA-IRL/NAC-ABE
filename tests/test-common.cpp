@@ -9,20 +9,20 @@
  *                          The University of Memphis.
  *
  * This file, originally written as part of NFD (Named Data Networking Forwarding Daemon),
- * is a part of ndnabac, a certificate management system based on NDN.
+ * is a part of ChronoShare, a decentralized file sharing application over NDN.
  *
- * ndnabac is free software: you can redistribute it and/or modify it under the terms
+ * ChronoShare is free software: you can redistribute it and/or modify it under the terms
  * of the GNU General Public License as published by the Free Software Foundation, either
  * version 3 of the License, or (at your option) any later version.
  *
- * ndnabac is distributed in the hope that it will be useful, but WITHOUT ANY
+ * ChronoShare is distributed in the hope that it will be useful, but WITHOUT ANY
  * WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A
  * PARTICULAR PURPOSE.  See the GNU General Public License for more details.
  *
  * You should have received copies of the GNU General Public License along with
- * ndnabac, e.g., in COPYING.md file.  If not, see <http://www.gnu.org/licenses/>.
+ * ChronoShare, e.g., in COPYING.md file.  If not, see <http://www.gnu.org/licenses/>.
  *
- * See AUTHORS.md for complete list of ndnabac authors and contributors.
+ * See AUTHORS.md for complete list of ChronoShare authors and contributors.
  */
 
 #include "test-common.hpp"
@@ -31,7 +31,7 @@
 #include <ndn-cxx/security/signature-sha256-with-rsa.hpp>
 
 namespace ndn {
-namespace ndnabac {
+namespace chronoshare {
 namespace tests {
 
 UnitTestTimeFixture::UnitTestTimeFixture()
@@ -132,5 +132,5 @@ digestFromFile(const boost::filesystem::path& filename)
 }
 
 } // namespace tests
-} // namespace ndnabac
+} // namespace chronoshare
 } // namespace ndn

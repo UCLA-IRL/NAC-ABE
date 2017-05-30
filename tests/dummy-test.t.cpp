@@ -1,6 +1,6 @@
 /* -*- Mode:C++; c-file-style:"gnu"; indent-tabs-mode:nil; -*- */
 /**
- * Copyright (c) 2013-2016, Regents of the University of California.
+ * Copyright (c) 2013-2017, Regents of the University of California.
  *
  * This file is part of ChronoShare, a decentralized file sharing application over NDN.
  *
@@ -18,8 +18,35 @@
  * See AUTHORS.md for complete list of ChronoShare authors and contributors.
  */
 
-#define BOOST_TEST_MAIN 1
-#define BOOST_TEST_DYN_LINK 1
 #include "test-common.hpp"
 
-#include <boost/test/unit_test.hpp>
+namespace ndn {
+namespace chronoshare {
+namespace tests {
+
+// See http://redmine.named-data.net/projects/nfd/wiki/UnitTesting on how to name a test suite.
+BOOST_AUTO_TEST_SUITE(TestSkeleton)
+
+BOOST_AUTO_TEST_CASE(Test1)
+{
+  int i = 0;
+
+  // For reference of available Boost.Test macros, see
+  // http://www.boost.org/doc/libs/1_54_0/libs/test/doc/html/utf/testing-tools/reference.html
+
+  BOOST_REQUIRE_NO_THROW(i = 1);
+  BOOST_REQUIRE_EQUAL(i, 1);
+}
+
+// Use UnitTestTimeFixture to mock clocks.
+BOOST_FIXTURE_TEST_CASE(Test2, UnitTestTimeFixture)
+{
+  // this->advanceClocks increments mock clocks.
+  advanceClocks(time::milliseconds(500), 2);
+}
+
+BOOST_AUTO_TEST_SUITE_END()
+
+} // namespace tests
+} // namespace chronoshare
+} // namespace ndn

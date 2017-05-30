@@ -57,7 +57,7 @@ DataOwner::commandProducerPolicy(const Name& prefix, const std::string& policy,
   auto validationCallback =
     [=] (const shared_ptr<const Data>& validData) {
       //try to know if register success;
-      if (validData->getContent().type() == 0) {
+      if ( readString(validData->getContent()) != "success") {
       	errorCb("register failed");
       }
       else {

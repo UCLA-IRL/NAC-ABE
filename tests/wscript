@@ -1,28 +1,44 @@
 # -*- Mode: python; py-indent-offset: 4; indent-tabs-mode: nil; coding: utf-8; -*-
-from waflib import Utils
 
 top = '..'
 
+from waflib import Logs
+
 def build(bld):
-    if not bld.env["WITH_TESTS"]:
+    if not bld.env['WITH_TESTS']:
         return
 
-    tests_main = bld(
-        target='tests-main',
-        name='tests-main',
-        features='cxx',
-        source="main.cpp",
-        use='ndn-cert BOOST',
-        defines=['BOOST_TEST_MODULE=\"NDNCERT Tests\"']
-        )
+    # precompiled headers (if enabled)
+    bld(features='cxx',
+        name='tests-base',
+        target='tests-base',
+        headers=['boost-test.hpp'],
+        use='NDN_CXX BOOST',
+        includes='.')
 
-    unit_test = bld.program(
-        target="../unit-tests",
-        source=bld.path.ant_glob(['*.cpp', 'unit-tests/**/*.cpp'],
-                                 excl=['main.cpp']),
-        features=['cxx', 'cxxprogram'],
-        use='ndn-cert tests-main',
-        includes=['.'],
+    # core modules that can be shared between unit and integrated tests
+    bld(features="cxx",
+        target="boost-tests-base",
+        source=bld.path.ant_glob(['*.cpp'], excl='main.cpp'),
+        use='ndn-abac tests-base BOOST',
+        includes='.. ../src .',
+        defines=['UNIT_TEST_CONFIG_PATH=\"%s/tmp-files/\"' % (bld.bldnode)],
+        install_path=None)
+
+    bld(target='unit-tests-main',
+        name='unit-tests-main',
+        features='cxx',
+        use='tests-base boost-tests-base BOOST',
+        source='main.cpp',
+        defines=['BOOST_TEST_MODULE=Unit Test'])
+
+    unit_tests=bld(
+        target='../unit-tests',
+        features='cxx cxxprogram',
+        source=bld.path.ant_glob(['unit-tests/*.cpp']),
+        use='ndn-abac unit-tests-main',
         install_path=None,
-        defines='TMP_TESTS_PATH=\"%s/tmp-tests\"' % bld.bldnode,
-        )
+        defines=['UNIT_TEST_CONFIG_PATH=\"%s/tmp-files/\"' % (bld.bldnode)],
+        includes='.. ../src .')
+
+    bld.recurse('integrated-tests')

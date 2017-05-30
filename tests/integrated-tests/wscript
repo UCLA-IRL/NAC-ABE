@@ -1,0 +1,15 @@
+from waflib import Utils
+
+top = '..'
+
+def build(bld):
+
+    for i in bld.path.ant_glob(['*.cpp']):
+        name = str(i)[str.rfind(str(i),'/'):-len(".cpp")]
+        bld(features='cxx cxxprogram',
+            target=name,
+            source=[i],
+            use='ndn-abac boost-tests-base',
+            includes='..',
+            defines=['UNIT_TEST_CONFIG_PATH=\"%s/tmp-files/\"' % (bld.bldnode)],
+            install_path=None)

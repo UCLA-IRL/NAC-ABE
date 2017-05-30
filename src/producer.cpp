@@ -90,10 +90,10 @@ Producer::onPolicyInterest(const Interest& interest)
   reply.setName(interest.getName());
   if (ret.second==false) {
     std::cout << "dataPrefix already exist";
-  	reply.setContent(makeStringBlock(0, "exist"));
+  	reply.setContent(makeStringBlock(tlv::Content, "exist"));
   }
  	else {
-  	reply.setContent(makeStringBlock(1, "success"));
+  	reply.setContent(makeStringBlock(tlv::Content, "success"));
  	}
  	m_keyChain.sign(reply, signingByCertificate(m_cert));
  	m_face.put(reply);
