@@ -31,64 +31,56 @@
 #include <boost/filesystem.hpp>
 
 namespace ndn {
-namespace chronoshare {
+namespace ndnabac {
 namespace tests {
 
 IdentityManagementFixture::IdentityManagementFixture()
-  : m_keyChain("sqlite3", "file")
+  : m_keyChain("pib-memory", "tmp-memory:")
 {
-  m_keyChain.getDefaultCertificate(); // side effect: create a default cert if it doesn't exist
 }
 
 IdentityManagementFixture::~IdentityManagementFixture()
 {
-  for (const auto& id : m_identities) {
-    m_keyChain.deleteIdentity(id);
-  }
-
   boost::system::error_code ec;
   for (const auto& certFile : m_certFiles) {
     boost::filesystem::remove(certFile, ec); // ignore error
   }
 }
 
-bool
-IdentityManagementFixture::addIdentity(const Name& identity, const ndn::KeyParams& params)
+security::Identity
+IdentityManagementFixture::addIdentity(const Name& identityName, const KeyParams& params)
 {
+  auto identity = m_keyChain.createIdentity(identityName, params);
+  m_identities.insert(identityName);
+  return identity;
+}
+
+bool
+IdentityManagementFixture::saveCertToFile(const Data& obj, const std::string& filename)
+{
+  m_certFiles.insert(filename);
   try {
-    m_keyChain.createIdentity(identity, params);
-    m_identities.push_back(identity);
+    io::save(obj, filename);
     return true;
   }
-  catch (std::runtime_error&) {
+  catch (const io::Error&) {
     return false;
   }
 }
 
 bool
-IdentityManagementFixture::saveIdentityCertificate(const Name& identity, const std::string& filename, bool wantAdd)
+IdentityManagementFixture::saveIdentityCertificate(const security::Identity& identity,
+                                                   const std::string& filename)
 {
-  shared_ptr<ndn::IdentityCertificate> cert;
   try {
-    cert = m_keyChain.getCertificate(m_keyChain.getDefaultCertificateNameForIdentity(identity));
+    auto cert = identity.getDefaultKey().getDefaultCertificate();
+    return saveCertToFile(cert, filename);
   }
-  catch (const ndn::SecPublicInfo::Error&) {
-    if (wantAdd && this->addIdentity(identity)) {
-      return this->saveIdentityCertificate(identity, filename, false);
-    }
-    return false;
-  }
-
-  m_certFiles.push_back(filename);
-  try {
-    ndn::io::save(*cert, filename);
-    return true;
-  }
-  catch (const ndn::io::Error&) {
+  catch (const security::Pib::Error&) {
     return false;
   }
 }
 
 } // namespace tests
-} // namespace chronoshare
+} // namespace ndnabac
 } // namespace ndn

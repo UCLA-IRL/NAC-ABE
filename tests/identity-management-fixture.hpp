@@ -25,15 +25,15 @@
  * See AUTHORS.md for complete list of ChronoShare authors and contributors.
  */
 
-#ifndef NFD_TESTS_IDENTITY_MANAGEMENT_FIXTURE_HPP
-#define NFD_TESTS_IDENTITY_MANAGEMENT_FIXTURE_HPP
+#ifndef NDNABAC_TESTS_IDENTITY_MANAGEMENT_FIXTURE_HPP
+#define NDNABAC_TESTS_IDENTITY_MANAGEMENT_FIXTURE_HPP
 
 #include "test-common.hpp"
 
 #include <ndn-cxx/security/key-chain.hpp>
 
 namespace ndn {
-namespace chronoshare {
+namespace ndnabac {
 namespace tests {
 
 /** \brief a fixture that cleans up KeyChain identities and certificate files upon destruction
@@ -47,28 +47,31 @@ public:
    */
   ~IdentityManagementFixture();
 
-  /** \brief add identity
-   *  \return whether successful
+  /**
+   * @brief Add identity @p identityName
+   * @return name of the created self-signed certificate
    */
-  bool
-  addIdentity(const Name& identity,
-              const ndn::KeyParams& params = ndn::KeyChain::DEFAULT_KEY_PARAMS);
+  security::Identity
+  addIdentity(const Name& identityName, const KeyParams& params = security::v2::KeyChain::getDefaultKeyParams());
 
-  /** \brief save identity certificate to a file
-   *  \param identity identity name
-   *  \param filename file name, should be writable
-   *  \param wantAdd if true, add new identity when necessary
-   *  \return whether successful
+  bool
+  saveCertToFile(const Data& obj, const std::string& filename);
+
+  /**
+   *  @brief Save identity certificate to a file
+   *  @param identity identity
+   *  @param filename file name, should be writable
+   *  @return whether successful
    */
   bool
-  saveIdentityCertificate(const Name& identity, const std::string& filename, bool wantAdd = false);
+  saveIdentityCertificate(const security::Identity& identity, const std::string& filename);
 
 protected:
-  ndn::KeyChain m_keyChain;
+  security::v2::KeyChain m_keyChain;
 
 private:
-  std::vector<ndn::Name> m_identities;
-  std::vector<std::string> m_certFiles;
+  std::set<Name> m_identities;
+  std::set<std::string> m_certFiles;
 };
 
 /** \brief convenience base class for inheriting from both UnitTestTimeFixture
@@ -80,7 +83,7 @@ class IdentityManagementTimeFixture : public UnitTestTimeFixture
 };
 
 } // namespace tests
-} // namespace chronoshare
+} // namespace ndnabac
 } // namespace ndn
 
-#endif // NFD_TESTS_IDENTITY_MANAGEMENT_FIXTURE_HPP
+#endif // NDNABAC_TESTS_IDENTITY_MANAGEMENT_FIXTURE_HPP

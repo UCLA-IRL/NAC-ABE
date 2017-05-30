@@ -23,7 +23,7 @@
 #include "test-common.hpp"
 
 namespace ndn {
-namespace chronoshare {
+namespace ndnabac {
 namespace tests {
 
 class GlobalConfigurationFixture : boost::noncopyable
@@ -79,5 +79,5 @@ BOOST_GLOBAL_FIXTURE(GlobalConfigurationFixture)
 #endif // BOOST_VERSION >= 105900
 
 } // namespace tests
-} // namespace chronoshare
+} // namespace ndnabac
 } // namespace ndn

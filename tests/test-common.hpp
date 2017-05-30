@@ -43,7 +43,7 @@
 #include <ndn-cxx/util/string-helper.hpp>
 
 namespace ndn {
-namespace chronoshare {
+namespace ndnabac {
 namespace tests {
 
 /** \brief base test fixture
@@ -172,7 +172,7 @@ ndn::ConstBufferPtr
 digestFromFile(const boost::filesystem::path& filename);
 
 } // namespace tests
-} // namespace chronoshare
+} // namespace ndnabac
 } // namespace ndn
 
 #include "identity-management-fixture.hpp"

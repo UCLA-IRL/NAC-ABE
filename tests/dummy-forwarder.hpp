@@ -24,11 +24,11 @@
 #include <ndn-cxx/util/dummy-client-face.hpp>
 #include <ndn-cxx/security/key-chain.hpp>
 
-#ifndef NDN_CHRONOSHARE_TESTS_DUMMY_FORWARDER_HPP
-#define NDN_CHRONOSHARE_TESTS_DUMMY_FORWARDER_HPP
+#ifndef NDN_ABAC_TESTS_DUMMY_FORWARDER_HPP
+#define NDN_ABAC_TESTS_DUMMY_FORWARDER_HPP
 
 namespace ndn {
-namespace chronoshare {
+namespace ndnabac {
 
 /**
  * @brief Very basic implementation of the dummy forwarder
@@ -39,7 +39,7 @@ namespace chronoshare {
 class DummyForwarder
 {
 public:
-  DummyForwarder(boost::asio::io_service& io, KeyChain& keyChain);
+  DummyForwarder(boost::asio::io_service& io, security::v2::KeyChain& keyChain);
 
   Face&
   addFace();
@@ -52,11 +52,11 @@ public:
 
 private:
   boost::asio::io_service& m_io;
-  KeyChain& m_keyChain;
+  security::v2::KeyChain& m_keyChain;
   std::vector<shared_ptr<util::DummyClientFace>> m_faces;
 };
 
-} // namespace chronoshare
+} // namespace ndnabac
 } // namespace ndn
 
-#endif // NDN_CHRONOSHARE_TESTS_DUMMY_FORWARDER_HPP
+#endif // NDN_ABAC_TESTS_DUMMY_FORWARDER_HPP

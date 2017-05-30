@@ -21,7 +21,7 @@
 #include "test-common.hpp"
 
 namespace ndn {
-namespace chronoshare {
+namespace ndnabac {
 namespace tests {
 
 // See http://redmine.named-data.net/projects/nfd/wiki/UnitTesting on how to name a test suite.
@@ -48,5 +48,5 @@ BOOST_FIXTURE_TEST_CASE(Test2, UnitTestTimeFixture)
 BOOST_AUTO_TEST_SUITE_END()
 
 } // namespace tests
-} // namespace chronoshare
+} // namespace ndnabac
 } // namespace ndn

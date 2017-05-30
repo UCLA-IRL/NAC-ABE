@@ -31,7 +31,7 @@
 #include <ndn-cxx/security/signature-sha256-with-rsa.hpp>
 
 namespace ndn {
-namespace chronoshare {
+namespace ndnabac {
 namespace tests {
 
 UnitTestTimeFixture::UnitTestTimeFixture()
@@ -132,5 +132,5 @@ digestFromFile(const boost::filesystem::path& filename)
 }
 
 } // namespace tests
-} // namespace chronoshare
+} // namespace ndnabac
 } // namespace ndn

@@ -18,52 +18,45 @@
  * See AUTHORS.md for complete list of ChronoShare authors and contributors.
  */
 
-#include "dummy-forwarder.hpp"
+#include "attribute-authority.hpp"
 
-#include <boost/asio/io_service.hpp>
+#include "test-common.hpp"
+#include "dummy-forwarder.hpp"
 
 namespace ndn {
 namespace ndnabac {
+namespace tests {
 
-DummyForwarder::DummyForwarder(boost::asio::io_service& io, security::v2::KeyChain& keyChain)
-  : m_io(io)
-  , m_keyChain(keyChain)
+namespace fs = boost::filesystem;
+
+_LOG_INIT(Test.AttributeAuthority);
+
+class TestAttributeAuthorityFixture : public IdentityManagementTimeFixture
 {
+public:
+  TestAttributeAuthorityFixture()
+    : forwarder(m_io, m_keyChain)
+  {
+  }
+
+public:
+  DummyForwarder forwarder;
+};
+
+BOOST_FIXTURE_TEST_SUITE(TestAttributeAuthority, TestAttributeAuthorityFixture)
+
+BOOST_AUTO_TEST_CASE(onDecryptionKeyRequest)
+{
+  Face& c1 = forwarder.addFace();
+  security::Identity id = addIdentity("/ndn/test/abac");
+  security::Key key = id.getDefaultKey();
+  security::v2::Certificate cert = key.getDefaultCertificate();
+
+  AttributeAuthority aa(cert, c1, m_keyChain);
 }
 
-Face&
-DummyForwarder::addFace()
-{
-  auto face = std::make_shared<util::DummyClientFace>(m_io, util::DummyClientFace::Options{true, true});
-  face->onSendInterest.connect([this, face] (const Interest& interest) {
-      for (auto& otherFace : m_faces) {
-        if (&*face == &*otherFace) {
-          continue;
-        }
-        otherFace->receive(interest);
-      }
-    });
-  face->onSendData.connect([this, face] (const Data& data) {
-      for (auto& otherFace : m_faces) {
-        if (&*face == &*otherFace) {
-          continue;
-        }
-        otherFace->receive(data);
-      }
-    });
+BOOST_AUTO_TEST_SUITE_END()
 
-  face->onSendNack.connect([this, face] (const lp::Nack& nack) {
-      for (auto& otherFace : m_faces) {
-        if (&*face == &*otherFace) {
-          continue;
-        }
-        otherFace->receive(nack);
-      }
-    });
-
-  m_faces.push_back(face);
-  return *face;
-}
-
+} // namespace tests
 } // namespace ndnabac
 } // namespace ndn
