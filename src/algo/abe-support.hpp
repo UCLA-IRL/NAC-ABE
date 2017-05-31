@@ -27,6 +27,9 @@
 #include "private-key.hpp"
 #include "cipher-text.hpp"
 
+#include <openssl/aes.h>
+#include <openssl/sha.h>
+
 namespace ndn {
 namespace ndnabac {
 namespace algo {
@@ -37,15 +40,33 @@ public:
   static void
   setup(PublicParams& pubParams, MasterKey& masterKey);
 
+  /**
+   * The policy is specified as a simple string which encodes a postorder
+   * traversal of threshold tree defining the access policy. As an
+   * example:
+   * "foo bar fim 2of3 baf 1of2"
+   */
   static PrivateKey
   prvKeyGen(const PublicParams& pubParams, const MasterKey& masterKey,
             const std::vector<std::string>& attrList);
 
   static CipherText
-  encrypt(const PublicParams& pubParams, const std::string& policy, const Buffer& plainText);
+  encrypt(const PublicParams& pubParams,
+          const std::string& policy, Buffer plainText);
 
   static Buffer
-  decrypt(const PublicParams& pubParams, const PrivateKey& prvKey, const CipherText& cipherText);
+  decrypt(const PublicParams& pubParams,
+          const PrivateKey& prvKey, CipherText cipherText);
+
+public:
+  static GByteArray*
+  aes_128_encrypt(GByteArray* pt, element_t k);
+
+  static GByteArray*
+  aes_128_decrypt(GByteArray* ct, element_t k);
+
+  static void
+  init_aes(element_t k, int enc, AES_KEY* key, unsigned char* iv);
 };
 
 } // namespace algo
