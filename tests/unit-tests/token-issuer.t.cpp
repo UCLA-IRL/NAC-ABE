@@ -48,14 +48,23 @@ BOOST_FIXTURE_TEST_SUITE(TestTokenIssuer, TestTokenIssuerFixture)
 BOOST_AUTO_TEST_CASE(onTokenRequestTest)
 {
   Face& c1 = forwarder.addFace();
-  security::Identity id = addIdentity("/ndn/test/abac");
+  Face& c2 = forwarder.addFace();
+  security::Identity id = addIdentity("/tokenissuer1");
+  security::Identity consumerId = addIdentity("/consumer1");
   security::Key key = id.getDefaultKey();
   security::v2::Certificate cert = key.getDefaultCertificate();
 
-  TokenIssuer issuer(cert, c1, m_keyChain);
+  TokenIssuer tokenissuer(cert, c1, m_keyChain);
+
+  Name tokenIssuerPrefix = Name("/tokenissuer1");
 
   Interest interest(
-    Name("/ndn/test/abac").append("DKEY"));
+    Name("/tokenissuer1").append(TokenIssuer::TOKEN_REQUEST).append(consumerId.getName()));
+
+  c2.expressInterest(interest,
+                     [=](const Interest&, const Data&){},
+                     [=](const Interest&, const lp::Nack&){},
+                     [=](const Interest&){});
 }
 
 BOOST_AUTO_TEST_SUITE_END()

@@ -23,6 +23,8 @@
 #include "test-common.hpp"
 #include "dummy-forwarder.hpp"
 
+#include <ndn-cxx/security/signing-helpers.hpp>
+
 namespace ndn {
 namespace ndnabac {
 namespace tests {
@@ -60,6 +62,7 @@ BOOST_FIXTURE_TEST_SUITE(TestDataOwner, TestDataOwnerFixture)
 BOOST_AUTO_TEST_CASE(setPolicy)
 {
   Face& c1 = forwarder.addFace();
+  Face& c2 = forwarder.addFace();
   security::Identity id = addIdentity("/ndnabac/test/dataowner");
   security::Key key = id.getDefaultKey();
   security::v2::Certificate cert = key.getDefaultCertificate();
@@ -67,9 +70,54 @@ BOOST_AUTO_TEST_CASE(setPolicy)
   DataOwner dataowner(cert, c1, m_keyChain);
 
   Name producerPrefix = Name("/producer1");
-  std::string policy = "attr1 and attr2 or attr3"
-  dataowner.commandProducerPolicy(producerPrefix, policy, std::bind(successCallBack, _1, "success"), errorCallBack); 
-  Name interestName = producerPrefix.append(DataOwner::SET_POLICY).append(policy);
+  std::string policy = "attr1 and attr2 or attr3";
+  Name interestName = producerPrefix;
+  interestName.append(DataOwner::SET_POLICY);
+  interestName.append(policy);
+
+  c2.setInterestFilter(Name("/producer1"),
+                       [&] (const ndn::InterestFilter&, const ndn::Interest& interest) {
+                         BOOST_CHECK_EQUAL(interest.getName().get(0).toUri(), "producer1");
+                         BOOST_CHECK_EQUAL(interest.getName().get(1).toUri(), DataOwner::SET_POLICY.toUri());
+                         BOOST_CHECK_EQUAL(interest.getName().get(2).toUri(), policy);
+                         BOOST_CHECK_EQUAL(interest.getName().get(3).toUri(), "addSig");
+
+                         Data reply;
+                         reply.setName(interest.getName());
+                         reply.setContent(makeStringBlock(tlv::Content, "success"));
+                         m_keyChain.sign(reply, signingByCertificate(cert));
+                         c2.put(reply);
+                       });
+
+  dataowner.commandProducerPolicy(producerPrefix, policy,
+                                 [=] (const Data& data) {
+                                   BOOST_CHECK_EQUAL(data.getName().toUri(), interestName.toUri());
+                                 },
+                                 [=] (const std::string&) {
+                                   BOOST_CHECK(false);
+                                 });
+
+  c2.setInterestFilter(Name("/producer2"),
+                       [&] (const ndn::InterestFilter&, const ndn::Interest& interest) {
+                         BOOST_CHECK_EQUAL(interest.getName().get(0).toUri(), "producer2");
+                         BOOST_CHECK_EQUAL(interest.getName().get(1).toUri(), DataOwner::SET_POLICY.toUri());
+                         BOOST_CHECK_EQUAL(interest.getName().get(2).toUri(), policy);
+                         BOOST_CHECK_EQUAL(interest.getName().get(3).toUri(), "addSig");
+
+                         Data reply;
+                         reply.setName(interest.getName());
+                         reply.setContent(makeStringBlock(tlv::Content, "exist"));
+                         m_keyChain.sign(reply, signingByCertificate(cert));
+                         c2.put(reply);
+                       });
+
+  dataowner.commandProducerPolicy(producerPrefix, policy,
+                                 [=] (const Data&) {
+                                   BOOST_CHECK(false);
+                                 },
+                                 [=] (const std::string& err) {
+                                   BOOST_CHECK_EQUAL(err, "register failed");
+                                 });
 }
 
 BOOST_AUTO_TEST_SUITE_END()

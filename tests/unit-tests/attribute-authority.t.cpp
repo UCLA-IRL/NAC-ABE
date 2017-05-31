@@ -36,26 +36,42 @@ class TestAttributeAuthorityFixture : public IdentityManagementTimeFixture
 public:
   TestAttributeAuthorityFixture()
     : forwarder(m_io, m_keyChain)
+    , c1(forwarder.addFace())
+    , c2(forwarder.addFace())
   {
+    id = addIdentity("/ndn/test/abac");
+    key = id.getDefaultKey();
+    cert = key.getDefaultCertificate();
+
+    aa = make_shared<AttributeAuthority>(AttributeAuthority(cert, c1, m_keyChain));
   }
 
 public:
   DummyForwarder forwarder;
+  Face& c1;
+  Face& c2;
+  security::Identity id;
+  security::Key key;
+  security::v2::Certificate cert;
+  shared_ptr<AttributeAuthority> aa;
 };
 
 BOOST_FIXTURE_TEST_SUITE(TestAttributeAuthority, TestAttributeAuthorityFixture)
 
 BOOST_AUTO_TEST_CASE(onDecryptionKeyRequest)
 {
-  Face& c1 = forwarder.addFace();
-  security::Identity id = addIdentity("/ndn/test/abac");
-  security::Key key = id.getDefaultKey();
-  security::v2::Certificate cert = key.getDefaultCertificate();
-
-  AttributeAuthority aa(cert, c1, m_keyChain);
-
   Interest interest(
     Name("/ndn/test/abac").append("DKEY"));
+}
+
+BOOST_AUTO_TEST_CASE(onPublicParamsRequest)
+{
+  Interest interest(
+    Name("/ndn/test/abac").append(AttributeAuthority::PUBLIC_PARAMS));
+  c2.expressInterest(interest,
+                     [=](const Interest&, const Data&){},
+                     [=](const Interest&, const lp::Nack&){},
+                     [=](const Interest&){});
 }
 
 BOOST_AUTO_TEST_SUITE_END()
