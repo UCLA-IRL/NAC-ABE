@@ -30,14 +30,14 @@ namespace algo {
 class PublicParams
 {
 public:
-  static Buffer
-  toBuffer(const PublicParams& pubParam);
+  // static Buffer
+  // toBuffer(const PublicParams& pubParam);
 
-  static PublicParams
-  fromBuffer(Buffer buffer);
+  // static PublicParams
+  // fromBuffer(Buffer buffer);
 
 public:
-  bswabe_pub_t* m_pub;
+  GByteArray* m_pub;
 };
 
 } // namespace algo

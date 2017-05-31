@@ -30,7 +30,7 @@ namespace algo {
 class MasterKey
 {
 public:
-  bswabe_msk_t* m_msk;
+  GByteArray* m_msk;
 };
 
 } // namespace algo

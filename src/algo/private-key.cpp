@@ -24,18 +24,18 @@ namespace ndn {
 namespace ndnabac {
 namespace algo {
 
-Buffer
-PrivateKey::toBuffer(const PrivateKey& privateKey)
-{
-  // From Glib:
-  // struct GByteArray {
-  //   guint8 *data;
-  //   guint len;
-  // }
-  GByteArray* bytes = bswabe_prv_serialize(privateKey.m_prv);
-  Buffer result(bytes->data, bytes->len);
-  return result;
-}
+// Buffer
+// PrivateKey::toBuffer(const PrivateKey& privateKey)
+// {
+//   // From Glib:
+//   // struct GByteArray {
+//   //   guint8 *data;
+//   //   guint len;
+//   // }
+//   GByteArray* bytes = bswabe_prv_serialize(privateKey.m_prv);
+//   Buffer result(bytes->data, bytes->len);
+//   return result;
+// }
 
 } // namespace algo
 } // namespace ndnabac

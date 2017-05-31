@@ -47,23 +47,26 @@ public:
    * "foo bar fim 2of3 baf 1of2"
    */
   static PrivateKey
-  prvKeyGen(const PublicParams& pubParams, const MasterKey& masterKey,
+  prvKeyGen(PublicParams& pubParams, MasterKey& masterKey,
             const std::vector<std::string>& attrList);
 
   static CipherText
   encrypt(const PublicParams& pubParams,
-          const std::string& policy, Buffer plainText);
+          const std::string& policy, Buffer plaintext);
 
   static Buffer
   decrypt(const PublicParams& pubParams,
           const PrivateKey& prvKey, CipherText cipherText);
 
 public:
+  static void
+  prependToArray(GByteArray* pt, const guint8 *data, guint dataSize);
+
   static GByteArray*
   aes_128_encrypt(GByteArray* pt, element_t k);
 
   static GByteArray*
-  aes_128_decrypt(GByteArray* ct, element_t k);
+  aes_128_decrypt(GByteArray* ct, element_t k, guint8 outputSize);
 
   static void
   init_aes(element_t k, int enc, AES_KEY* key, unsigned char* iv);

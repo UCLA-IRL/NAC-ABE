@@ -123,9 +123,10 @@ AttributeAuthority::onDecryptionKeyRequest(const Interest& interest)
   ss << pubKeyStr;
   pubKey.loadPkcs8Base64(ss);
 
-  algo::PrivateKey prvKey = algo::ABESupport::prvKeyGen(m_pubParams, m_masterKey, attrs);
-  auto prvBuffer = algo::PrivateKey::toBuffer(prvKey);
-  auto encryptedKey = pubKey.encrypt(prvBuffer.buf(), prvBuffer.size());
+  // algo::PrivateKey prvKey = algo::ABESupport::prvKeyGen(m_pubParams, m_masterKey, attrs);
+  // auto prvBuffer = algo::PrivateKey::toBuffer(prvKey);
+  // auto encryptedKey = pubKey.encrypt(prvBuffer.buf(), prvBuffer.size());
+  Block encryptedKey;
 
   // reply interest with encrypted private key
   Data result;
@@ -143,9 +144,9 @@ AttributeAuthority::onPublicParamsRequest(const Interest& interest)
   Name dataName = interest.getName();
   dataName.appendTimestamp();
   result.setName(dataName);
-  result.setContent(makeBinaryBlock(ndn::tlv::Content,
-                                    algo::PublicParams::toBuffer(m_pubParams).buf(),
-                                    algo::PublicParams::toBuffer(m_pubParams).size()));
+  // result.setContent(makeBinaryBlock(ndn::tlv::Content,
+  //                                   algo::PublicParams::toBuffer(m_pubParams).buf(),
+  //                                   algo::PublicParams::toBuffer(m_pubParams).size()));
   m_keyChain.sign(result, signingByCertificate(m_cert));
   m_face.put(result);
 }

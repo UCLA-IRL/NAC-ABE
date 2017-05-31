@@ -30,47 +30,48 @@ namespace algo {
 
 class CipherText
 {
-public:
-  void
-  setPublicParam(const PublicParams& params)
-  {
-    m_publicParams = params;
-  }
+// public:
+//   void
+//   setPublicParam(const PublicParams& params)
+//   {
+//     m_publicParams = params;
+//   }
+
+// public:
+//   /**
+//    * @brief Fast encoding or block size estimation
+//    */
+//   template<encoding::Tag TAG>
+//   size_t
+//   wireEncode(EncodingImpl<TAG>& encoder) const;
+
+//   /**
+//    * @brief Encode to a wire format
+//    */
+//   const Block&
+//   wireEncode() const;
+
+//   /**
+//    * @brief Decode the input from wire format
+//    */
+//   void
+//   wireDecode(const Block& wire);
+
+// private:
+//   Buffer
+//   encryptedAesKeyToBuffer() const;
+
+//   void
+//   encryptedAesKeyFromBuffer(const PublicParams& params, Buffer buffer);
+
+// private:
+//   static const uint32_t TLV_EncryptedAesKey;
+//   static const uint32_t TLV_EncryptedContent;
 
 public:
-  /**
-   * @brief Fast encoding or block size estimation
-   */
-  template<encoding::Tag TAG>
-  size_t
-  wireEncode(EncodingImpl<TAG>& encoder) const;
-
-  /**
-   * @brief Encode to a wire format
-   */
-  const Block&
-  wireEncode() const;
-
-  /**
-   * @brief Decode the input from wire format
-   */
-  void
-  wireDecode(const Block& wire);
-
-private:
-  Buffer
-  encryptedAesKeyToBuffer() const;
-
-  void
-  encryptedAesKeyFromBuffer(const PublicParams& params, Buffer buffer);
-
-private:
-  static const uint32_t TLV_EncryptedAesKey;
-  static const uint32_t TLV_EncryptedContent;
-
-public:
-  bswabe_cph_t* m_cph; // encrypted AES key
+  GByteArray* m_cph; // encrypted AES key
   Buffer m_content; // encrypted content
+  uint8_t m_plainTextSize; // plain text length
 
   PublicParams m_publicParams;
 
