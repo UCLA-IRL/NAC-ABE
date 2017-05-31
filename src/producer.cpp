@@ -109,7 +109,7 @@ Producer::fetchAuthorityPubParams(const Name& attrAuthorityPrefix, const ErrorCa
   shared_ptr<Interest> interest = make_shared<Interest>(interestName);
 
   auto dataCallback =
-    [=] (const Interest& contentInterest, const Data& contentData) {
+    [&] (const Interest& contentInterest, const Data& contentData) {
     if (!contentInterest.matchesData(contentData))
       return;
 
@@ -117,8 +117,9 @@ Producer::fetchAuthorityPubParams(const Name& attrAuthorityPrefix, const ErrorCa
     Name issuerKey = contentData.getSignature().getKeyLocator().getName();
     for (auto anchor : m_trustAnchors) {
       if (anchor.getKeyName() == issuerKey) {
-        if (!security::verifySignature(token, anchor)) {
+        if (!security::verifySignature(contentData, anchor)) {
           _LOG_TRACE("Invalid sig fo public parameters from authority");
+          errorCb("Invalid sig fo public parameters from authority");
           return;
         }
         break;
