@@ -28,23 +28,23 @@ namespace ndnabac {
 const Name DataOwner::SET_POLICY = "/SET_POLICY";
 
 DataOwner::DataOwner(const security::v2::Certificate& identityCert, Face& face,
-    				         security::v2::KeyChain& keyChain)
-	: m_cert(identityCert)
-	, m_face(face)
+                     security::v2::KeyChain& keyChain)
+  : m_cert(identityCert)
+  , m_face(face)
   , m_keyChain(keyChain)
 {
 }
 
-  /**
-   * send command:
-   *  /producer-prefix/data-prefix/POLICY/<policy string>/[sig]
-   * data-prefix contains the producer prefix and data prefix
-   */
+/**
+ * send command:
+ *  /producer-prefix/data-prefix/POLICY/<policy string>/[sig]
+ * data-prefix contains the producer prefix and data prefix
+ */
 void
 DataOwner::commandProducerPolicy(const Name& prefix, const std::string& policy,
-										  					 const SuccessCallback& SuccessCb, const ErrorCallback& errorCb)
+                                 const SuccessCallback& SuccessCb, const ErrorCallback& errorCb)
 {
-	// shared_ptr<Interest> interest = make_shared<Interest>(dataName);
+  // shared_ptr<Interest> interest = make_shared<Interest>(dataName);
   // sendInterest(*Interest);
   Name policyName = prefix;
   policyName.append(SET_POLICY);
@@ -56,16 +56,16 @@ DataOwner::commandProducerPolicy(const Name& prefix, const std::string& policy,
   // prepare callback functions
   auto validationCallback =
     [=] (const shared_ptr<const Data>& validData) {
-      //try to know if register success;
-      if ( readString(validData->getContent()) != "success") {
-      	errorCb("register failed");
-      }
-      else {
-      	SuccessCb(*validData);	
-      }
+    //try to know if register success;
+    if ( readString(validData->getContent()) != "success") {
+      errorCb("register failed");
+    }
+    else {
+      SuccessCb(*validData);
+    }
   };
 
-	auto dataCallback = [=] (const Interest& contentInterest, const Data& contentData) {
+  auto dataCallback = [=] (const Interest& contentInterest, const Data& contentData) {
     if (!contentInterest.matchesData(contentData))
       return;
 
@@ -79,6 +79,7 @@ DataOwner::commandProducerPolicy(const Name& prefix, const std::string& policy,
 
 
   m_face.expressInterest(*interest, dataCallback,
+                         nullptr,
                          [=] (const Interest&) {
                            errorCb("time out");
                          });
