@@ -18,7 +18,7 @@
  * See AUTHORS.md for complete list of ChronoShare authors and contributors.
  */
 
-#include "attribute-authority.hpp"
+#include "data-owner.hpp"
 
 #include "test-common.hpp"
 #include "dummy-forwarder.hpp"
@@ -29,12 +29,12 @@ namespace tests {
 
 namespace fs = boost::filesystem;
 
-_LOG_INIT(Test.AttributeAuthority);
+_LOG_INIT(Test.DataOwner);
 
-class TestAttributeAuthorityFixture : public IdentityManagementTimeFixture
+class TestDataOwnerFixture : public IdentityManagementTimeFixture
 {
 public:
-  TestAttributeAuthorityFixture()
+  TestDataOwnerFixture()
     : forwarder(m_io, m_keyChain)
   {
   }
@@ -43,19 +43,33 @@ public:
   DummyForwarder forwarder;
 };
 
-BOOST_FIXTURE_TEST_SUITE(TestAttributeAuthority, TestAttributeAuthorityFixture)
+void
+successCallBack(const Data& data, const std::string& info)
+{
 
-BOOST_AUTO_TEST_CASE(onDecryptionKeyRequest)
+}
+
+void
+errorCallBack(const std::string& errorInfo)
+{
+
+}
+
+BOOST_FIXTURE_TEST_SUITE(TestDataOwner, TestDataOwnerFixture)
+
+BOOST_AUTO_TEST_CASE(setPolicy)
 {
   Face& c1 = forwarder.addFace();
-  security::Identity id = addIdentity("/ndn/test/abac");
+  security::Identity id = addIdentity("/ndnabac/test/dataowner");
   security::Key key = id.getDefaultKey();
   security::v2::Certificate cert = key.getDefaultCertificate();
 
-  AttributeAuthority aa(cert, c1, m_keyChain);
+  DataOwner dataowner(cert, c1, m_keyChain);
 
-  Interest interest(
-    Name("/ndn/test/abac").append("DKEY"));
+  Name producerPrefix = Name("/producer1");
+  std::string policy = "attr1 and attr2 or attr3"
+  dataowner.commandProducerPolicy(producerPrefix, policy, std::bind(successCallBack, _1, "success"), errorCallBack); 
+  Name interestName = producerPrefix.append(DataOwner::SET_POLICY).append(policy);
 }
 
 BOOST_AUTO_TEST_SUITE_END()

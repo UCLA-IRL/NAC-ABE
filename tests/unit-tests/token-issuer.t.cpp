@@ -18,7 +18,7 @@
  * See AUTHORS.md for complete list of ChronoShare authors and contributors.
  */
 
-#include "attribute-authority.hpp"
+#include "token-issuer.hpp"
 
 #include "test-common.hpp"
 #include "dummy-forwarder.hpp"
@@ -29,12 +29,12 @@ namespace tests {
 
 namespace fs = boost::filesystem;
 
-_LOG_INIT(Test.AttributeAuthority);
+_LOG_INIT(Test.TokenIssuer);
 
-class TestAttributeAuthorityFixture : public IdentityManagementTimeFixture
+class TestTokenIssuerFixture : public IdentityManagementTimeFixture
 {
 public:
-  TestAttributeAuthorityFixture()
+  TestTokenIssuerFixture()
     : forwarder(m_io, m_keyChain)
   {
   }
@@ -43,16 +43,16 @@ public:
   DummyForwarder forwarder;
 };
 
-BOOST_FIXTURE_TEST_SUITE(TestAttributeAuthority, TestAttributeAuthorityFixture)
+BOOST_FIXTURE_TEST_SUITE(TestTokenIssuer, TestTokenIssuerFixture)
 
-BOOST_AUTO_TEST_CASE(onDecryptionKeyRequest)
+BOOST_AUTO_TEST_CASE(onTokenRequestTest)
 {
   Face& c1 = forwarder.addFace();
   security::Identity id = addIdentity("/ndn/test/abac");
   security::Key key = id.getDefaultKey();
   security::v2::Certificate cert = key.getDefaultCertificate();
 
-  AttributeAuthority aa(cert, c1, m_keyChain);
+  TokenIssuer issuer(cert, c1, m_keyChain);
 
   Interest interest(
     Name("/ndn/test/abac").append("DKEY"));
