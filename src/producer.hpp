@@ -24,6 +24,8 @@
 #include "ndnabac-common.hpp"
 #include "algo/public-params.hpp"
 
+#include <ndn-cxx/security/verification-helpers.hpp>
+
 namespace ndn {
 namespace ndnabac {
 
@@ -78,7 +80,7 @@ public:
 
 private:
   security::v2::Certificate m_cert;
-  unique_ptr<Validator> m_validator;
+  // unique_ptr<Validator> m_validator;
   Face& m_face;
   security::v2::KeyChain& m_keyChain;
   Name m_attrAuthorityPrefix;

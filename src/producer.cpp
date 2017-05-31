@@ -108,21 +108,24 @@ Producer::fetchAuthorityPubParams(const Name& attrAuthorityPrefix, const ErrorCa
 
   shared_ptr<Interest> interest = make_shared<Interest>(interestName);
 
-  // prepare callback functions
-  auto validationCallback =
-    [=] (const shared_ptr<const Data>& validData) {
-    //add Pub Param
-  };
-
   auto dataCallback =
     [=] (const Interest& contentInterest, const Data& contentData) {
     if (!contentInterest.matchesData(contentData))
       return;
 
-    this->m_validator->validate(contentData, validationCallback,
-                                [=] (const shared_ptr<const Data>& d, const std::string& e) {
-                                  errorCb(e);
-                                });
+    // check signature
+    Name issuerKey = contentData.getSignature().getKeyLocator().getName();
+    for (auto anchor : m_trustAnchors) {
+      if (anchor.getKeyName() == issuerKey) {
+        if (!security::verifySignature(token, anchor)) {
+          _LOG_TRACE("Invalid sig fo public parameters from authority");
+          return;
+        }
+        break;
+      }
+    }
+
+    //add Pub Param
   };
 
   // set link object if it is available
