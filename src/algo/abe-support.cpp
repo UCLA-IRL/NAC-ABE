@@ -140,7 +140,7 @@ ABESupport::prependToArray(GByteArray* pt, const guint8 *data, guint dataSize)
 }
 
 void
-removeFrontFromArray(GByteArray* pt, guint dataSize)
+ABESupport::removeFrontFromArray(GByteArray* pt, uint32_t dataSize)
 {
   std::vector<guint8> v(pt->data, pt->data + pt->len);
   auto it = v.begin();
@@ -182,7 +182,7 @@ ABESupport::aes_128_encrypt(GByteArray* pt, element_t k)
 }
 
 GByteArray*
-ABESupport::aes_128_decrypt(GByteArray* ct, element_t k, guint8 outputSize)
+ABESupport::aes_128_decrypt(GByteArray* ct, element_t k, uint32_t outputSize)
 {
   AES_KEY key;
   unsigned char iv[16];

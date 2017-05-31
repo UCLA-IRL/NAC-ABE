@@ -62,11 +62,14 @@ public:
   static void
   prependToArray(GByteArray* pt, const guint8 *data, guint dataSize);
 
+  static void
+  removeFrontFromArray(GByteArray* pt, uint32_t dataSize);
+
   static GByteArray*
   aes_128_encrypt(GByteArray* pt, element_t k);
 
   static GByteArray*
-  aes_128_decrypt(GByteArray* ct, element_t k, guint8 outputSize);
+  aes_128_decrypt(GByteArray* ct, element_t k, uint32_t outputSize);
 
   static void
   init_aes(element_t k, int enc, AES_KEY* key, unsigned char* iv);
