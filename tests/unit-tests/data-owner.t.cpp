@@ -45,18 +45,6 @@ public:
   DummyForwarder forwarder;
 };
 
-void
-successCallBack(const Data& data, const std::string& info)
-{
-
-}
-
-void
-errorCallBack(const std::string& errorInfo)
-{
-
-}
-
 BOOST_FIXTURE_TEST_SUITE(TestDataOwner, TestDataOwnerFixture)
 
 BOOST_AUTO_TEST_CASE(setPolicy)

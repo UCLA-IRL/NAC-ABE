@@ -29,8 +29,8 @@ namespace ndnabac {
 _LOG_INIT(ndnabac.consumer);
 
 // public
-Consumer::Consumer(const security::v2::Certificate& identityCert, Face& face,
-                   Name& consumerName, uint8_t repeatAttempts)
+Consumer::Consumer(const security::v2::Certificate& identityCert,
+                   Face& face, uint8_t repeatAttempts)
   : m_cert(identityCert)
   //, m_validator(new Validator())
   , m_face(face)

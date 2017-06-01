@@ -44,8 +44,8 @@ public:
   using SuccessCallback = function<void (const Data&)>;
 
 public:
-  Consumer(const security::v2::Certificate& identityCert, Face& face,
-           Name& consumerName, uint8_t repeatAttempts = 3);
+  Consumer(const security::v2::Certificate& identityCert,
+           Face& face, uint8_t repeatAttempts = 3);
 
   void
   consume(const Name& dataName,
