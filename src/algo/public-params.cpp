@@ -24,28 +24,23 @@ namespace ndn {
 namespace ndnabac {
 namespace algo {
 
-// Buffer
-// PublicParams::toBuffer(const PublicParams& pubParam)
-// {
-//   // From Glib:
-//   // struct GByteArray {
-//   //   guint8 *data;
-//   //   guint len;
-//   // }
-//   GByteArray* bytes = bswabe_pub_serialize(pubParam.m_pub);
-//   Buffer result(bytes->data, bytes->len);
-//   return result;
-// }
+Buffer
+PublicParams::toBuffer()
+{
+  // From Glib:
+  // struct GByteArray {
+  //   guint8 *data;
+  //   guint len;
+  // }
+  return Buffer(m_pub->data, m_pub->len);
+}
 
-// PublicParams
-// PublicParams::fromBuffer(Buffer buffer)
-// {
-//   GByteArray bytes{buffer.buf(), static_cast<guint>(buffer.size())};
-
-//   PublicParams result;
-//   result.m_pub = bswabe_pub_unserialize(&bytes, false);
-//   return result;
-// }
+void
+PublicParams::fromBuffer(Buffer buffer)
+{
+  GByteArray array{buffer.buf(), static_cast<guint>(buffer.size())};
+  this->m_pub = &array;
+}
 
 } // namespace algo
 } // namespace ndnabac

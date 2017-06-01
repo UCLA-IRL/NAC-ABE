@@ -30,8 +30,11 @@ namespace algo {
 class PrivateKey
 {
 public:
-  // static Buffer
-  // toBuffer(const PrivateKey& pubParam);
+  Buffer
+  toBuffer();
+
+  void
+  fromBuffer(Buffer block);
 
 public:
   GByteArray* m_prv;
