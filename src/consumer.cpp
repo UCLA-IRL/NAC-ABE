@@ -32,11 +32,11 @@ _LOG_INIT(ndnabac.consumer);
 Consumer::Consumer(const security::v2::Certificate& identityCert,
                    Face& face, uint8_t repeatAttempts)
   : m_cert(identityCert)
-  //, m_validator(new Validator())
+    //, m_validator(new Validator())
   , m_face(face)
   , m_repeatAttempts(repeatAttempts)
 {
-	//m_consumerName = identityCert.getIdentity();
+  //m_consumerName = identityCert.getIdentity();
 }
 
 void
@@ -49,12 +49,11 @@ Consumer::consume(const Name& dataName,
   shared_ptr<Interest> interest = make_shared<Interest>(dataName);
 
   // prepare callback functions
-  auto validationCallback =
-    [=] (const shared_ptr<const Data>& validData) {
-      // decrypt content
-      decryptContent(*validData,
-                     [=] (const Data& decryptData) { consumptionCb(decryptData); },
-                     errorCb);
+  auto validationCallback = [=] (const shared_ptr<const Data>& validData) {
+    // decrypt content
+    decryptContent(*validData,
+                   [=] (const Buffer& decryptContent) { consumptionCb(decryptContent); },
+                   errorCb);
   };
 
   sendInterest(*interest, m_repeatAttempts, validationCallback, errorCb);
@@ -83,7 +82,7 @@ Consumer::sendInterest(const Interest& interest, int nRetrials,
                          std::bind(&Consumer::handleTimeout, this, _1, nRetrials,
                                    validationCallback, errorCallback));
 }
- 
+
 void
 Consumer::handleNack(const Interest& interest, const lp::Nack& nack,
                      const OnDataValidated& callback, const ErrorCallback& errorCallback)
@@ -110,14 +109,18 @@ Consumer::decryptContent(const Data& data,
 {
   // get encrypted content
   Block encryptedContent = data.getContent().blockFromValue();
+  algo::CipherText cipherText;
+  cipherText.wireDecode(encryptedContent);
 
   // check if key exist
-  if (m_privateKey == 0) {
-  	errorCallback("privateKey doesn't exist");
-  	return;
+  if (m_privateKey == nullptr) {
+    // errorCallback("privateKey doesn't exist");
+    // we need to fetch the privateKey here
+    return;
   }
 
-  //decrypt(encryptedContent, successCallBack, errorCallback);
+  Buffer result = algo::ABESupport::decrypt(m_pubParamsCache, *m_privateKey, cipherText);
+  successCallBack(result);
 }
 
 void
@@ -126,12 +129,12 @@ Consumer::loadTrustConfig(const TrustConfig& config)
 
 void
 Consumer::fetchDecryptionKey(const Name& attrAuthorityPrefix,
-														 const ErrorCallback& errorCb)
+                             const ErrorCallback& errorCb)
 {
-	if (m_token == 0) {
-		errorCb("token doesn't exist");
-		return;
-	}
+  if (m_token == 0) {
+    errorCb("token doesn't exist");
+    return;
+  }
 
   Name interestName = attrAuthorityPrefix;
   interestName.append(AttributeAuthority::DECRYPT_KEY);
@@ -141,8 +144,8 @@ Consumer::fetchDecryptionKey(const Name& attrAuthorityPrefix,
   // prepare callback functions
   auto validationCallback =
     [=] (const shared_ptr<const Data>& validData) {
-      // decrypt content
-      onDecryptionKey(*validData, errorCb);
+    // decrypt content
+    onDecryptionKey(*validData, errorCb);
   };
 
   sendInterest(*interest, m_repeatAttempts, validationCallback, errorCb);
@@ -151,12 +154,12 @@ Consumer::fetchDecryptionKey(const Name& attrAuthorityPrefix,
 void
 Consumer::onDecryptionKey(const Data& data, const ErrorCallback& errorCb)
 {
-	//set decryption key
+  //set decryption key
 }
 
 void
 Consumer::requestToken(const Name& tokenIssuerPrefix,
-                  		 const ErrorCallback& errorCb)
+                       const ErrorCallback& errorCb)
 {
   Name requestTokenName = tokenIssuerPrefix;
   requestTokenName.append(TokenIssuer::TOKEN_REQUEST);
@@ -166,11 +169,11 @@ Consumer::requestToken(const Name& tokenIssuerPrefix,
   // prepare callback functions
   auto validationCallback =
     [=] (const shared_ptr<const Data>& validData) {
-      if (m_token != 0) {
-      	m_privateKey.reset();
-      	m_token.reset();
-      }
-      m_token = make_unique<Data>(*validData);
+    if (m_token != 0) {
+      m_privateKey.reset();
+      m_token.reset();
+    }
+    m_token = make_unique<Data>(*validData);
   };
 
   sendInterest(*interest, m_repeatAttempts, validationCallback, errorCb);
@@ -187,8 +190,8 @@ Consumer::fetchAttributePubParams(const Name& attrAuthorityPrefix, const ErrorCa
   // prepare callback functions
   auto validationCallback =
     [=] (const shared_ptr<const Data>& validData) {
-      // decrypt content
-      onAttributePubParams(*validData, errorCb);
+    // decrypt content
+    onAttributePubParams(*validData, errorCb);
   };
 
   sendInterest(*interest, m_repeatAttempts, validationCallback, errorCb);
@@ -197,7 +200,7 @@ Consumer::fetchAttributePubParams(const Name& attrAuthorityPrefix, const ErrorCa
 void
 Consumer::onAttributePubParams(const Data& data, const ErrorCallback& errorCb)
 {
-	//addPubParam
+  //addPubParam
 
 }
 

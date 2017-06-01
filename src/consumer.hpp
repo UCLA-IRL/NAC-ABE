@@ -40,8 +40,8 @@ public:
 
   using OnDataCallback = function<void (const Interest&, const Data&)>;
   using ErrorCallback = function<void (const std::string&)>;
-  using ConsumptionCallback = function<void (const Data&)>;
-  using SuccessCallback = function<void (const Data&)>;
+  using ConsumptionCallback = function<void (const Buffer&)>;
+  using SuccessCallback = function<void (const Buffer&)>;
 
 public:
   Consumer(const security::v2::Certificate& identityCert,
