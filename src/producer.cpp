@@ -24,6 +24,7 @@
 
 #include <ndn-cxx/security/signing-helpers.hpp>
 #include <ndn-cxx/encoding/block-helpers.hpp>
+#include <ndn-cxx/security/verification-helpers.hpp>
 
 namespace ndn {
 namespace ndnabac {
@@ -47,6 +48,15 @@ Producer::Producer(const security::v2::Certificate& identityCert, Face& face,
   filterId = m_face.setInterestFilter(Name(m_cert.getIdentity()).append(SET_POLICY),
                                       bind(&Producer::onPolicyInterest, this, _2));
   m_interestFilterIds.push_back(filterId);
+
+  // fetch pub parameters
+  Name interestName = m_attrAuthorityPrefix;
+  interestName.append(AttributeAuthority::PUBLIC_PARAMS);
+  Interest interest(interestName);
+  interest.setMustBeFresh(true);
+
+  m_face.expressInterest(interest, std::bind(&Producer::onAttributePubParams, this, _1, _2),
+                         nullptr, nullptr);
 }
 
 Producer::~Producer()
@@ -54,6 +64,20 @@ Producer::~Producer()
   for (auto prefixId : m_interestFilterIds) {
     m_face.unsetInterestFilter(prefixId);
   }
+}
+
+void
+Producer::onAttributePubParams(const Interest& request, const Data& pubParamData)
+{
+  Name attrAuthorityKey = pubParamData.getSignature().getKeyLocator().getName();
+  for (auto anchor : m_trustAnchors) {
+    if (anchor.getKeyName() == attrAuthorityKey) {
+      BOOST_ASSERT(security::verifySignature(pubParamData, anchor));
+      break;
+    }
+  }
+  auto block = pubParamData.getContent();
+  m_pubParamsCache.fromBuffer(Buffer(block.value(), block.value_size()));
 }
 
 void
@@ -94,43 +118,6 @@ Producer::onPolicyInterest(const Interest& interest)
   }
   m_keyChain.sign(reply, signingByCertificate(m_cert));
   m_face.put(reply);
-}
-
-
-void
-Producer::fetchAuthorityPubParams(const Name& attrAuthorityPrefix, const ErrorCallback& errorCb)
-{
-  Name interestName = attrAuthorityPrefix;
-  interestName.append(AttributeAuthority::PUBLIC_PARAMS);
-
-  shared_ptr<Interest> interest = make_shared<Interest>(interestName);
-
-  auto dataCallback =
-    [&] (const Interest& contentInterest, const Data& contentData) {
-    if (!contentInterest.matchesData(contentData))
-      return;
-
-    // check signature
-    Name issuerKey = contentData.getSignature().getKeyLocator().getName();
-    for (auto anchor : m_trustAnchors) {
-      if (anchor.getKeyName() == issuerKey) {
-        if (!security::verifySignature(contentData, anchor)) {
-          _LOG_TRACE("Invalid sig fo public parameters from authority");
-          errorCb("Invalid sig fo public parameters from authority");
-          return;
-        }
-        break;
-      }
-    }
-
-    //add Pub Param
-  };
-
-  // set link object if it is available
-  m_face.expressInterest(*interest, dataCallback, nullptr,
-                         [=] (const Interest&) {
-                           errorCb("time out");
-                         });
 }
 
 } // namespace ndnabac

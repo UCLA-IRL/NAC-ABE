@@ -23,6 +23,9 @@
 #include "token-issuer.hpp"
 #include "logging.hpp"
 
+#include <ndn-cxx/security/signing-helpers.hpp>
+#include <ndn-cxx/security/verification-helpers.hpp>
+
 namespace ndn {
 namespace ndnabac {
 
@@ -30,181 +33,150 @@ _LOG_INIT(ndnabac.consumer);
 
 // public
 Consumer::Consumer(const security::v2::Certificate& identityCert,
-                   Face& face, uint8_t repeatAttempts)
+                   Face& face, security::v2::KeyChain& keyChain,
+                   const Name& attrAuthorityPrefix,
+                   const Name& tokenIssuerPrefix,
+                   uint8_t repeatAttempts)
   : m_cert(identityCert)
-    //, m_validator(new Validator())
   , m_face(face)
+  , m_keyChain(keyChain)
+  , m_attrAuthorityPrefix(attrAuthorityPrefix)
   , m_repeatAttempts(repeatAttempts)
 {
-  //m_consumerName = identityCert.getIdentity();
+  // fetch pub parameters
+  Name interestName = m_attrAuthorityPrefix;
+  interestName.append(AttributeAuthority::PUBLIC_PARAMS);
+  Interest interest(interestName);
+  interest.setMustBeFresh(true);
+
+  m_face.expressInterest(interest, std::bind(&Consumer::onAttributePubParams, this, _1, _2),
+                         nullptr, nullptr);
 }
 
 void
-Consumer::consume(const Name& dataName,
+Consumer::consume(const Name& dataName, const Name& tokenIssuerPrefix,
                   const ConsumptionCallback& consumptionCb,
-                  const ErrorCallback& errorCb)
+                  const ErrorCallback& errorCallback)
 {
-  // shared_ptr<Interest> interest = make_shared<Interest>(dataName);
-  // sendInterest(*Interest);
-  shared_ptr<Interest> interest = make_shared<Interest>(dataName);
+  Interest interest(dataName);
+  interest.setMustBeFresh(true);
 
-  // prepare callback functions
-  auto validationCallback = [=] (const shared_ptr<const Data>& validData) {
-    // decrypt content
-    decryptContent(*validData,
-                   [=] (const Buffer& decryptContent) { consumptionCb(decryptContent); },
-                   errorCb);
-  };
-
-  sendInterest(*interest, m_repeatAttempts, validationCallback, errorCb);
+  DataCallback dataCb = std::bind(&Consumer::decryptContent, this, _2, tokenIssuerPrefix,
+                                  consumptionCb, errorCallback);
+  m_face.expressInterest(interest, dataCb,
+                         std::bind(&Consumer::handleNack, this, _1, _2, errorCallback),
+                         std::bind(&Consumer::handleTimeout, this, _1, m_repeatAttempts, dataCb, errorCallback));
 }
 
 void
-Consumer::sendInterest(const Interest& interest, int nRetrials,
-                       const OnDataValidated& validationCallback,
-                       const ErrorCallback& errorCallback)
+Consumer::decryptContent(const Data& data, const Name& tokenIssuerPrefix,
+                         const ConsumptionCallback& successCallBack,
+                         const ErrorCallback& errorCallback)
 {
-  auto dataCallback = [=] (const Interest& contentInterest, const Data& contentData) {
-    if (!contentInterest.matchesData(contentData))
-      return;
+  // get encrypted content
+  Block encryptedContent = data.getContent();
+  algo::CipherText cipherText;
+  cipherText.wireDecode(encryptedContent);
 
-    this->m_validator->validate(contentData, validationCallback,
-                                [=] (const shared_ptr<const Data>& d, const std::string& e) {
-                                  errorCallback(e);
-                                });
-  };
+  auto it = m_keyCache.find(tokenIssuerPrefix);
+  if (it == m_keyCache.end()) {
+    _LOG_TRACE("Private key is not there: we need to fetch token and private key");
 
-  // set link object if it is available
+    Name requestTokenName = tokenIssuerPrefix;
+    requestTokenName.append(TokenIssuer::TOKEN_REQUEST);
+    requestTokenName.append(m_cert.getIdentity().wireEncode());
+    Interest interest(requestTokenName);
+    m_keyChain.sign(interest, signingByCertificate(m_cert));
+    interest.setMustBeFresh(true);
 
-  m_face.expressInterest(interest, dataCallback,
-                         std::bind(&Consumer::handleNack, this, _1, _2,
-                                   validationCallback, errorCallback),
-                         std::bind(&Consumer::handleTimeout, this, _1, nRetrials,
-                                   validationCallback, errorCallback));
+    DataCallback dataCb = std::bind(&Consumer::onTokenData, this, _2, tokenIssuerPrefix, cipherText,
+                                    successCallBack, errorCallback);
+    m_face.expressInterest(interest, dataCb,
+                           std::bind(&Consumer::handleNack, this, _1, _2, errorCallback),
+                           std::bind(&Consumer::handleTimeout, this, _1, m_repeatAttempts, dataCb, errorCallback));
+  }
+  else {
+    algo::PrivateKey prvKey;
+    std::tie(std::ignore, prvKey) = it->second;
+
+    Buffer result = algo::ABESupport::decrypt(m_pubParamsCache, prvKey, cipherText);
+    successCallBack(result);
+  }
+}
+
+void
+Consumer::onAttributePubParams(const Interest& request, const Data& pubParamData)
+{
+  Name attrAuthorityKey = pubParamData.getSignature().getKeyLocator().getName();
+  for (auto anchor : m_trustAnchors) {
+    if (anchor.getKeyName() == attrAuthorityKey) {
+      BOOST_ASSERT(security::verifySignature(pubParamData, anchor));
+      break;
+    }
+  }
+  auto block = pubParamData.getContent();
+  m_pubParamsCache.fromBuffer(Buffer(block.value(), block.value_size()));
+}
+
+void
+Consumer::onTokenData(const Data& tokenData, const Name& tokenIssuerPrefix, algo::CipherText cipherText,
+                      const ConsumptionCallback& successCallBack,
+                      const ErrorCallback& errorCallback)
+{
+  Name interestName = m_attrAuthorityPrefix;
+  interestName.append(AttributeAuthority::DECRYPT_KEY);
+  interestName.append(tokenData.wireEncode());
+  Interest interest(interestName);
+  interest.setMustBeFresh(true);
+
+  DataCallback dataCb = std::bind(&Consumer::onDecryptionKeyData, this, _2, tokenData,
+                                  tokenIssuerPrefix, cipherText, successCallBack, errorCallback);
+  m_face.expressInterest(interest, dataCb,
+                         std::bind(&Consumer::handleNack, this, _1, _2, errorCallback),
+                         std::bind(&Consumer::handleTimeout, this, _1, m_repeatAttempts, dataCb, errorCallback));
+}
+
+void
+Consumer::onDecryptionKeyData(const Data& keyData, const Data& tokenData,
+                              const Name& tokenIssuerPrefix, algo::CipherText cipherText,
+                              const ConsumptionCallback& successCallBack,
+                              const ErrorCallback& errorCallback)
+{
+  algo::PrivateKey prv;
+  const auto& block = keyData.getContent();
+  prv.fromBuffer(Buffer(block.value(), block.value_size()));
+
+  m_keyCache[tokenIssuerPrefix] = make_tuple(keyData, prv);
+
+  Buffer result = algo::ABESupport::decrypt(m_pubParamsCache, prv, cipherText);
+  successCallBack(result);
 }
 
 void
 Consumer::handleNack(const Interest& interest, const lp::Nack& nack,
-                     const OnDataValidated& callback, const ErrorCallback& errorCallback)
+                     const ErrorCallback& errorCallback)
 {
-  // we run out of options, report retrieval failure.
-  errorCallback("interest nack");
+  errorCallback("Got Nack");
 }
 
 void
 Consumer::handleTimeout(const Interest& interest, int nRetrials,
-                        const OnDataValidated& callback, const ErrorCallback& errorCallback)
+                        const DataCallback& dataCallback, const ErrorCallback& errorCallback)
 {
   if (nRetrials > 0) {
-    sendInterest(interest, nRetrials - 1, callback, errorCallback);
+    m_face.expressInterest(interest, dataCallback,
+                           std::bind(&Consumer::handleNack, this, _1, _2, errorCallback),
+                           std::bind(&Consumer::handleTimeout, this, _1, nRetrials - 1,
+                                     dataCallback, errorCallback));
   }
-  else
-    handleNack(interest, lp::Nack(), callback, errorCallback);
-}
-
-void
-Consumer::decryptContent(const Data& data,
-                         const SuccessCallback& successCallBack,
-                         const ErrorCallback& errorCallback)
-{
-  // get encrypted content
-  Block encryptedContent = data.getContent().blockFromValue();
-  algo::CipherText cipherText;
-  cipherText.wireDecode(encryptedContent);
-
-  // check if key exist
-  if (m_privateKey == nullptr) {
-    // errorCallback("privateKey doesn't exist");
-    // we need to fetch the privateKey here
-    return;
+  else {
+    errorCallback("Run out retries: still timeout");
   }
-
-  Buffer result = algo::ABESupport::decrypt(m_pubParamsCache, *m_privateKey, cipherText);
-  successCallBack(result);
 }
 
 void
 Consumer::loadTrustConfig(const TrustConfig& config)
 {}
-
-void
-Consumer::fetchDecryptionKey(const Name& attrAuthorityPrefix,
-                             const ErrorCallback& errorCb)
-{
-  if (m_token == 0) {
-    errorCb("token doesn't exist");
-    return;
-  }
-
-  Name interestName = attrAuthorityPrefix;
-  interestName.append(AttributeAuthority::DECRYPT_KEY);
-
-  shared_ptr<Interest> interest = make_shared<Interest>(interestName);
-
-  // prepare callback functions
-  auto validationCallback =
-    [=] (const shared_ptr<const Data>& validData) {
-    // decrypt content
-    onDecryptionKey(*validData, errorCb);
-  };
-
-  sendInterest(*interest, m_repeatAttempts, validationCallback, errorCb);
-}
-
-void
-Consumer::onDecryptionKey(const Data& data, const ErrorCallback& errorCb)
-{
-  //set decryption key
-}
-
-void
-Consumer::requestToken(const Name& tokenIssuerPrefix,
-                       const ErrorCallback& errorCb)
-{
-  Name requestTokenName = tokenIssuerPrefix;
-  requestTokenName.append(TokenIssuer::TOKEN_REQUEST);
-  requestTokenName.append(m_cert.getIdentity());
-  shared_ptr<Interest> interest = make_shared<Interest>(requestTokenName);
-
-  // prepare callback functions
-  auto validationCallback =
-    [=] (const shared_ptr<const Data>& validData) {
-    if (m_token != 0) {
-      m_privateKey.reset();
-      m_token.reset();
-    }
-    m_token = make_unique<Data>(*validData);
-  };
-
-  sendInterest(*interest, m_repeatAttempts, validationCallback, errorCb);
-}
-
-void
-Consumer::fetchAttributePubParams(const Name& attrAuthorityPrefix, const ErrorCallback& errorCb)
-{
-  Name interestName = attrAuthorityPrefix;
-  interestName.append(AttributeAuthority::PUBLIC_PARAMS);
-
-  shared_ptr<Interest> interest = make_shared<Interest>(interestName);
-
-  // prepare callback functions
-  auto validationCallback =
-    [=] (const shared_ptr<const Data>& validData) {
-    // decrypt content
-    onAttributePubParams(*validData, errorCb);
-  };
-
-  sendInterest(*interest, m_repeatAttempts, validationCallback, errorCb);
-}
-
-void
-Consumer::onAttributePubParams(const Data& data, const ErrorCallback& errorCb)
-{
-  //addPubParam
-
-}
-
-
 
 } // namespace ndnabac
 } // namespace ndn

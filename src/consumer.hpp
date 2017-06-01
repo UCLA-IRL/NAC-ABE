@@ -25,6 +25,7 @@
 #include "trust-config.hpp"
 #include "algo/public-params.hpp"
 #include "algo/private-key.hpp"
+#include "algo/cipher-text.hpp"
 
 namespace ndn {
 namespace ndnabac {
@@ -41,69 +42,61 @@ public:
   using OnDataCallback = function<void (const Interest&, const Data&)>;
   using ErrorCallback = function<void (const std::string&)>;
   using ConsumptionCallback = function<void (const Buffer&)>;
-  using SuccessCallback = function<void (const Buffer&)>;
 
 public:
   Consumer(const security::v2::Certificate& identityCert,
-           Face& face, uint8_t repeatAttempts = 3);
+           Face& face, security::v2::KeyChain& keyChain,
+           const Name& attrAuthorityPrefix,
+           const Name& tokenIssuerPrefix,
+           uint8_t repeatAttempts);
 
   void
-  consume(const Name& dataName,
+  consume(const Name& dataName, const Name& tokenIssuerPrefix,
           const ConsumptionCallback& consumptionCb,
-          const ErrorCallback& errorCb);
+          const ErrorCallback& errorCallback);
+
+private:
+  void
+  decryptContent(const Data& data, const Name& tokenIssuerPrefix,
+                 const ConsumptionCallback& successCallBack,
+                 const ErrorCallback& errorCallback);
+
+  void
+  onAttributePubParams(const Interest& request, const Data& pubParamData);
+
+
+  void
+  onTokenData(const Data& tokenData, const Name& tokenIssuerPrefix, algo::CipherText cipherText,
+              const ConsumptionCallback& successCallBack,
+              const ErrorCallback& errorCallback);
+
+  void
+  onDecryptionKeyData(const Data& keyData, const Data& tokenData,
+                      const Name& tokenIssuerPrefix, algo::CipherText cipherText,
+                      const ConsumptionCallback& successCallBack,
+                      const ErrorCallback& errorCallback);
+
+  void
+  handleNack(const Interest& interest, const lp::Nack& nack,
+             const ErrorCallback& errorCallback);
+
+  void
+  handleTimeout(const Interest& interest, int nRetrials,
+                const DataCallback& dataCallback, const ErrorCallback& errorCallback);
 
   void
   loadTrustConfig(const TrustConfig& config);
 
 private:
-  void
-  sendInterest(const Interest& interest, int nRetrials,
-               const OnDataValidated& validationCallback,
-               const ErrorCallback& errorCallback);
-
-  void
-  decryptContent(const Data& data,
-                 const SuccessCallback& SuccessCb,
-                 const ErrorCallback& errorCb);
-
-  void
-  handleNack(const Interest& interest, const lp::Nack& nack,
-             const OnDataValidated& callback, const ErrorCallback& errorCallback);
-
-  void
-  handleTimeout(const Interest& interest, int nRetrials,
-                const OnDataValidated& callback, const ErrorCallback& errorCallback);
-
-  void
-  fetchDecryptionKey(const Name& attrAuthorityPrefix, const ErrorCallback& errorCb);
-
-  void
-  onDecryptionKey(const Data& data, const ErrorCallback& errorCb);
-
-  /**
-   * interest naming convention:
-   *  /tokenIssuerPrefix/TOKEN/[identity-name block]/[sig]
-   */
-  void
-  requestToken(const Name& tokenIssuerPrefix, const ErrorCallback& errorCb);
-
-  void
-  fetchAttributePubParams(const Name& attrAuthorityPrefix, const ErrorCallback& errorCb);
-
-  void
-  onAttributePubParams(const Data& data,
-                       const ErrorCallback& errorCb);
-
-private:
   security::v2::Certificate m_cert;
-  unique_ptr<Validator> m_validator;
   Face& m_face;
+  security::v2::KeyChain& m_keyChain;
+  Name m_attrAuthorityPrefix;
   uint8_t m_repeatAttempts;
 
-  unique_ptr<algo::PrivateKey> m_privateKey;
-  unique_ptr<Data> m_token;
   algo::PublicParams m_pubParamsCache;
   std::list<security::v2::Certificate> m_trustAnchors;
+  std::map<Name/*tokenIssuerPrefix*/, std::tuple<Data/*token*/, algo::PrivateKey>> m_keyCache;
 };
 
 } // namespace ndnabac

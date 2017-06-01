@@ -70,17 +70,16 @@ public:
 
 private:
   void
-  onPolicyInterest(const Interest& interest);
+  onAttributePubParams(const Interest& request, const Data& pubParamData);
 
   void
-  fetchAuthorityPubParams(const Name& attrAuthorityPrefix, const ErrorCallback& errorCb);
+  onPolicyInterest(const Interest& interest);
 
 public:
   const static Name SET_POLICY;
 
 private:
   security::v2::Certificate m_cert;
-  // unique_ptr<Validator> m_validator;
   Face& m_face;
   security::v2::KeyChain& m_keyChain;
   Name m_attrAuthorityPrefix;
