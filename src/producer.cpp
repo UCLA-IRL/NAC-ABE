@@ -56,24 +56,21 @@ Producer::~Producer()
   }
 }
 
-// need to determine how to parse accessPolicy
 void
 Producer::produce(const Name& dataPrefix, const std::string& accessPolicy,
                   const uint8_t* content, size_t contentLen,
                   const SuccessCallback& onDataProduceCb, const ErrorCallback& errorCallback)
 {
+  // do encryption
+  auto cipherText = algo::ABESupport::encrypt(m_pubParamsCache, accessPolicy,
+                                              Buffer(content, contentLen));
+
   Name dataName = m_cert.getIdentity();
   dataName.append(dataPrefix);
-  shared_ptr<Data> data = make_shared<Data>(dataName);
-
-  //parse policy then encrypt
-  //algo::EncryptParams params(tlv::AlgorithmAesCbc, 16);
-  //algo::encryptData(data, content, contentLen, contentKeyName,
-  //                  contentKey.buf(), contentKey.size(), params);
-  //encryptWithPolicy(data, content, accessPolicy, errorCallback);
-  //m_keyChain.sign(data);
-  onDataProduceCb(*data);
-
+  Data data(dataName);
+  data.setContent(cipherText.wireEncode());
+  m_keyChain.sign(data, signingByCertificate(m_cert));
+  onDataProduceCb(data);
 }
 
 //private:
