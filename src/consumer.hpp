@@ -47,8 +47,7 @@ public:
   Consumer(const security::v2::Certificate& identityCert,
            Face& face, security::v2::KeyChain& keyChain,
            const Name& attrAuthorityPrefix,
-           const Name& tokenIssuerPrefix,
-           uint8_t repeatAttempts);
+           uint8_t repeatAttempts = 3);
 
   void
   consume(const Name& dataName, const Name& tokenIssuerPrefix,

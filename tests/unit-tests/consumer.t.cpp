@@ -38,25 +38,31 @@ public:
     : forwarder(m_io, m_keyChain)
     , c1(forwarder.addFace())
     , c2(forwarder.addFace())
+    , attrAuthorityPrefix("/authority")
+    , tokenIssuerPrefix("/token/issuer")
   {
     id = addIdentity("/consumer");
     key = id.getDefaultKey();
     cert = key.getDefaultCertificate();
-
-    consumer = make_shared<Consumer>(Consumer(cert, c1));
   }
 
 public:
   DummyForwarder forwarder;
   Face& c1;
   Face& c2;
+  Name attrAuthorityPrefix;
+  Name tokenIssuerPrefix;
   security::Identity id;
   security::Key key;
   security::v2::Certificate cert;
-  shared_ptr<Consumer> consumer;
 };
 
 BOOST_FIXTURE_TEST_SUITE(TestConsumer, TestConsumerFixture)
+
+BOOST_AUTO_TEST_CASE(Constructor)
+{
+  Consumer consumer(cert, c1, m_keyChain, attrAuthorityPrefix);
+}
 
 BOOST_AUTO_TEST_CASE(DegryptContent)
 {

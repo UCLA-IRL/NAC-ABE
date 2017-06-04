@@ -35,7 +35,6 @@ _LOG_INIT(ndnabac.consumer);
 Consumer::Consumer(const security::v2::Certificate& identityCert,
                    Face& face, security::v2::KeyChain& keyChain,
                    const Name& attrAuthorityPrefix,
-                   const Name& tokenIssuerPrefix,
                    uint8_t repeatAttempts)
   : m_cert(identityCert)
   , m_face(face)
