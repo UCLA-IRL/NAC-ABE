@@ -83,9 +83,6 @@ private:
   handleTimeout(const Interest& interest, int nRetrials,
                 const DataCallback& dataCallback, const ErrorCallback& errorCallback);
 
-  void
-  loadTrustConfig(const TrustConfig& config);
-
 private:
   security::v2::Certificate m_cert;
   Face& m_face;
@@ -94,8 +91,9 @@ private:
   uint8_t m_repeatAttempts;
 
   algo::PublicParams m_pubParamsCache;
-  std::list<security::v2::Certificate> m_trustAnchors;
-  std::map<Name/*tokenIssuerPrefix*/, std::tuple<Data/*token*/, algo::PrivateKey>> m_keyCache;
+  TrustConfig m_trustConfig;
+  std::map<Name/*tokenIssuerPrefix*/,
+           std::tuple<Data/*token*/, algo::PrivateKey>> m_keyCache;
 };
 
 } // namespace ndnabac

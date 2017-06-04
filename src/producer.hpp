@@ -22,6 +22,7 @@
 #define NDNABAC_PRODUCER_HPP
 
 #include "ndnabac-common.hpp"
+#include "trust-config.hpp"
 #include "algo/public-params.hpp"
 
 #include <ndn-cxx/security/verification-helpers.hpp>
@@ -88,7 +89,7 @@ private:
   std::map<Name/* data prefix */, std::string/* policy */> m_policyCache;
   std::list<const InterestFilterId*> m_interestFilterIds;
   algo::PublicParams m_pubParamsCache;
-  std::list<security::v2::Certificate> m_trustAnchors;
+  TrustConfig m_trustConfig;
 };
 
 } // namespace ndnabac

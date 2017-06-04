@@ -41,8 +41,8 @@ public:
     , attrAuthorityPrefix("/authority")
     , tokenIssuerPrefix("/token/issuer")
   {
-    id = addIdentity("/consumer");
-    key = id.getDefaultKey();
+    auto id = addIdentity("/consumer");
+    auto key = id.getDefaultKey();
     cert = key.getDefaultCertificate();
   }
 
@@ -52,8 +52,6 @@ public:
   Face& c2;
   Name attrAuthorityPrefix;
   Name tokenIssuerPrefix;
-  security::Identity id;
-  security::Key key;
   security::v2::Certificate cert;
 };
 

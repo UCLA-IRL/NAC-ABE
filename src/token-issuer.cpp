@@ -64,7 +64,7 @@ TokenIssuer::onTokenRequest(const Interest& request)
 
   // verify request and generate token
   JsonSection root;
-  for (auto anchor : m_trustAnchors) {
+  for (auto anchor : m_trustConfig.m_trustAnchors) {
     if (anchor.getIdentity() == identityName) {
       if (!security::verifySignature(request, anchor)) {
         _LOG_TRACE("Interest is with bad signature");

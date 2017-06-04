@@ -22,6 +22,7 @@
 #define NDNABAC_ATTRIBUTE_AUTHORITY_HPP
 
 #include "ndnabac-common.hpp"
+#include "trust-config.hpp"
 #include "algo/abe-support.hpp"
 
 namespace ndn {
@@ -60,6 +61,7 @@ private:
   algo::PublicParams m_pubParams;
   algo::MasterKey m_masterKey;
   std::list<security::v2::Certificate> m_trustAnchors;
+  TrustConfig m_trustConfig;
 
 private:
   std::list<const RegisteredPrefixId*> m_registeredPrefixIds;

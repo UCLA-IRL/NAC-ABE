@@ -22,6 +22,7 @@
 #define NDNABAC_TOKEN_ISSUER_HPP
 
 #include "ndnabac-common.hpp"
+#include "trust-config.hpp"
 #include "json-helper.hpp"
 #include <list>
 
@@ -61,7 +62,7 @@ private:
   Face& m_face;
   security::v2::KeyChain& m_keyChain;
 
-  std::list<security::v2::Certificate> m_trustAnchors;
+  TrustConfig m_trustConfig;
   std::list<const InterestFilterId*> m_interestFilterIds;
   std::map<Name/* Consumer Identity */, std::list<std::string>/* Attr */> m_tokens;
 };

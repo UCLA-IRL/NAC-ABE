@@ -70,7 +70,7 @@ void
 Producer::onAttributePubParams(const Interest& request, const Data& pubParamData)
 {
   Name attrAuthorityKey = pubParamData.getSignature().getKeyLocator().getName();
-  for (auto anchor : m_trustAnchors) {
+  for (auto anchor : m_trustConfig.m_trustAnchors) {
     if (anchor.getKeyName() == attrAuthorityKey) {
       BOOST_ASSERT(security::verifySignature(pubParamData, anchor));
       break;

@@ -37,8 +37,7 @@ const Name AttributeAuthority::PUBLIC_PARAMS = "/PUBPARAMS";
 const Name AttributeAuthority::DECRYPT_KEY = "/DKEY";
 
 //public
-AttributeAuthority::AttributeAuthority(const security::v2::Certificate& identityCert,
-                                       Face& face,
+AttributeAuthority::AttributeAuthority(const security::v2::Certificate& identityCert, Face& face,
                                        security::v2::KeyChain& keyChain)
   : m_cert(identityCert)
   , m_face(face)
@@ -96,7 +95,7 @@ AttributeAuthority::onDecryptionKeyRequest(const Interest& interest)
 
   // verify token
   Name tokenIssuerKey = token.getSignature().getKeyLocator().getName();
-  for (auto anchor : m_trustAnchors) {
+  for (auto anchor : m_trustConfig.m_trustAnchors) {
     if (anchor.getKeyName() == tokenIssuerKey) {
       if (!security::verifySignature(token, anchor)) {
         _LOG_TRACE("Invalid token");

@@ -21,6 +21,7 @@
 #define NDNABAC_TRUST_CONFIG_HPP
 
 #include "ndnabac-common.hpp"
+#include "json-helper.hpp"
 
 namespace ndn {
 namespace ndnabac {
@@ -33,6 +34,20 @@ public:
   public:
     using std::runtime_error::runtime_error;
   };
+
+public:
+  void
+  load(const std::string& fileName);
+
+private:
+  void
+  parse();
+
+public:
+  std::list<security::v2::Certificate> m_trustAnchors;
+
+PUBLIC_WITH_TESTS_ELSE_PRIVATE:
+  JsonSection m_config;
 };
 
 } // namespace ndnabac
