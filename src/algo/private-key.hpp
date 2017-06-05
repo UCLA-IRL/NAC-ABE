@@ -34,7 +34,7 @@ public:
   toBuffer();
 
   void
-  fromBuffer(Buffer block);
+  fromBuffer(const Buffer& block);
 
 public:
   GByteArray* m_prv;

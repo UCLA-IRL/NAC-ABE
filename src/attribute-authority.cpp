@@ -146,6 +146,10 @@ AttributeAuthority::onPublicParamsRequest(const Interest& interest)
   result.setContent(makeBinaryBlock(ndn::tlv::Content,
                                     contentBuf.buf(), contentBuf.size()));
   m_keyChain.sign(result, signingByCertificate(m_cert));
+
+  _LOG_TRACE("Reply public params request.");
+  _LOG_TRACE("Pub params size: " << contentBuf.size());
+
   m_face.put(result);
 }
 

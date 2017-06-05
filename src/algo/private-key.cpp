@@ -36,10 +36,11 @@ PrivateKey::toBuffer()
 }
 
 void
-PrivateKey::fromBuffer(Buffer buffer)
+PrivateKey::fromBuffer(const Buffer& buffer)
 {
-  GByteArray array{buffer.buf(), static_cast<guint>(buffer.size())};
-  this->m_prv = &array;
+  Buffer tempBuf(buffer.buf(), buffer.size());
+  m_prv = g_byte_array_new();
+  g_byte_array_append(m_prv, tempBuf.buf(), static_cast<guint>(tempBuf.size()));
 }
 
 } // namespace algo

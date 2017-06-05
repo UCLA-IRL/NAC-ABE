@@ -100,8 +100,8 @@ CipherText::wireDecode(const Block& wire)
   // encrypted symmetric key
   if (it != m_wire.elements_end() && it->type() == TLV_EncryptedAesKey) {
     Buffer cphBuffer(it->value(), it->value_size());
-    GByteArray cphArray{cphBuffer.buf(), static_cast<guint>(cphBuffer.size())};
-    this->m_cph = &cphArray;
+    m_cph = g_byte_array_new();
+    g_byte_array_append(m_cph, cphBuffer.buf(), static_cast<guint>(cphBuffer.size()));
     it++;
   }
   else

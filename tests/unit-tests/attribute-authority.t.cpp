@@ -23,6 +23,9 @@
 #include "test-common.hpp"
 #include "dummy-forwarder.hpp"
 
+#include <ndn-cxx/security/verification-helpers.hpp>
+#include <ndn-cxx/security/signing-helpers.hpp>
+
 namespace ndn {
 namespace ndnabac {
 namespace tests {
@@ -35,43 +38,62 @@ class TestAttributeAuthorityFixture : public IdentityManagementTimeFixture
 {
 public:
   TestAttributeAuthorityFixture()
-    : forwarder(m_io, m_keyChain)
-    , c1(forwarder.addFace())
-    , c2(forwarder.addFace())
+    : attrAuthorityPrefix("/authority")
   {
-    id = addIdentity("/ndn/test/abac");
-    key = id.getDefaultKey();
+    auto id = addIdentity(attrAuthorityPrefix);
+    auto key = id.getDefaultKey();
     cert = key.getDefaultCertificate();
-
-    aa = make_shared<AttributeAuthority>(AttributeAuthority(cert, c1, m_keyChain));
   }
 
 public:
-  DummyForwarder forwarder;
-  Face& c1;
-  Face& c2;
-  security::Identity id;
-  security::Key key;
+  Name attrAuthorityPrefix;
   security::v2::Certificate cert;
-  shared_ptr<AttributeAuthority> aa;
 };
 
 BOOST_FIXTURE_TEST_SUITE(TestAttributeAuthority, TestAttributeAuthorityFixture)
 
-BOOST_AUTO_TEST_CASE(onDecryptionKeyRequest)
+BOOST_AUTO_TEST_CASE(Constructor)
 {
-  Interest interest(
-    Name("/ndn/test/abac").append("DKEY"));
+  util::DummyClientFace face(m_io, {true, true});
+  AttributeAuthority aa(cert, face, m_keyChain);
+  BOOST_CHECK(aa.m_pubParams.m_pub != nullptr);
+  BOOST_CHECK(aa.m_masterKey.m_msk != nullptr);
 }
 
-BOOST_AUTO_TEST_CASE(onPublicParamsRequest)
+BOOST_AUTO_TEST_CASE(onPublicParams)
 {
-  Interest interest(
-    Name("/ndn/test/abac").append(AttributeAuthority::PUBLIC_PARAMS));
-  c2.expressInterest(interest,
-                     [=](const Interest&, const Data&){},
-                     [=](const Interest&, const lp::Nack&){},
-                     [=](const Interest&){});
+  util::DummyClientFace face(m_io, {true, true});
+  AttributeAuthority aa(cert, face, m_keyChain);
+  Name interestName = attrAuthorityPrefix;
+  Interest request(interestName.append(AttributeAuthority::PUBLIC_PARAMS));
+  auto requiredBuffer = aa.m_pubParams.toBuffer();
+
+  advanceClocks(time::milliseconds(20), 60);
+
+  int count = 0;
+  face.onSendData.connect([&] (const Data& response) {
+      count++;
+      BOOST_CHECK(security::verifySignature(response, cert));
+
+      auto block = response.getContent();
+      Buffer contentBuffer(block.value(), block.value_size());
+      algo::PublicParams pubParams;
+      pubParams.fromBuffer(contentBuffer);
+      auto buffer = pubParams.toBuffer();
+
+      BOOST_CHECK_EQUAL_COLLECTIONS(buffer.begin(), buffer.end(),
+                                    requiredBuffer.begin(), requiredBuffer.end());
+    });
+  face.receive(request);
+
+  advanceClocks(time::milliseconds(20), 60);
+
+  BOOST_CHECK_EQUAL(count, 1);
+}
+
+BOOST_AUTO_TEST_CASE(onPrvKey)
+{
+  // TODO
 }
 
 BOOST_AUTO_TEST_SUITE_END()

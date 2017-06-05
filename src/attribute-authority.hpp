@@ -36,7 +36,7 @@ public:
 
   ~AttributeAuthority();
 
-private:
+PUBLIC_WITH_TESTS_ELSE_PRIVATE:
   void
   onDecryptionKeyRequest(const Interest& interest);
 
@@ -53,17 +53,18 @@ public:
   const static Name PUBLIC_PARAMS;
   const static Name DECRYPT_KEY;
 
-private:
+PUBLIC_WITH_TESTS_ELSE_PRIVATE:
   security::v2::Certificate m_cert;
   Face& m_face;
   security::v2::KeyChain& m_keyChain;
 
   algo::PublicParams m_pubParams;
   algo::MasterKey m_masterKey;
+
   std::list<security::v2::Certificate> m_trustAnchors;
   TrustConfig m_trustConfig;
 
-private:
+PUBLIC_WITH_TESTS_ELSE_PRIVATE:
   std::list<const RegisteredPrefixId*> m_registeredPrefixIds;
   std::list<const InterestFilterId*> m_interestFilterIds;
 };

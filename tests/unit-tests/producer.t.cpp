@@ -38,25 +38,27 @@ public:
     : forwarder(m_io, m_keyChain)
     , c1(forwarder.addFace())
     , c2(forwarder.addFace())
+    , attrAuthorityPrefix("/authority")
   {
-    id = addIdentity("/producer");
-    key = id.getDefaultKey();
+    auto id = addIdentity("/producer");
+    auto key = id.getDefaultKey();
     cert = key.getDefaultCertificate();
-
-    producer = make_shared<Producer>(Producer(cert, c1, m_keyChain, Name("/aa-prefix")));
   }
 
 public:
   DummyForwarder forwarder;
   Face& c1;
   Face& c2;
-  security::Identity id;
-  security::Key key;
+  Name attrAuthorityPrefix;
   security::v2::Certificate cert;
-  shared_ptr<Producer> producer;
 };
 
 BOOST_FIXTURE_TEST_SUITE(TestProducer, TestProducerFixture)
+
+BOOST_AUTO_TEST_CASE(Constructor)
+{
+  Producer producer(cert, c1, m_keyChain, attrAuthorityPrefix);
+}
 
 BOOST_AUTO_TEST_CASE(encryptContent)
 {
