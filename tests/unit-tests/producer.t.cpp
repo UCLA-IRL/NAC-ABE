@@ -57,7 +57,14 @@ BOOST_FIXTURE_TEST_SUITE(TestProducer, TestProducerFixture)
 
 BOOST_AUTO_TEST_CASE(Constructor)
 {
-  Producer producer(cert, c1, m_keyChain, attrAuthorityPrefix);
+}
+
+BOOST_AUTO_TEST_CASE(requestPublicParams)
+{
+}
+
+BOOST_AUTO_TEST_CASE(onPolicyInterest)
+{
 }
 
 BOOST_AUTO_TEST_CASE(encryptContent)

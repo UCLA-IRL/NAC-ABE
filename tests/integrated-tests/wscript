@@ -9,7 +9,7 @@ def build(bld):
         bld(features='cxx cxxprogram',
             target=name,
             source=[i],
-            use='ndn-abac boost-tests-base',
+            use='ndn-abac boost-tests-base unit-tests-main',
             includes='..',
             defines=['UNIT_TEST_CONFIG_PATH=\"%s/tmp-files/\"' % (bld.bldnode)],
             install_path=None)

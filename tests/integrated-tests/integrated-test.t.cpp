@@ -18,7 +18,11 @@
  * See AUTHORS.md for complete list of ChronoShare authors and contributors.
  */
 
+#include "attribute-authority.hpp"
 #include "consumer.hpp"
+#include "data-owner.hpp"
+#include "producer.hpp"
+#include "token-issuer.hpp"
 
 #include "test-common.hpp"
 #include "dummy-forwarder.hpp"
@@ -29,51 +33,49 @@ namespace tests {
 
 namespace fs = boost::filesystem;
 
-_LOG_INIT(Test.Consumer);
+_LOG_INIT(Test.IntegratedTest);
 
-class TestConsumerFixture : public IdentityManagementTimeFixture
+class TestIntegratedFixture : public IdentityManagementTimeFixture
 {
 public:
-  TestConsumerFixture()
+  TestAttributeAuthorityFixture()
     : forwarder(m_io, m_keyChain)
     , c1(forwarder.addFace())
     , c2(forwarder.addFace())
-    , attrAuthorityPrefix("/authority")
-    , tokenIssuerPrefix("/token/issuer")
   {
-    auto id = addIdentity("/consumer");
-    auto key = id.getDefaultKey();
+    id = addIdentity("/ndn/test/abac");
+    key = id.getDefaultKey();
     cert = key.getDefaultCertificate();
+
+    aa = make_shared<AttributeAuthority>(AttributeAuthority(cert, c1, m_keyChain));
   }
 
 public:
   DummyForwarder forwarder;
   Face& c1;
   Face& c2;
-  Name attrAuthorityPrefix;
-  Name tokenIssuerPrefix;
+  security::Identity id;
+  security::Key key;
   security::v2::Certificate cert;
+  shared_ptr<AttributeAuthority> aa;
 };
 
-BOOST_FIXTURE_TEST_SUITE(TestConsumer, TestConsumerFixture)
+BOOST_FIXTURE_TEST_SUITE(TestIntegrated, TestIntegratedFixture)
 
-BOOST_AUTO_TEST_CASE(requestPublicParams)
+BOOST_AUTO_TEST_CASE(onDecryptionKeyRequest)
 {
+  Interest interest(
+    Name("/ndn/test/abac").append("DKEY"));
 }
 
-
-BOOST_AUTO_TEST_CASE(requestToken)
+BOOST_AUTO_TEST_CASE(onPublicParamsRequest)
 {
-}
-
-
-BOOST_AUTO_TEST_CASE(requestDecryptKey)
-{
-}
-
-
-BOOST_AUTO_TEST_CASE(DecryptContent)
-{
+  Interest interest(
+    Name("/ndn/test/abac").append(AttributeAuthority::PUBLIC_PARAMS));
+  c2.expressInterest(interest,
+                     [=](const Interest&, const Data&){},
+                     [=](const Interest&, const lp::Nack&){},
+                     [=](const Interest&){});
 }
 
 BOOST_AUTO_TEST_SUITE_END()
