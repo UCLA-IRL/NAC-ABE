@@ -33,49 +33,142 @@ namespace tests {
 
 namespace fs = boost::filesystem;
 
+const uint8_t PLAIN_TEXT[] = {
+  0x41, 0x45, 0x53, 0x2d, 0x45, 0x6e, 0x63, 0x72,
+  0x79, 0x70, 0x74, 0x2d, 0x54, 0x65, 0x73, 0x74,
+  0x41, 0x45, 0x53, 0x2d, 0x45, 0x6e, 0x63, 0x72,
+  0x79, 0x70, 0x74, 0x2d, 0x54, 0x65, 0x73, 0x74,
+  0x41, 0x45, 0x53, 0x2d, 0x45, 0x6e, 0x63, 0x72,
+  0x79, 0x70, 0x74, 0x2d, 0x54, 0x65, 0x73, 0x74,
+  0x41, 0x45, 0x53, 0x2d, 0x45, 0x6e, 0x63, 0x72,
+  0x79, 0x70, 0x74, 0x2d, 0x54, 0x65, 0x73, 0x74
+};
+
 _LOG_INIT(Test.IntegratedTest);
 
 class TestIntegratedFixture : public IdentityManagementTimeFixture
 {
 public:
-  TestAttributeAuthorityFixture()
+  TestIntegratedFixture()
     : forwarder(m_io, m_keyChain)
-    , c1(forwarder.addFace())
-    , c2(forwarder.addFace())
+    , aaFace(forwarder.addFace())
+    , tokenIssuerFace(forwarder.addFace())
+    , consumerFace(forwarder.addFace())
+    , producerFace(forwarder.addFace())
+    , dataOwnerFace(forwarder.addFace())
   {
-    id = addIdentity("/ndn/test/abac");
-    key = id.getDefaultKey();
-    cert = key.getDefaultCertificate();
-
-    aa = make_shared<AttributeAuthority>(AttributeAuthority(cert, c1, m_keyChain));
   }
 
 public:
   DummyForwarder forwarder;
-  Face& c1;
-  Face& c2;
-  security::Identity id;
-  security::Key key;
-  security::v2::Certificate cert;
+
+  Face& aaFace;
+  Face& tokenIssuerFace;
+  Face& consumerFace;
+  Face& producerFace;
+  Face& dataOwnerFace;
+
+  security::v2::Certificate aaCert;
+  security::v2::Certificate tokenIssuerCert;
+  security::v2::Certificate consumerCert;
+  security::v2::Certificate producerCert;
+  security::v2::Certificate dataOwnerCert;
+
   shared_ptr<AttributeAuthority> aa;
+  shared_ptr<TokenIssuer> tokenIssuer;
+  shared_ptr<Consumer> consumer;
+  shared_ptr<Producer> producer;
+  shared_ptr<DataOwner> dataOwner;
 };
 
 BOOST_FIXTURE_TEST_SUITE(TestIntegrated, TestIntegratedFixture)
 
-BOOST_AUTO_TEST_CASE(onDecryptionKeyRequest)
+BOOST_AUTO_TEST_CASE(IntegratedTest)
 {
-  Interest interest(
-    Name("/ndn/test/abac").append("DKEY"));
-}
+  security::Identity aaId = addIdentity("/aaPrefix");
+  security::Key aaKey = aaId.getDefaultKey();
+  aaCert = aaKey.getDefaultCertificate();
+  aa = make_shared<AttributeAuthority>(AttributeAuthority(aaCert, aaFace, m_keyChain));
+  advanceClocks(time::milliseconds(20), 60);
 
-BOOST_AUTO_TEST_CASE(onPublicParamsRequest)
-{
-  Interest interest(
-    Name("/ndn/test/abac").append(AttributeAuthority::PUBLIC_PARAMS));
-  c2.expressInterest(interest,
-                     [=](const Interest&, const Data&){},
-                     [=](const Interest&, const lp::Nack&){},
-                     [=](const Interest&){});
+  BOOST_CHECK(aa->m_pubParams.m_pub != nullptr);
+  BOOST_CHECK(aa->m_masterKey.m_msk != nullptr);
+
+  security::Identity tokenIssuerId = addIdentity("/tokenIssuerPrefix");
+  security::Key tokenIssuerKey = tokenIssuerId.getDefaultKey();
+  tokenIssuerCert = tokenIssuerKey.getDefaultCertificate();
+  tokenIssuer = make_shared<TokenIssuer>(TokenIssuer(tokenIssuerCert, tokenIssuerFace, m_keyChain));
+  advanceClocks(time::milliseconds(20), 60);
+  BOOST_CHECK_EQUAL(tokenIssuer->m_interestFilterIds.size(), 1);
+
+  security::Identity consumerId = addIdentity("/consumerPrefix");
+  security::Key consumerKey = consumerId.getDefaultKey();
+  consumerCert = consumerKey.getDefaultCertificate();
+  consumer = make_shared<Consumer>(Consumer(aaCert, consumerFace, m_keyChain, aaCert.getIdentity()));
+  advanceClocks(time::milliseconds(20), 60);
+  BOOST_CHECK(consumer->m_pubParamsCache.m_pub != nullptr);
+  //***** need to compare pointer content *****
+  BOOST_CHECK(consumer->m_pubParamsCache.m_pub == aa->m_pubParams.m_pub);
+
+  security::Identity producerId = addIdentity("/producerPrefix");
+  security::Key producerKey = producerId.getDefaultKey();
+  producerCert = producerKey.getDefaultCertificate();
+  producer = make_shared<Producer>(Producer(aaCert, producerFace, m_keyChain, aaCert.getIdentity()));
+  advanceClocks(time::milliseconds(20), 60);
+
+  BOOST_CHECK(producer->m_pubParamsCache.m_pub != nullptr);
+  //***** need to compare pointer content *****
+  BOOST_CHECK(producer->m_pubParamsCache.m_pub == aa->m_pubParams.m_pub);
+  BOOST_CHECK_EQUAL(producer->m_interestFilterIds.size(), 1);
+
+  security::Identity dataOwnerId = addIdentity("/dataOwnerPrefix");
+  security::Key dataOwnerKey = dataOwnerId.getDefaultKey();
+  dataOwnerCert = dataOwnerKey.getDefaultCertificate();
+  dataOwner = make_shared<DataOwner>(DataOwner(dataOwnerCert, dataOwnerFace, m_keyChain));
+
+  //==============================================
+
+  Name dataName = "/dataName";
+  Name interestName = producerCert->getIdentity();
+  std::string policy = "attr1 and attr2 or attr3";
+  interestName.append(DataOwner::SET_POLICY);
+  interestName.append(policy);
+
+  dataowner.commandProducerPolicy(producer->getIdentity(), dataName, policy,
+                                 [&] (const Data& response) {
+                                   BOOST_CHECK_EQUAL(readString(response.getContent()), "success");
+                                   auto it = producer->m_policyCache.find(dataName);
+                                   BOOST_CHECK(it != producer->m_policyCache.end());
+                                   BOOST_CHECK(it->second == "attr1 and attr2 or attr3");
+                                 },
+                                 [=] (const std::string& err) {
+                                   BOOST_CHECK(false);
+                                 });
+
+  producerFace.setInterestFilter(dataName,
+    [&] (const ndn::InterestFilter&, const ndn::Interest& interest) {
+      auto it = producer->m_policyCache.find(dataName);
+      BOOST_CHECK(it != producer->m_policyCache.end());
+      BOOST_CHECK(it->second == "attr1 and attr2 or attr3");
+      producer->produce(dataName, it->second, PLAIN_TEXT, sizeof(PLAIN_TEXT),
+        [&] (const Data& data) {
+          producerFace.put(data);
+        },
+        [&] (const std::string& err) {
+          BOOST_CHECK(false);
+        });
+    }
+  );
+
+  consumer.consume(dataName, tokenIssuerCert.getIdentity()
+    [&] (const Buffer& result) {
+      BOOST_CHECK_EQUAL_COLLECTIONS(result.begin(), result.end(),
+                                    PLAIN_TEXT, PLAIN_TEXT + sizeof(PLAIN_TEXT));
+    },
+    [&] (const std::string& err) {
+      BOOST_CHECK(false);
+    }
+  );
 }
 
 BOOST_AUTO_TEST_SUITE_END()

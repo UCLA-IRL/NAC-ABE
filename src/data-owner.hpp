@@ -42,7 +42,7 @@ public:
    * data-prefix contains the producer prefix and data prefix
    */
   void
-  commandProducerPolicy(const Name& prefix, const std::string& policy,
+  commandProducerPolicy(const Name& producerPrefix, const Name& dataPrefix, const std::string& policy,
                         const SuccessCallback& SuccessCb, const ErrorCallback& errorCb);
 
 public:

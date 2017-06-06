@@ -83,7 +83,10 @@ private:
   handleTimeout(const Interest& interest, int nRetrials,
                 const DataCallback& dataCallback, const ErrorCallback& errorCallback);
 
-private:
+  void
+  fetchPublicParams();
+
+PUBLIC_WITH_TESTS_ELSE_PRIVATE:
   security::v2::Certificate m_cert;
   Face& m_face;
   security::v2::KeyChain& m_keyChain;

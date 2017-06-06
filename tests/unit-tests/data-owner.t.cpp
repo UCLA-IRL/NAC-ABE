@@ -58,10 +58,12 @@ BOOST_AUTO_TEST_CASE(setPolicy)
   DataOwner dataowner(cert, c1, m_keyChain);
 
   Name producerPrefix = Name("/producer1");
+  Name dataPrefix = Name("/data")
   std::string policy = "attr1 and attr2 or attr3";
   Name interestName = producerPrefix;
-  interestName.append(DataOwner::SET_POLICY);
-  interestName.append(policy);
+  interestName.append(dataPrefix)
+              .append(DataOwner::SET_POLICY)
+              .append(policy);
 
   c2.setInterestFilter(Name("/producer1"),
                        [&] (const ndn::InterestFilter&, const ndn::Interest& interest) {
@@ -77,7 +79,7 @@ BOOST_AUTO_TEST_CASE(setPolicy)
                          c2.put(reply);
                        });
 
-  dataowner.commandProducerPolicy(producerPrefix, policy,
+  dataowner.commandProducerPolicy(producerPrefix, dataPrefix, policy,
                                  [=] (const Data& data) {
                                    BOOST_CHECK_EQUAL(data.getName().toUri(), interestName.toUri());
                                  },
@@ -99,7 +101,7 @@ BOOST_AUTO_TEST_CASE(setPolicy)
                          c2.put(reply);
                        });
 
-  dataowner.commandProducerPolicy(producerPrefix, policy,
+  dataowner.commandProducerPolicy(producerPrefix, dataPrefix, policy,
                                  [=] (const Data&) {
                                    BOOST_CHECK(false);
                                  },

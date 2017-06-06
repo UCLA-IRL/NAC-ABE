@@ -42,14 +42,7 @@ Consumer::Consumer(const security::v2::Certificate& identityCert,
   , m_attrAuthorityPrefix(attrAuthorityPrefix)
   , m_repeatAttempts(repeatAttempts)
 {
-  // fetch pub parameters
-  Name interestName = m_attrAuthorityPrefix;
-  interestName.append(AttributeAuthority::PUBLIC_PARAMS);
-  Interest interest(interestName);
-  interest.setMustBeFresh(true);
-
-  m_face.expressInterest(interest, std::bind(&Consumer::onAttributePubParams, this, _1, _2),
-                         nullptr, nullptr);
+  fetchPublicParams();
 }
 
 void
@@ -171,6 +164,19 @@ Consumer::handleTimeout(const Interest& interest, int nRetrials,
   else {
     errorCallback("Run out retries: still timeout");
   }
+}
+
+void
+Consumer::fetchPublicParams()
+{
+  // fetch pub parameters
+  Name interestName = m_attrAuthorityPrefix;
+  interestName.append(AttributeAuthority::PUBLIC_PARAMS);
+  Interest interest(interestName);
+  interest.setMustBeFresh(true);
+
+  m_face.expressInterest(interest, std::bind(&Consumer::onAttributePubParams, this, _1, _2),
+                         nullptr, nullptr);
 }
 
 } // namespace ndnabac

@@ -22,6 +22,7 @@
 
 #include "test-common.hpp"
 #include "dummy-forwarder.hpp"
+#include "algo/abe-support.hpp"
 
 namespace ndn {
 namespace ndnabac {
@@ -57,24 +58,44 @@ public:
 
 BOOST_FIXTURE_TEST_SUITE(TestConsumer, TestConsumerFixture)
 
-BOOST_AUTO_TEST_CASE(requestPublicParams)
+BOOST_AUTO_TEST_CASE(Constructor)
 {
+  algo::PublicParams m_pubParams;
+  c2.setInterestFilter((attrAuthorityPrefix),
+                     [&] (const ndn::InterestFilter&, const ndn::Interest& interest) {
+                        algo::MasterKey m_masterKey;
+                        algo::ABESupport::setup(m_pubParams, m_masterKey);
+                        Data result;
+                        Name dataName = interest.getName();
+                        dataName.appendTimestamp();
+                        result.setName(dataName);
+                        const auto& contentBuf = m_pubParams.toBuffer();
+                        result.setContent(makeBinaryBlock(ndn::tlv::Content,
+                                                          contentBuf.buf(), contentBuf.size()));
+                        m_keyChain.sign(result, signingByCertificate(cert));
+
+                        _LOG_TRACE("Reply public params request.");
+                        _LOG_TRACE("Pub params size: " << contentBuf.size());
+
+                        c2.put(result);
+                     });
+
+  advanceClocks(time::milliseconds(20), 60);
+
+  Consumer consumer(cert, c1, m_keyChain, attrAuthorityPrefix);
+  advanceClocks(time::milliseconds(20), 60);
+
+  BOOST_CHECK(consumer.m_pubParamsCache.m_pub != nullptr);
+  //***** need to compare pointer content *****
+  BOOST_CHECK(consumer.m_pubParamsCache.m_pub == m_pubParams.m_pub);
 }
 
 
-BOOST_AUTO_TEST_CASE(requestToken)
+BOOST_AUTO_TEST_CASE(comsumeData)
 {
+  // Maybe we can put this to integrated test?
 }
 
-
-BOOST_AUTO_TEST_CASE(requestDecryptKey)
-{
-}
-
-
-BOOST_AUTO_TEST_CASE(DecryptContent)
-{
-}
 
 BOOST_AUTO_TEST_SUITE_END()
 

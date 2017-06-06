@@ -57,7 +57,7 @@ public:
 
   const static Name TOKEN_REQUEST;
 
-private:
+PUBLIC_WITH_TESTS_ELSE_PRIVATE:
   security::v2::Certificate m_cert;
   Face& m_face;
   security::v2::KeyChain& m_keyChain;

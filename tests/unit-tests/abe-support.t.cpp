@@ -48,7 +48,7 @@ BOOST_AUTO_TEST_CASE(Setup)
   algo::ABESupport::setup(pubParams, masterKey);
 
   BOOST_CHECK(pubParams.m_pub != nullptr);
-  BOOST_CHECK(pubParams.m_pub != nullptr);
+  BOOST_CHECK(masterKey.m_msk != nullptr);
 }
 
 BOOST_AUTO_TEST_CASE(GenPrivateKey)

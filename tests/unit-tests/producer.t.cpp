@@ -22,12 +22,24 @@
 
 #include "test-common.hpp"
 #include "dummy-forwarder.hpp"
+#include "algo/abe-support.hpp"
 
 namespace ndn {
 namespace ndnabac {
 namespace tests {
 
 namespace fs = boost::filesystem;
+
+const uint8_t PLAIN_TEXT[] = {
+  0x41, 0x45, 0x53, 0x2d, 0x45, 0x6e, 0x63, 0x72,
+  0x79, 0x70, 0x74, 0x2d, 0x54, 0x65, 0x73, 0x74,
+  0x41, 0x45, 0x53, 0x2d, 0x45, 0x6e, 0x63, 0x72,
+  0x79, 0x70, 0x74, 0x2d, 0x54, 0x65, 0x73, 0x74,
+  0x41, 0x45, 0x53, 0x2d, 0x45, 0x6e, 0x63, 0x72,
+  0x79, 0x70, 0x74, 0x2d, 0x54, 0x65, 0x73, 0x74,
+  0x41, 0x45, 0x53, 0x2d, 0x45, 0x6e, 0x63, 0x72,
+  0x79, 0x70, 0x74, 0x2d, 0x54, 0x65, 0x73, 0x74
+};
 
 _LOG_INIT(Test.Producer);
 
@@ -57,18 +69,113 @@ BOOST_FIXTURE_TEST_SUITE(TestProducer, TestProducerFixture)
 
 BOOST_AUTO_TEST_CASE(Constructor)
 {
-}
+  algo::PublicParams m_pubParams;
+  c2.setInterestFilter((attrAuthorityPrefix),
+                     [&] (const ndn::InterestFilter&, const ndn::Interest& interest) {
+                        algo::MasterKey m_masterKey;
+                        algo::ABESupport::setup(m_pubParams, m_masterKey);
+                        Data result;
+                        Name dataName = interest.getName();
+                        dataName.appendTimestamp();
+                        result.setName(dataName);
+                        const auto& contentBuf = m_pubParams.toBuffer();
+                        result.setContent(makeBinaryBlock(ndn::tlv::Content,
+                                                          contentBuf.buf(), contentBuf.size()));
+                        m_keyChain.sign(result, signingByCertificate(cert));
 
-BOOST_AUTO_TEST_CASE(requestPublicParams)
-{
+                        _LOG_TRACE("Reply public params request.");
+                        _LOG_TRACE("Pub params size: " << contentBuf.size());
+
+                        c2.put(result);
+                     });
+
+  advanceClocks(time::milliseconds(20), 60);
+
+  Producer producer(cert, c1, m_keyChain, attrAuthorityPrefix);
+  advanceClocks(time::milliseconds(20), 60);
+
+  BOOST_CHECK(producer.m_pubParamsCache.m_pub != nullptr);
+  //***** need to compare pointer content *****
+  BOOST_CHECK(producer.m_pubParamsCache.m_pub == m_pubParams.m_pub);
 }
 
 BOOST_AUTO_TEST_CASE(onPolicyInterest)
 {
+
+  Producer producer(cert, c1, m_keyChain, attrAuthorityPrefix);
+  advanceClocks(time::milliseconds(20), 60);
+
+  Name dataPrefix("/dataPrefix");
+  Interest setPolicyInterest = Interest(Name(cert.getIdentity()).append(dataPrefix)
+                                                                .append(Producer::SET_POLICY)
+                                                                .append("policy"));
+
+  int count = 0;
+  auto onSend = [&] (const Data& response, std::string isSuccess) {
+    count++;
+    BOOST_CHECK(security::verifySignature(response, cert));
+
+    BOOST_CHECK(readString(response.getContent()) == isSuccess);
+  };
+
+  dynamic_cast<util::DummyClientFace*>(&c1)->onSendData.connect(
+    [&](const Data& dt) {
+      onSend(dt, "success");
+    }
+  );
+  dynamic_cast<util::DummyClientFace*>(&c1)->receive(setPolicyInterest);
+
+  advanceClocks(time::milliseconds(20), 60);
+
+  auto it = producer.m_policyCache.find(dataPrefix);
+  BOOST_CHECK(it != producer.m_policyCache.end());
+  BOOST_CHECK(it->second == "policy");
+  BOOST_CHECK(count == 1);
+
+  dynamic_cast<util::DummyClientFace*>(&c1)->onSendData.connect(
+    [&](const Data& dt) {
+      onSend(dt, "exist");
+    }
+  );
+  dynamic_cast<util::DummyClientFace*>(&c1)->receive(setPolicyInterest);
+
+  advanceClocks(time::milliseconds(20), 60);
+
+  it = producer.m_policyCache.find(dataPrefix);
+  BOOST_CHECK(it != producer.m_policyCache.end());
+  BOOST_CHECK(it->second == "policy");
+  BOOST_CHECK(count == 2);
 }
 
 BOOST_AUTO_TEST_CASE(encryptContent)
 {
+  algo::PublicParams pubParams;
+  algo::MasterKey masterKey;
+  Producer producer(cert, c1, m_keyChain, attrAuthorityPrefix);
+  advanceClocks(time::milliseconds(20), 60);
+  algo::ABESupport::setup(pubParams, masterKey);
+
+  BOOST_CHECK(pubParams.m_pub != nullptr);
+  BOOST_CHECK(masterKey.m_msk != nullptr);
+
+  producer.m_pubParamsCache = pubParams;
+  // generate prv key
+  std::vector<std::string> attrList = {"attr1", "attr2", "attr3", "attr4"};
+  algo::PrivateKey prvKey = algo::ABESupport::prvKeyGen(pubParams, masterKey, attrList);
+
+  producer.produce(Name("/dataPrefix"), "attr1 attr2 1of2", PLAIN_TEXT, sizeof(PLAIN_TEXT),
+                   [&] (const Data& data) {
+                     BOOST_CHECK_EQUAL(data.getName(), Name("/dataPrefix"));
+                     algo::CipherText cipherText;
+                     cipherText.wireDecode(data.getContent());
+                     Buffer result = algo::ABESupport::decrypt(pubParams, prvKey, cipherText);
+
+                     BOOST_CHECK_EQUAL_COLLECTIONS(result.begin(), result.end(),
+                                                   PLAIN_TEXT, PLAIN_TEXT + sizeof(PLAIN_TEXT));
+                   },
+                   [&] (const std::string& err) {
+                     BOOST_CHECK(false);
+                   });
 }
 
 BOOST_AUTO_TEST_SUITE_END()

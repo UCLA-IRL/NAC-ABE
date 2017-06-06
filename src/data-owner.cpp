@@ -41,12 +41,13 @@ DataOwner::DataOwner(const security::v2::Certificate& identityCert, Face& face,
  * data-prefix contains the producer prefix and data prefix
  */
 void
-DataOwner::commandProducerPolicy(const Name& prefix, const std::string& policy,
+DataOwner::commandProducerPolicy(const Name& prefix, const Name& dataPrefix, const std::string& policy,
                                  const SuccessCallback& SuccessCb, const ErrorCallback& errorCb)
 {
   // shared_ptr<Interest> interest = make_shared<Interest>(dataName);
   // sendInterest(*Interest);
   Name policyName = prefix;
+  policyName.append(dataPrefix);
   policyName.append(SET_POLICY);
   policyName.append(policy);
   //add sig

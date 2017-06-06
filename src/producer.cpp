@@ -48,15 +48,7 @@ Producer::Producer(const security::v2::Certificate& identityCert, Face& face,
   filterId = m_face.setInterestFilter(Name(m_cert.getIdentity()).append(SET_POLICY),
                                       bind(&Producer::onPolicyInterest, this, _2));
   m_interestFilterIds.push_back(filterId);
-
-  // fetch pub parameters
-  Name interestName = m_attrAuthorityPrefix;
-  interestName.append(AttributeAuthority::PUBLIC_PARAMS);
-  Interest interest(interestName);
-  interest.setMustBeFresh(true);
-
-  m_face.expressInterest(interest, std::bind(&Producer::onAttributePubParams, this, _1, _2),
-                         nullptr, nullptr);
+  fetchPublicParams();
 }
 
 Producer::~Producer()
@@ -86,22 +78,28 @@ Producer::produce(const Name& dataPrefix, const std::string& accessPolicy,
                   const SuccessCallback& onDataProduceCb, const ErrorCallback& errorCallback)
 {
   // do encryption
-  auto cipherText = algo::ABESupport::encrypt(m_pubParamsCache, accessPolicy,
-                                              Buffer(content, contentLen));
+  if (m_pubParamsCache.m_pub == nullptr) {
+    errorCallback("public key missing");
+  }
+  else {
+    auto cipherText = algo::ABESupport::encrypt(m_pubParamsCache, accessPolicy,
+                                                Buffer(content, contentLen));
 
-  Name dataName = m_cert.getIdentity();
-  dataName.append(dataPrefix);
-  Data data(dataName);
-  data.setContent(cipherText.wireEncode());
-  m_keyChain.sign(data, signingByCertificate(m_cert));
-  onDataProduceCb(data);
+    Name dataName = m_cert.getIdentity();
+    dataName.append(dataPrefix);
+    Data data(dataName);
+    data.setContent(cipherText.wireEncode());
+    m_keyChain.sign(data, signingByCertificate(m_cert));
+    onDataProduceCb(data);    
+  }
 }
 
 //private:
 void
 Producer::onPolicyInterest(const Interest& interest)
 {
-  Name dataPrefix = interest.getName().at(2).toUri();
+  //*** need verify signature ****
+  Name dataPrefix = interest.getName().at(1).toUri();
   Name policy = interest.getName().at(3).toUri();
 
   std::pair<std::map<Name,std::string>::iterator,bool> ret;
@@ -118,6 +116,19 @@ Producer::onPolicyInterest(const Interest& interest)
   }
   m_keyChain.sign(reply, signingByCertificate(m_cert));
   m_face.put(reply);
+}
+
+void
+Producer::fetchPublicParams()
+{
+  // fetch pub parameters
+  Name interestName = m_attrAuthorityPrefix;
+  interestName.append(AttributeAuthority::PUBLIC_PARAMS);
+  Interest interest(interestName);
+  interest.setMustBeFresh(true);
+
+  m_face.expressInterest(interest, std::bind(&Producer::onAttributePubParams, this, _1, _2),
+                         nullptr, nullptr);
 }
 
 } // namespace ndnabac

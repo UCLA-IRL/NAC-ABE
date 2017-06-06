@@ -61,6 +61,7 @@ BOOST_AUTO_TEST_CASE(onTokenRequestTest)
   Interest interest(
     Name("/tokenissuer1").append(TokenIssuer::TOKEN_REQUEST).append(consumerId.getName()));
 
+  //******* how to handle token Issuer
   c2.expressInterest(interest,
                      [=](const Interest&, const Data&){},
                      [=](const Interest&, const lp::Nack&){},
