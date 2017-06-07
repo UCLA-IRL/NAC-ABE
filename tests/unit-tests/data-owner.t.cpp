@@ -22,6 +22,7 @@
 
 #include "test-common.hpp"
 #include "dummy-forwarder.hpp"
+#include "producer.hpp"
 
 #include <ndn-cxx/security/signing-helpers.hpp>
 
@@ -58,7 +59,7 @@ BOOST_AUTO_TEST_CASE(setPolicy)
   DataOwner dataowner(cert, c1, m_keyChain);
 
   Name producerPrefix = Name("/producer1");
-  Name dataPrefix = Name("/data")
+  Name dataPrefix = Name("/data");
   std::string policy = "attr1 and attr2 or attr3";
   Name interestName = producerPrefix;
   interestName.append(dataPrefix)
@@ -67,10 +68,11 @@ BOOST_AUTO_TEST_CASE(setPolicy)
 
   c2.setInterestFilter(Name("/producer1"),
                        [&] (const ndn::InterestFilter&, const ndn::Interest& interest) {
-                         BOOST_CHECK_EQUAL(interest.getName().get(0).toUri(), "producer1");
+                         BOOST_CHECK_EQUAL(interest.getName().get(0).toUri(), "/producer1");
                          BOOST_CHECK_EQUAL(interest.getName().get(1).toUri(), DataOwner::SET_POLICY.toUri());
-                         BOOST_CHECK_EQUAL(interest.getName().get(2).toUri(), policy);
-                         BOOST_CHECK_EQUAL(interest.getName().get(3).toUri(), "addSig");
+                         BOOST_CHECK_EQUAL(interest.getName().get(2).toUri(), "/data");
+                         BOOST_CHECK_EQUAL(interest.getName().get(3).toUri(), policy);
+                         BOOST_CHECK_EQUAL(interest.getName().get(4).toUri(), "addSig");
 
                          Data reply;
                          reply.setName(interest.getName());
@@ -87,12 +89,13 @@ BOOST_AUTO_TEST_CASE(setPolicy)
                                    BOOST_CHECK(false);
                                  });
 
-  c2.setInterestFilter(Name("/producer2"),
+  c2.setInterestFilter(Name("/producer2").append(Producer::SET_POLICY),
                        [&] (const ndn::InterestFilter&, const ndn::Interest& interest) {
-                         BOOST_CHECK_EQUAL(interest.getName().get(0).toUri(), "producer2");
+                         BOOST_CHECK_EQUAL(interest.getName().get(0).toUri(), "/producer2");
                          BOOST_CHECK_EQUAL(interest.getName().get(1).toUri(), DataOwner::SET_POLICY.toUri());
-                         BOOST_CHECK_EQUAL(interest.getName().get(2).toUri(), policy);
-                         BOOST_CHECK_EQUAL(interest.getName().get(3).toUri(), "addSig");
+                         BOOST_CHECK_EQUAL(interest.getName().get(2).toUri(), "/data");
+                         BOOST_CHECK_EQUAL(interest.getName().get(3).toUri(), policy);
+                         BOOST_CHECK_EQUAL(interest.getName().get(4).toUri(), "addSig");
 
                          Data reply;
                          reply.setName(interest.getName());

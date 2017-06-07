@@ -47,8 +47,8 @@ DataOwner::commandProducerPolicy(const Name& prefix, const Name& dataPrefix, con
   // shared_ptr<Interest> interest = make_shared<Interest>(dataName);
   // sendInterest(*Interest);
   Name policyName = prefix;
-  policyName.append(dataPrefix);
   policyName.append(SET_POLICY);
+  policyName.append(dataPrefix);
   policyName.append(policy);
   //add sig
 

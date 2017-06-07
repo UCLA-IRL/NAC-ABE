@@ -101,6 +101,11 @@ BOOST_AUTO_TEST_CASE(IntegratedTest)
   advanceClocks(time::milliseconds(20), 60);
   BOOST_CHECK_EQUAL(tokenIssuer->m_interestFilterIds.size(), 1);
 
+  std::list<std::string> attrList = {"attr1, attr3"};
+  tokenIssuer->m_tokens.insert(std::pair<Name, std::list<std::string> >(consumerCert.getIdentity(), attrList));
+
+  BOOST_CHECK_EQUAL(tokenIssuer->m_tokens.size(), 1);
+
   security::Identity consumerId = addIdentity("/consumerPrefix");
   security::Key consumerKey = consumerId.getDefaultKey();
   consumerCert = consumerKey.getDefaultCertificate();
@@ -129,27 +134,27 @@ BOOST_AUTO_TEST_CASE(IntegratedTest)
   //==============================================
 
   Name dataName = "/dataName";
-  Name interestName = producerCert->getIdentity();
-  std::string policy = "attr1 and attr2 or attr3";
+  Name interestName = producerCert.getIdentity();
+  std::string policy = "attr1 attr2 1of2 attr3 2of2";
   interestName.append(DataOwner::SET_POLICY);
   interestName.append(policy);
 
-  dataowner.commandProducerPolicy(producer->getIdentity(), dataName, policy,
-                                 [&] (const Data& response) {
-                                   BOOST_CHECK_EQUAL(readString(response.getContent()), "success");
-                                   auto it = producer->m_policyCache.find(dataName);
-                                   BOOST_CHECK(it != producer->m_policyCache.end());
-                                   BOOST_CHECK(it->second == "attr1 and attr2 or attr3");
-                                 },
-                                 [=] (const std::string& err) {
-                                   BOOST_CHECK(false);
-                                 });
+  dataOwner->commandProducerPolicy(producerCert.getIdentity(), dataName, policy,
+                                   [&] (const Data& response) {
+                                     BOOST_CHECK_EQUAL(readString(response.getContent()), "success");
+                                     auto it = producer->m_policyCache.find(dataName);
+                                     BOOST_CHECK(it != producer->m_policyCache.end());
+                                     BOOST_CHECK(it->second == policy);
+                                   },
+                                   [=] (const std::string& err) {
+                                     BOOST_CHECK(false);
+                                   });
 
   producerFace.setInterestFilter(dataName,
     [&] (const ndn::InterestFilter&, const ndn::Interest& interest) {
       auto it = producer->m_policyCache.find(dataName);
       BOOST_CHECK(it != producer->m_policyCache.end());
-      BOOST_CHECK(it->second == "attr1 and attr2 or attr3");
+      BOOST_CHECK(it->second == policy);
       producer->produce(dataName, it->second, PLAIN_TEXT, sizeof(PLAIN_TEXT),
         [&] (const Data& data) {
           producerFace.put(data);
@@ -160,7 +165,7 @@ BOOST_AUTO_TEST_CASE(IntegratedTest)
     }
   );
 
-  consumer.consume(dataName, tokenIssuerCert.getIdentity()
+  consumer->consume(dataName, tokenIssuerCert.getIdentity(),
     [&] (const Buffer& result) {
       BOOST_CHECK_EQUAL_COLLECTIONS(result.begin(), result.end(),
                                     PLAIN_TEXT, PLAIN_TEXT + sizeof(PLAIN_TEXT));

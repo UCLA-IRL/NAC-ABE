@@ -84,6 +84,18 @@ TokenIssuer::onTokenRequest(const Interest& request)
     }
   }
 
+//  {
+//    user-pub-key: xxx,
+//    attribute-set: [
+//      {
+//        attribute-name: AA
+//      },
+//      {
+//        attribute-name: BB
+//      }
+//    ],
+//  }
+
   // rest part of the token
   JsonSection attrList;
   for (auto attrName : m_tokens[identityName]) {

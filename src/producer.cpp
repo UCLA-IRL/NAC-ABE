@@ -47,6 +47,7 @@ Producer::Producer(const security::v2::Certificate& identityCert, Face& face,
   const InterestFilterId* filterId;
   filterId = m_face.setInterestFilter(Name(m_cert.getIdentity()).append(SET_POLICY),
                                       bind(&Producer::onPolicyInterest, this, _2));
+  _LOG_DEBUG("set prefix:"<<m_cert.getIdentity());
   m_interestFilterIds.push_back(filterId);
   fetchPublicParams();
 }
@@ -99,8 +100,10 @@ void
 Producer::onPolicyInterest(const Interest& interest)
 {
   //*** need verify signature ****
-  Name dataPrefix = interest.getName().at(1).toUri();
-  Name policy = interest.getName().at(3).toUri();
+  _LOG_DEBUG("on policy Interest:"<<interest.getName());
+  Name dataPrefix = interest.getName().getSubName(2,1);
+  Name policy = interest.getName().getSubName(3,1);
+  _LOG_DEBUG(dataPrefix<<", "<<policy);
 
   std::pair<std::map<Name,std::string>::iterator,bool> ret;
   ret = m_policyCache.insert(std::pair<Name, std::string>(Name(dataPrefix), policy.toUri()));
@@ -108,10 +111,12 @@ Producer::onPolicyInterest(const Interest& interest)
   Data reply;
   reply.setName(interest.getName());
   if (ret.second==false) {
-    std::cout << "dataPrefix already exist";
+
+    _LOG_DEBUG("dataPrefix already exist");
     reply.setContent(makeStringBlock(tlv::Content, "exist"));
   }
   else {
+    _LOG_DEBUG("insert success");
     reply.setContent(makeStringBlock(tlv::Content, "success"));
   }
   m_keyChain.sign(reply, signingByCertificate(m_cert));
