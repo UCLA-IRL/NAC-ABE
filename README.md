@@ -72,3 +72,11 @@ Really simple to make it using waf.
 // in the root directory of ndn-abac
 ./waf install
 ```
+
+Contact
+-------
+
+If you have any problems or want to do bug report. Please contact: 
+
+* Zhiyi Zhang (zhiyi@cs.ucla.edu).
+* Yukai Tu (ytu@cs.ucla.edu)
