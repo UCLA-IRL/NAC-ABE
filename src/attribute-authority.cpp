@@ -138,6 +138,7 @@ void
 AttributeAuthority::onPublicParamsRequest(const Interest& interest)
 {
   // naming: /AA-prefix/PUBLICPARAMS
+  _LOG_DEBUG("on public Params request:"<<interest.getName());
   Data result;
   Name dataName = interest.getName();
   dataName.appendTimestamp();
@@ -145,6 +146,7 @@ AttributeAuthority::onPublicParamsRequest(const Interest& interest)
   const auto& contentBuf = m_pubParams.toBuffer();
   result.setContent(makeBinaryBlock(ndn::tlv::Content,
                                     contentBuf.buf(), contentBuf.size()));
+  _LOG_DEBUG("before sign");
   m_keyChain.sign(result, signingByCertificate(m_cert));
 
   _LOG_TRACE("Reply public params request.");

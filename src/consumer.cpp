@@ -99,6 +99,8 @@ Consumer::decryptContent(const Data& data, const Name& tokenIssuerPrefix,
 void
 Consumer::onAttributePubParams(const Interest& request, const Data& pubParamData)
 {
+
+  _LOG_DEBUG("on public parameters");
   Name attrAuthorityKey = pubParamData.getSignature().getKeyLocator().getName();
   for (auto anchor : m_trustConfig.m_trustAnchors) {
     if (anchor.getKeyName() == attrAuthorityKey) {
@@ -106,6 +108,7 @@ Consumer::onAttributePubParams(const Interest& request, const Data& pubParamData
       break;
     }
   }
+  
   auto block = pubParamData.getContent();
   m_pubParamsCache.fromBuffer(Buffer(block.value(), block.value_size()));
 }
@@ -170,6 +173,7 @@ void
 Consumer::fetchPublicParams()
 {
   // fetch pub parameters
+  _LOG_DEBUG("fetch public parameters");
   Name interestName = m_attrAuthorityPrefix;
   interestName.append(AttributeAuthority::PUBLIC_PARAMS);
   Interest interest(interestName);
