@@ -108,7 +108,7 @@ BOOST_AUTO_TEST_CASE(IntegratedTest)
   security::Key consumerKey = m_keyChain.createKey(consumerId, RsaKeyParams());
   security::v2::Certificate consumerCert = consumerKey.getDefaultCertificate();
 
-  std::list<std::string> attrList = {"attr1, attr3"};
+  std::list<std::string> attrList = {"attr1", "attr3"};
   NDN_LOG_INFO("Add comsumer "<<consumerCert.getIdentity()<<" with attributes: attr1, attr3");
   tokenIssuer.m_tokens.insert(std::pair<Name, std::list<std::string>>(consumerCert.getIdentity(),
                                                                       attrList));
@@ -180,6 +180,10 @@ BOOST_AUTO_TEST_CASE(IntegratedTest)
       auto it = producer.m_policyCache.find(dataName);
       BOOST_CHECK(it != producer.m_policyCache.end());
       BOOST_CHECK(it->second == policy);
+      std::string str;
+      for(int i =0;i<sizeof(PLAIN_TEXT);++i)
+        str.push_back(PLAIN_TEXT[i]);
+      NDN_LOG_INFO("plain text:"<<str);
       producer.produce(dataName, it->second, PLAIN_TEXT, sizeof(PLAIN_TEXT),
         [&] (const Data& data) {
           isProdCbCalled = true;
@@ -199,6 +203,11 @@ BOOST_AUTO_TEST_CASE(IntegratedTest)
       isConsumeCbCalled = true;
       BOOST_CHECK_EQUAL_COLLECTIONS(result.begin(), result.end(),
                                     PLAIN_TEXT, PLAIN_TEXT + sizeof(PLAIN_TEXT));
+
+      std::string str;
+      for(int i =0;i<sizeof(PLAIN_TEXT);++i)
+        str.push_back(result[i]);
+      NDN_LOG_INFO("result:"<<str);
     },
     [&] (const std::string& err) {
       BOOST_CHECK(false);
