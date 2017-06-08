@@ -74,11 +74,11 @@ public:
   security::v2::Certificate producerCert;
   security::v2::Certificate dataOwnerCert;
 
-  shared_ptr<AttributeAuthority> aa;
-  shared_ptr<TokenIssuer> tokenIssuer;
-  shared_ptr<Consumer> consumer;
-  shared_ptr<Producer> producer;
-  shared_ptr<DataOwner> dataOwner;
+  //shared_ptr<AttributeAuthority> aa;
+  //shared_ptr<TokenIssuer> tokenIssuer;
+  //shared_ptr<Consumer> consumer;
+  //shared_ptr<Producer> producer;
+  //shared_ptr<DataOwner> dataOwner;
 };
 
 BOOST_FIXTURE_TEST_SUITE(TestIntegrated, TestIntegratedFixture)
@@ -88,31 +88,31 @@ BOOST_AUTO_TEST_CASE(IntegratedTest)
   security::Identity aaId = addIdentity("/aaPrefix");
   security::Key aaKey = aaId.getDefaultKey();
   aaCert = aaKey.getDefaultCertificate();
-  aa = make_shared<AttributeAuthority>(AttributeAuthority(aaCert, aaFace, m_keyChain));
+  AttributeAuthority aa = AttributeAuthority(aaCert, aaFace, m_keyChain);
   advanceClocks(time::milliseconds(20), 60);
 
-  BOOST_CHECK(aa->m_pubParams.m_pub != nullptr);
-  BOOST_CHECK(aa->m_masterKey.m_msk != nullptr);
+  BOOST_CHECK(aa.m_pubParams.m_pub != nullptr);
+  BOOST_CHECK(aa.m_masterKey.m_msk != nullptr);
 
   security::Identity tokenIssuerId = addIdentity("/tokenIssuerPrefix");
   security::Key tokenIssuerKey = tokenIssuerId.getDefaultKey();
   tokenIssuerCert = tokenIssuerKey.getDefaultCertificate();
-  tokenIssuer = make_shared<TokenIssuer>(TokenIssuer(tokenIssuerCert, tokenIssuerFace, m_keyChain));
+  TokenIssuer tokenIssuer = TokenIssuer(tokenIssuerCert, tokenIssuerFace, m_keyChain);
   advanceClocks(time::milliseconds(20), 60);
-  BOOST_CHECK_EQUAL(tokenIssuer->m_interestFilterIds.size(), 1);
+  BOOST_CHECK_EQUAL(tokenIssuer.m_interestFilterIds.size(), 1);
 
   std::list<std::string> attrList = {"attr1, attr3"};
-  tokenIssuer->m_tokens.insert(std::pair<Name, std::list<std::string> >(consumerCert.getIdentity(), attrList));
+  tokenIssuer.m_tokens.insert(std::pair<Name, std::list<std::string> >(consumerCert.getIdentity(), attrList));
 
-  BOOST_CHECK_EQUAL(tokenIssuer->m_tokens.size(), 1);
+  BOOST_CHECK_EQUAL(tokenIssuer.m_tokens.size(), 1);
   _LOG_DEBUG("after token issuer");
 
   security::Identity consumerId = addIdentity("/consumerPrefix");
   security::Key consumerKey = consumerId.getDefaultKey();
   consumerCert = consumerKey.getDefaultCertificate();
-  consumer = make_shared<Consumer>(Consumer(consumerCert, consumerFace, m_keyChain, aaCert.getIdentity()));
+  Consumer consumer = Consumer(consumerCert, consumerFace, m_keyChain, aaCert.getIdentity());
   advanceClocks(time::milliseconds(20), 60);
-  BOOST_CHECK(consumer->m_pubParamsCache.m_pub != nullptr);
+  BOOST_CHECK(consumer.m_pubParamsCache.m_pub != nullptr);
   //***** need to compare pointer content *****
   //BOOST_CHECK(consumer->m_pubParamsCache.m_pub == aa->m_pubParams.m_pub);
 
@@ -121,18 +121,18 @@ BOOST_AUTO_TEST_CASE(IntegratedTest)
   security::Identity producerId = addIdentity("/producerPrefix");
   security::Key producerKey = producerId.getDefaultKey();
   producerCert = producerKey.getDefaultCertificate();
-  producer = make_shared<Producer>(Producer(producerCert, producerFace, m_keyChain, aaCert.getIdentity()));
+  Producer producer = Producer(producerCert, producerFace, m_keyChain, aaCert.getIdentity());
   advanceClocks(time::milliseconds(20), 60);
 
-  BOOST_CHECK(producer->m_pubParamsCache.m_pub != nullptr);
+  BOOST_CHECK(producer.m_pubParamsCache.m_pub != nullptr);
   //***** need to compare pointer content *****
   //BOOST_CHECK(producer->m_pubParamsCache.m_pub == aa->m_pubParams.m_pub);
-  BOOST_CHECK_EQUAL(producer->m_interestFilterIds.size(), 1);
+  BOOST_CHECK_EQUAL(producer.m_interestFilterIds.size(), 1);
 
   security::Identity dataOwnerId = addIdentity("/dataOwnerPrefix");
   security::Key dataOwnerKey = dataOwnerId.getDefaultKey();
   dataOwnerCert = dataOwnerKey.getDefaultCertificate();
-  dataOwner = make_shared<DataOwner>(DataOwner(dataOwnerCert, dataOwnerFace, m_keyChain));
+  DataOwner dataOwner = DataOwner(dataOwnerCert, dataOwnerFace, m_keyChain);
 
   //==============================================
 
@@ -142,11 +142,11 @@ BOOST_AUTO_TEST_CASE(IntegratedTest)
   interestName.append(DataOwner::SET_POLICY);
   interestName.append(policy);
 
-  dataOwner->commandProducerPolicy(producerCert.getIdentity(), dataName, policy,
+  dataOwner.commandProducerPolicy(producerCert.getIdentity(), dataName, policy,
                                    [&] (const Data& response) {
                                      BOOST_CHECK_EQUAL(readString(response.getContent()), "success");
-                                     auto it = producer->m_policyCache.find(dataName);
-                                     BOOST_CHECK(it != producer->m_policyCache.end());
+                                     auto it = producer.m_policyCache.find(dataName);
+                                     BOOST_CHECK(it != producer.m_policyCache.end());
                                      BOOST_CHECK(it->second == policy);
                                    },
                                    [=] (const std::string& err) {
@@ -155,10 +155,10 @@ BOOST_AUTO_TEST_CASE(IntegratedTest)
 
   producerFace.setInterestFilter(dataName,
     [&] (const ndn::InterestFilter&, const ndn::Interest& interest) {
-      auto it = producer->m_policyCache.find(dataName);
-      BOOST_CHECK(it != producer->m_policyCache.end());
+      auto it = producer.m_policyCache.find(dataName);
+      BOOST_CHECK(it != producer.m_policyCache.end());
       BOOST_CHECK(it->second == policy);
-      producer->produce(dataName, it->second, PLAIN_TEXT, sizeof(PLAIN_TEXT),
+      producer.produce(dataName, it->second, PLAIN_TEXT, sizeof(PLAIN_TEXT),
         [&] (const Data& data) {
           producerFace.put(data);
         },
@@ -168,7 +168,7 @@ BOOST_AUTO_TEST_CASE(IntegratedTest)
     }
   );
 
-  consumer->consume(dataName, tokenIssuerCert.getIdentity(),
+  consumer.consume(dataName, tokenIssuerCert.getIdentity(),
     [&] (const Buffer& result) {
       BOOST_CHECK_EQUAL_COLLECTIONS(result.begin(), result.end(),
                                     PLAIN_TEXT, PLAIN_TEXT + sizeof(PLAIN_TEXT));
