@@ -119,7 +119,9 @@ Producer::onPolicyInterest(const Interest& interest)
     _LOG_DEBUG("insert success");
     reply.setContent(makeStringBlock(tlv::Content, "success"));
   }
+  _LOG_DEBUG("before sign");
   m_keyChain.sign(reply, signingByCertificate(m_cert));
+  _LOG_DEBUG("after sign");
   m_face.put(reply);
 }
 

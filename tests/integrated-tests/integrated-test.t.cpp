@@ -68,12 +68,6 @@ public:
   Face& producerFace;
   Face& dataOwnerFace;
 
-  security::v2::Certificate aaCert;
-  security::v2::Certificate tokenIssuerCert;
-  security::v2::Certificate consumerCert;
-  security::v2::Certificate producerCert;
-  security::v2::Certificate dataOwnerCert;
-
   //shared_ptr<AttributeAuthority> aa;
   //shared_ptr<TokenIssuer> tokenIssuer;
   //shared_ptr<Consumer> consumer;
@@ -85,10 +79,11 @@ BOOST_FIXTURE_TEST_SUITE(TestIntegrated, TestIntegratedFixture)
 
 BOOST_AUTO_TEST_CASE(IntegratedTest)
 {
+  
   // set up AA
   security::Identity aaId = addIdentity("/aaPrefix");
   security::Key aaKey = aaId.getDefaultKey();
-  aaCert = aaKey.getDefaultCertificate();
+  security::v2::Certificate aaCert = aaKey.getDefaultCertificate();
   AttributeAuthority aa = AttributeAuthority(aaCert, aaFace, m_keyChain);
   advanceClocks(time::milliseconds(20), 60);
 
@@ -98,21 +93,22 @@ BOOST_AUTO_TEST_CASE(IntegratedTest)
   // set up token issuer
   security::Identity tokenIssuerId = addIdentity("/tokenIssuerPrefix");
   security::Key tokenIssuerKey = tokenIssuerId.getDefaultKey();
-  tokenIssuerCert = tokenIssuerKey.getDefaultCertificate();
+  security::v2::Certificate tokenIssuerCert = tokenIssuerKey.getDefaultCertificate();
   TokenIssuer tokenIssuer = TokenIssuer(tokenIssuerCert, tokenIssuerFace, m_keyChain);
   advanceClocks(time::milliseconds(20), 60);
   BOOST_CHECK_EQUAL(tokenIssuer.m_interestFilterIds.size(), 1);
 
   // define attr list for consumer rights
+  security::Identity consumerId = addIdentity("/consumerPrefix");
+  security::Key consumerKey = consumerId.getDefaultKey();
+  security::v2::Certificate consumerCert = consumerKey.getDefaultCertificate();
+
   std::list<std::string> attrList = {"attr1, attr3"};
   tokenIssuer.m_tokens.insert(std::pair<Name, std::list<std::string> >(consumerCert.getIdentity(), attrList));
   BOOST_CHECK_EQUAL(tokenIssuer.m_tokens.size(), 1);
   _LOG_DEBUG("after token issuer");
 
   // set up consumer
-  security::Identity consumerId = addIdentity("/consumerPrefix");
-  security::Key consumerKey = consumerId.getDefaultKey();
-  consumerCert = consumerKey.getDefaultCertificate();
   Consumer consumer = Consumer(consumerCert, consumerFace, m_keyChain, aaCert.getIdentity());
   advanceClocks(time::milliseconds(20), 60);
   BOOST_CHECK(consumer.m_pubParamsCache.m_pub != nullptr);
@@ -124,7 +120,7 @@ BOOST_AUTO_TEST_CASE(IntegratedTest)
   // set up producer
   security::Identity producerId = addIdentity("/producerPrefix");
   security::Key producerKey = producerId.getDefaultKey();
-  producerCert = producerKey.getDefaultCertificate();
+  security::v2::Certificate producerCert = producerKey.getDefaultCertificate();
   Producer producer = Producer(producerCert, producerFace, m_keyChain, aaCert.getIdentity());
   advanceClocks(time::milliseconds(20), 60);
 
@@ -136,7 +132,7 @@ BOOST_AUTO_TEST_CASE(IntegratedTest)
   // set up data owner
   security::Identity dataOwnerId = addIdentity("/dataOwnerPrefix");
   security::Key dataOwnerKey = dataOwnerId.getDefaultKey();
-  dataOwnerCert = dataOwnerKey.getDefaultCertificate();
+  security::v2::Certificate dataOwnerCert = dataOwnerKey.getDefaultCertificate();
   DataOwner dataOwner = DataOwner(dataOwnerCert, dataOwnerFace, m_keyChain);
 
   //==============================================
@@ -144,8 +140,11 @@ BOOST_AUTO_TEST_CASE(IntegratedTest)
   Name dataName = "/dataName";
   std::string policy = "attr1 attr2 1of2 attr3 2of2";
 
+  bool isPolicySet = false;
   dataOwner.commandProducerPolicy(producerCert.getIdentity(), dataName, policy,
                                    [&] (const Data& response) {
+                                    _LOG_DEBUG("on policy set data callback");
+                                     isPolicySet = true;
                                      BOOST_CHECK_EQUAL(readString(response.getContent()), "success");
                                      auto it = producer.m_policyCache.find(dataName);
                                      BOOST_CHECK(it != producer.m_policyCache.end());
@@ -155,8 +154,12 @@ BOOST_AUTO_TEST_CASE(IntegratedTest)
                                      BOOST_CHECK(false);
                                    });
 
+  _LOG_DEBUG("before policy set");
+  advanceClocks(time::milliseconds(20), 60);
+  BOOST_CHECK(isPolicySet);
+
   bool isProdCbCalled = false;
-  producerFace.setInterestFilter(dataName,
+  producerFace.setInterestFilter(producerCert.getIdentity().append(dataName),
     [&] (const ndn::InterestFilter&, const ndn::Interest& interest) {
       auto it = producer.m_policyCache.find(dataName);
       BOOST_CHECK(it != producer.m_policyCache.end());
@@ -173,7 +176,7 @@ BOOST_AUTO_TEST_CASE(IntegratedTest)
   );
 
   bool isConsumeCbCalled = false;
-  consumer.consume(dataName, tokenIssuerCert.getIdentity(),
+  consumer.consume(producerCert.getIdentity().append(dataName), tokenIssuerCert.getIdentity(),
     [&] (const Buffer& result) {
       isConsumeCbCalled = true;
       BOOST_CHECK_EQUAL_COLLECTIONS(result.begin(), result.end(),
@@ -183,6 +186,7 @@ BOOST_AUTO_TEST_CASE(IntegratedTest)
       BOOST_CHECK(false);
     }
   );
+  advanceClocks(time::milliseconds(20), 60);
 
   BOOST_CHECK(isProdCbCalled);
   BOOST_CHECK(isConsumeCbCalled);
