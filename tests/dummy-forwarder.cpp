@@ -43,7 +43,7 @@ DummyForwarder::addFace()
       }
     });
   face->onSendData.connect([this, face] (const Data& data) {
-      std::cout << data.getName() << std::endl;
+      //std::cout << data.getName() << std::endl;
       for (auto& otherFace : m_faces) {
         if (&*face == &*otherFace) {
           continue;

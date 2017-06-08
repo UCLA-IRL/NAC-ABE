@@ -62,6 +62,7 @@ Producer::~Producer()
 void
 Producer::onAttributePubParams(const Interest& request, const Data& pubParamData)
 {
+  NDN_LOG_INFO("Get public parameters");
   Name attrAuthorityKey = pubParamData.getSignature().getKeyLocator().getName();
   for (auto anchor : m_trustConfig.m_trustAnchors) {
     if (anchor.getKeyName() == attrAuthorityKey) {
@@ -81,8 +82,11 @@ Producer::produce(const Name& dataPrefix, const std::string& accessPolicy,
   // do encryption
   if (m_pubParamsCache.m_pub == nullptr) {
     errorCallback("public key missing");
+
+    NDN_LOG_INFO("public parameters doesn't exist" );
   }
   else {
+    NDN_LOG_INFO("encrypt data:"<<dataPrefix );
     auto cipherText = algo::ABESupport::encrypt(m_pubParamsCache, accessPolicy,
                                                 Buffer(content, contentLen));
 
@@ -101,6 +105,7 @@ Producer::onPolicyInterest(const Interest& interest)
 {
   //*** need verify signature ****
   _LOG_DEBUG("on policy Interest:"<<interest.getName());
+  NDN_LOG_INFO("on policy Interest:"<<interest.getName());
   Name dataPrefix = interest.getName().getSubName(2,1);
   // Name policy = interest.getName().getSubName(3,1);
   // _LOG_DEBUG(dataPrefix<<", "<<policy);
@@ -113,10 +118,13 @@ Producer::onPolicyInterest(const Interest& interest)
   reply.setName(interest.getName());
   if (ret.second==false) {
     _LOG_DEBUG("dataPrefix already exist");
+
+    NDN_LOG_INFO("insert data prefix "<<dataPrefix<<" policy failed");
     reply.setContent(makeStringBlock(tlv::Content, "exist"));
   }
   else {
     _LOG_DEBUG("insert success");
+    NDN_LOG_INFO("insert data prefix "<<dataPrefix<<" with policy "<<encoding::readString(interest.getName().at(3)) );
     reply.setContent(makeStringBlock(tlv::Content, "success"));
   }
   _LOG_DEBUG("before sign");
@@ -134,6 +142,7 @@ Producer::fetchPublicParams()
   Interest interest(interestName);
   interest.setMustBeFresh(true);
 
+  NDN_LOG_INFO("Requeset public parameters:"<<interest.getName());
   m_face.expressInterest(interest, std::bind(&Producer::onAttributePubParams, this, _1, _2),
                          [=](const Interest&, const lp::Nack&){},
                          [=](const Interest&){});

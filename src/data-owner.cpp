@@ -19,6 +19,7 @@
  */
 
 #include "data-owner.hpp"
+#include "logging.hpp"
 
 #include <ndn-cxx/encoding/block-helpers.hpp>
 
@@ -26,6 +27,7 @@ namespace ndn {
 namespace ndnabac {
 
 const Name DataOwner::SET_POLICY = "/SET_POLICY";
+_LOG_INIT(ndnabac.dataOwner);
 
 DataOwner::DataOwner(const security::v2::Certificate& identityCert, Face& face,
                      security::v2::KeyChain& keyChain)
@@ -46,6 +48,7 @@ DataOwner::commandProducerPolicy(const Name& prefix, const Name& dataPrefix, con
 {
   // shared_ptr<Interest> interest = make_shared<Interest>(dataName);
   // sendInterest(*Interest);
+  NDN_LOG_INFO("Set data " << dataPrefix<<" in Producer "<<prefix<<" with policy "<<policy);
   Name policyName = prefix;
   policyName.append(SET_POLICY);
   policyName.append(dataPrefix);

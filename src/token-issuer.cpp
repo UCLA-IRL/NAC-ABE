@@ -60,6 +60,8 @@ void
 TokenIssuer::onTokenRequest(const Interest& request)
 {
   // Name: /token-issuer-name/TOKEN/<identity name block>
+
+  NDN_LOG_INFO("get token request:"<<request.getName());
   Name identityName(request.getName().at(m_cert.getIdentity().size() + 1).blockFromValue());
 
   // verify request and generate token

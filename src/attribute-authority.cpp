@@ -45,6 +45,7 @@ AttributeAuthority::AttributeAuthority(const security::v2::Certificate& identity
   , m_keyChain(keyChain)
 {
   // ABE setup
+  NDN_LOG_INFO("Set up public parameters and master key.");
   algo::ABESupport::setup(m_pubParams, m_masterKey);
 
   // prefix registration
@@ -85,6 +86,7 @@ AttributeAuthority::onDecryptionKeyRequest(const Interest& interest)
   // naming: /AA-prefix/DKEY/<token>
 
   // get token
+  NDN_LOG_INFO("get decryption key request:"<<interest.getName());
   Data token;
   try {
     token.wireDecode(interest.getName().at(m_cert.getIdentity().size() + 1).blockFromValue());

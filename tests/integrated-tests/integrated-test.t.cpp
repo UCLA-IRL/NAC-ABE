@@ -84,6 +84,8 @@ BOOST_AUTO_TEST_CASE(IntegratedTest)
   security::Identity aaId = addIdentity("/aaPrefix");
   security::Key aaKey = aaId.getDefaultKey();
   security::v2::Certificate aaCert = aaKey.getDefaultCertificate();
+
+  NDN_LOG_INFO("Create Attribute Authority. AA prefix:"<<aaCert.getIdentity());
   AttributeAuthority aa = AttributeAuthority(aaCert, aaFace, m_keyChain);
   advanceClocks(time::milliseconds(20), 60);
 
@@ -94,6 +96,8 @@ BOOST_AUTO_TEST_CASE(IntegratedTest)
   security::Identity tokenIssuerId = addIdentity("/tokenIssuerPrefix");
   security::Key tokenIssuerKey = tokenIssuerId.getDefaultKey();
   security::v2::Certificate tokenIssuerCert = tokenIssuerKey.getDefaultCertificate();
+
+  NDN_LOG_INFO("Create Token Issuer. Token Issuer prefix:"<<tokenIssuerCert.getIdentity());
   TokenIssuer tokenIssuer = TokenIssuer(tokenIssuerCert, tokenIssuerFace, m_keyChain);
   advanceClocks(time::milliseconds(20), 60);
   BOOST_CHECK_EQUAL(tokenIssuer.m_interestFilterIds.size(), 1);
@@ -105,12 +109,14 @@ BOOST_AUTO_TEST_CASE(IntegratedTest)
   security::v2::Certificate consumerCert = consumerKey.getDefaultCertificate();
 
   std::list<std::string> attrList = {"attr1, attr3"};
+  NDN_LOG_INFO("Add comsumer "<<consumerCert.getIdentity()<<" with attributes: attr1, attr3");
   tokenIssuer.m_tokens.insert(std::pair<Name, std::list<std::string>>(consumerCert.getIdentity(),
                                                                       attrList));
   BOOST_CHECK_EQUAL(tokenIssuer.m_tokens.size(), 1);
   _LOG_DEBUG("after token issuer");
 
   // set up consumer
+  NDN_LOG_INFO("Create Consumer. Consumer prefix:"<<consumerCert.getIdentity());
   Consumer consumer = Consumer(consumerCert, consumerFace, m_keyChain, aaCert.getIdentity());
   tokenIssuer.m_trustConfig.m_trustAnchors.push_back(consumerCert);
   advanceClocks(time::milliseconds(20), 60);
@@ -118,12 +124,13 @@ BOOST_AUTO_TEST_CASE(IntegratedTest)
   //***** need to compare pointer content *****
   //BOOST_CHECK(consumer->m_pubParamsCache.m_pub == aa->m_pubParams.m_pub);
 
-  _LOG_DEBUG("after consumer");
+  //NDN_LOG_INFO("after consumer");
 
   // set up producer
   security::Identity producerId = addIdentity("/producerPrefix");
   security::Key producerKey = producerId.getDefaultKey();
   security::v2::Certificate producerCert = producerKey.getDefaultCertificate();
+  NDN_LOG_INFO("Create Producer. Producer prefix:"<<producerCert.getIdentity());
   Producer producer = Producer(producerCert, producerFace, m_keyChain, aaCert.getIdentity());
   advanceClocks(time::milliseconds(20), 60);
 
@@ -136,6 +143,7 @@ BOOST_AUTO_TEST_CASE(IntegratedTest)
   security::Identity dataOwnerId = addIdentity("/dataOwnerPrefix");
   security::Key dataOwnerKey = dataOwnerId.getDefaultKey();
   security::v2::Certificate dataOwnerCert = dataOwnerKey.getDefaultCertificate();
+  NDN_LOG_INFO("Create Data Owner. Data Owner prefix:"<<dataOwnerCert.getIdentity());
   DataOwner dataOwner = DataOwner(dataOwnerCert, dataOwnerFace, m_keyChain);
   advanceClocks(time::milliseconds(20), 60);
 
@@ -152,8 +160,8 @@ BOOST_AUTO_TEST_CASE(IntegratedTest)
                                      BOOST_CHECK_EQUAL(readString(response.getContent()), "success");
                                      auto it = producer.m_policyCache.find(dataName);
                                      BOOST_CHECK(it != producer.m_policyCache.end());
-                                     std::cout << it->second << std::endl;
-                                     std::cout << policy << std::endl;
+                                     //std::cout << it->second << std::endl;
+                                     //std::cout << policy << std::endl;
                                      BOOST_CHECK(it->second == policy);
                                    },
                                    [=] (const std::string& err) {
@@ -167,12 +175,16 @@ BOOST_AUTO_TEST_CASE(IntegratedTest)
   bool isProdCbCalled = false;
   producerFace.setInterestFilter(producerCert.getIdentity().append(dataName),
     [&] (const ndn::InterestFilter&, const ndn::Interest& interest) {
+
+      NDN_LOG_INFO("consumer request for"<<interest.toUri());
       auto it = producer.m_policyCache.find(dataName);
       BOOST_CHECK(it != producer.m_policyCache.end());
       BOOST_CHECK(it->second == policy);
       producer.produce(dataName, it->second, PLAIN_TEXT, sizeof(PLAIN_TEXT),
         [&] (const Data& data) {
           isProdCbCalled = true;
+
+          NDN_LOG_INFO("data successfully encrypted");
           producerFace.put(data);
         },
         [&] (const std::string& err) {
