@@ -85,6 +85,7 @@ BOOST_FIXTURE_TEST_SUITE(TestIntegrated, TestIntegratedFixture)
 
 BOOST_AUTO_TEST_CASE(IntegratedTest)
 {
+  // set up AA
   security::Identity aaId = addIdentity("/aaPrefix");
   security::Key aaKey = aaId.getDefaultKey();
   aaCert = aaKey.getDefaultCertificate();
@@ -94,6 +95,7 @@ BOOST_AUTO_TEST_CASE(IntegratedTest)
   BOOST_CHECK(aa.m_pubParams.m_pub != nullptr);
   BOOST_CHECK(aa.m_masterKey.m_msk != nullptr);
 
+  // set up token issuer
   security::Identity tokenIssuerId = addIdentity("/tokenIssuerPrefix");
   security::Key tokenIssuerKey = tokenIssuerId.getDefaultKey();
   tokenIssuerCert = tokenIssuerKey.getDefaultCertificate();
@@ -101,12 +103,13 @@ BOOST_AUTO_TEST_CASE(IntegratedTest)
   advanceClocks(time::milliseconds(20), 60);
   BOOST_CHECK_EQUAL(tokenIssuer.m_interestFilterIds.size(), 1);
 
+  // define attr list for consumer rights
   std::list<std::string> attrList = {"attr1, attr3"};
   tokenIssuer.m_tokens.insert(std::pair<Name, std::list<std::string> >(consumerCert.getIdentity(), attrList));
-
   BOOST_CHECK_EQUAL(tokenIssuer.m_tokens.size(), 1);
   _LOG_DEBUG("after token issuer");
 
+  // set up consumer
   security::Identity consumerId = addIdentity("/consumerPrefix");
   security::Key consumerKey = consumerId.getDefaultKey();
   consumerCert = consumerKey.getDefaultCertificate();
@@ -118,6 +121,7 @@ BOOST_AUTO_TEST_CASE(IntegratedTest)
 
   _LOG_DEBUG("after consumer");
 
+  // set up producer
   security::Identity producerId = addIdentity("/producerPrefix");
   security::Key producerKey = producerId.getDefaultKey();
   producerCert = producerKey.getDefaultCertificate();
@@ -129,6 +133,7 @@ BOOST_AUTO_TEST_CASE(IntegratedTest)
   //BOOST_CHECK(producer->m_pubParamsCache.m_pub == aa->m_pubParams.m_pub);
   BOOST_CHECK_EQUAL(producer.m_interestFilterIds.size(), 1);
 
+  // set up data owner
   security::Identity dataOwnerId = addIdentity("/dataOwnerPrefix");
   security::Key dataOwnerKey = dataOwnerId.getDefaultKey();
   dataOwnerCert = dataOwnerKey.getDefaultCertificate();
@@ -137,10 +142,7 @@ BOOST_AUTO_TEST_CASE(IntegratedTest)
   //==============================================
 
   Name dataName = "/dataName";
-  Name interestName = producerCert.getIdentity();
   std::string policy = "attr1 attr2 1of2 attr3 2of2";
-  interestName.append(DataOwner::SET_POLICY);
-  interestName.append(policy);
 
   dataOwner.commandProducerPolicy(producerCert.getIdentity(), dataName, policy,
                                    [&] (const Data& response) {
@@ -153,6 +155,7 @@ BOOST_AUTO_TEST_CASE(IntegratedTest)
                                      BOOST_CHECK(false);
                                    });
 
+  bool isProdCbCalled = false;
   producerFace.setInterestFilter(dataName,
     [&] (const ndn::InterestFilter&, const ndn::Interest& interest) {
       auto it = producer.m_policyCache.find(dataName);
@@ -160,6 +163,7 @@ BOOST_AUTO_TEST_CASE(IntegratedTest)
       BOOST_CHECK(it->second == policy);
       producer.produce(dataName, it->second, PLAIN_TEXT, sizeof(PLAIN_TEXT),
         [&] (const Data& data) {
+          isProdCbCalled = true;
           producerFace.put(data);
         },
         [&] (const std::string& err) {
@@ -168,8 +172,10 @@ BOOST_AUTO_TEST_CASE(IntegratedTest)
     }
   );
 
+  bool isConsumeCbCalled = false;
   consumer.consume(dataName, tokenIssuerCert.getIdentity(),
     [&] (const Buffer& result) {
+      isConsumeCbCalled = true;
       BOOST_CHECK_EQUAL_COLLECTIONS(result.begin(), result.end(),
                                     PLAIN_TEXT, PLAIN_TEXT + sizeof(PLAIN_TEXT));
     },
@@ -177,6 +183,9 @@ BOOST_AUTO_TEST_CASE(IntegratedTest)
       BOOST_CHECK(false);
     }
   );
+
+  BOOST_CHECK(isProdCbCalled);
+  BOOST_CHECK(isConsumeCbCalled);
 }
 
 BOOST_AUTO_TEST_SUITE_END()
