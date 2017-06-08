@@ -95,6 +95,8 @@ BOOST_AUTO_TEST_CASE(Constructor)
   advanceClocks(time::milliseconds(20), 60);
 
   BOOST_CHECK(producer.m_pubParamsCache.m_pub != nullptr);
+  BOOST_CHECK_EQUAL(producer.m_interestFilterIds.size(), 1);
+
   //***** need to compare pointer content *****
   //BOOST_CHECK(producer.m_pubParamsCache.m_pub == m_pubParams.m_pub);
 }
@@ -118,24 +120,19 @@ BOOST_AUTO_TEST_CASE(onPolicyInterest)
 
   int count = 0;
   auto onSend = [&] (const Data& response, std::string isSuccess) {
-    count++;
     BOOST_CHECK(security::verifySignature(response, cert));
 
     BOOST_CHECK(readString(response.getContent()) == isSuccess);
-    _LOG_DEBUG("content is:"<<readString(response.getContent()));
+    _LOG_DEBUG("content is:"<<readString(response.getContent())<<", isSuccess:"<<isSuccess);
   };
-
-  dynamic_cast<util::DummyClientFace*>(&c1)->onSendData.connect(
-    [&](const Data& dt) {
-      _LOG_DEBUG("on send data");
-      onSend(dt, "success");
-    }
-  );
 
   _LOG_DEBUG("before receive, interest name:"<<setPolicyInterest.getName());
   //dynamic_cast<util::DummyClientFace*>(&c1)->receive(setPolicyInterest);
   c2.expressInterest(setPolicyInterest,
-                     [=](const Interest&, const Data&){},
+                     [&](const Interest&, const Data& response){
+                      BOOST_CHECK(security::verifySignature(response, cert));
+                      BOOST_CHECK(readString(response.getContent()) == "success");
+                     },
                      [=](const Interest&, const lp::Nack&){},
                      [=](const Interest&){});
 
@@ -150,23 +147,24 @@ BOOST_AUTO_TEST_CASE(onPolicyInterest)
   auto it = producer.m_policyCache.find(dataPrefix);
   BOOST_CHECK_EQUAL(producer.m_policyCache.size(), 1);
   BOOST_CHECK(it != producer.m_policyCache.end());
-  BOOST_CHECK_EQUAL(it->second, "policy");
-  BOOST_CHECK_EQUAL(count, 1);
+  BOOST_CHECK_EQUAL(it->second, "/policy");
 
-  dynamic_cast<util::DummyClientFace*>(&c1)->onSendData.connect(
-    [&](const Data& dt) {
-      onSend(dt, "exist");
-    }
-  );
-  dynamic_cast<util::DummyClientFace*>(&c1)->receive(setPolicyInterest);
+  advanceClocks(time::milliseconds(20), 60);
+
+    c2.expressInterest(setPolicyInterest,
+                     [&](const Interest&, const Data& response){
+                      BOOST_CHECK(security::verifySignature(response, cert));
+                      BOOST_CHECK(readString(response.getContent()) == "exist");
+                     },
+                     [=](const Interest&, const lp::Nack&){},
+                     [=](const Interest&){});
 
   advanceClocks(time::milliseconds(20), 60);
 
   it = producer.m_policyCache.find(dataPrefix);
   BOOST_CHECK_EQUAL(producer.m_policyCache.size(), 1);
   BOOST_CHECK(it != producer.m_policyCache.end());
-  BOOST_CHECK_EQUAL(it->second, "policy");
-  BOOST_CHECK_EQUAL(count, 2);
+  BOOST_CHECK_EQUAL(it->second, "/policy");
 }
 
 BOOST_AUTO_TEST_CASE(encryptContent)

@@ -56,10 +56,14 @@ BOOST_AUTO_TEST_CASE(onTokenRequestTest)
 
   TokenIssuer tokenissuer(cert, c1, m_keyChain);
 
-  Name tokenIssuerPrefix = Name("/tokenissuer1");
+  advanceClocks(time::milliseconds(20), 60);
+
+  BOOST_CHECK_EQUAL(tokenissuer.m_interestFilterIds.size(), 1);
+
+  Name tokenIssuerPrefix = cert.getIdentity();
 
   Interest interest(
-    Name("/tokenissuer1").append(TokenIssuer::TOKEN_REQUEST).append(consumerId.getName()));
+    tokenIssuerPrefix.append(TokenIssuer::TOKEN_REQUEST).append(consumerId.getName()));
 
   //******* how to handle token Issuer
   c2.expressInterest(interest,
