@@ -54,7 +54,8 @@ public:
     , producerFace(forwarder.addFace())
     , aaFace(forwarder.addFace())
     , tokenIssuerFace(forwarder.addFace())
-    , consumerFace(forwarder.addFace())
+    , consumerFace1(forwarder.addFace())
+    , consumerFace2(forwarder.addFace())
     , dataOwnerFace(forwarder.addFace())
   {
   }
@@ -65,7 +66,8 @@ public:
   Face& producerFace;
   Face& aaFace;
   Face& tokenIssuerFace;
-  Face& consumerFace;
+  Face& consumerFace1;
+  Face& consumerFace2;
 
   Face& dataOwnerFace;
 
@@ -103,24 +105,46 @@ BOOST_AUTO_TEST_CASE(IntegratedTest)
   BOOST_CHECK_EQUAL(tokenIssuer.m_interestFilterIds.size(), 1);
 
   // define attr list for consumer rights
-  security::Identity consumerId = addIdentity("/consumerPrefix");
+  security::Identity consumerId1 = addIdentity("/consumerPrefix1");
   // m_keyChain.createKey(consumerId, RsaKeyParamsInfo());
-  security::Key consumerKey = m_keyChain.createKey(consumerId, RsaKeyParams());
-  security::v2::Certificate consumerCert = consumerKey.getDefaultCertificate();
+  security::Key consumerKey1 = m_keyChain.createKey(consumerId1, RsaKeyParams());
+  security::v2::Certificate consumerCert1 = consumerKey1.getDefaultCertificate();
+
+
+  // define attr list for consumer rights
+  security::Identity consumerId2 = addIdentity("/consumerPrefix2");
+  // m_keyChain.createKey(consumerId, RsaKeyParamsInfo());
+  security::Key consumerKey2 = m_keyChain.createKey(consumerId2, RsaKeyParams());
+  security::v2::Certificate consumerCert2 = consumerKey2.getDefaultCertificate();
 
   std::list<std::string> attrList = {"attr1", "attr3"};
-  NDN_LOG_INFO("Add comsumer "<<consumerCert.getIdentity()<<" with attributes: attr1, attr3");
-  tokenIssuer.m_tokens.insert(std::pair<Name, std::list<std::string>>(consumerCert.getIdentity(),
+  NDN_LOG_INFO("Add comsumer 1 "<<consumerCert1.getIdentity()<<" with attributes: attr1, attr3");
+  tokenIssuer.m_tokens.insert(std::pair<Name, std::list<std::string>>(consumerCert1.getIdentity(),
                                                                       attrList));
   BOOST_CHECK_EQUAL(tokenIssuer.m_tokens.size(), 1);
+
+
+  std::list<std::string> attrList1 = {"attr1"};
+  NDN_LOG_INFO("Add comsumer 2 "<<consumerCert2.getIdentity()<<" with attributes: attr1");
+  tokenIssuer.m_tokens.insert(std::pair<Name, std::list<std::string>>(consumerCert2.getIdentity(),
+                                                                      attrList1));
+  BOOST_CHECK_EQUAL(tokenIssuer.m_tokens.size(), 2);
+
   _LOG_DEBUG("after token issuer");
 
   // set up consumer
-  NDN_LOG_INFO("Create Consumer. Consumer prefix:"<<consumerCert.getIdentity());
-  Consumer consumer = Consumer(consumerCert, consumerFace, m_keyChain, aaCert.getIdentity());
-  tokenIssuer.m_trustConfig.m_trustAnchors.push_back(consumerCert);
+  NDN_LOG_INFO("Create Consumer 1. Consumer 1 prefix:"<<consumerCert1.getIdentity());
+  Consumer consumer1 = Consumer(consumerCert1, consumerFace1, m_keyChain, aaCert.getIdentity());
+  tokenIssuer.m_trustConfig.m_trustAnchors.push_back(consumerCert1);
   advanceClocks(time::milliseconds(20), 60);
-  BOOST_CHECK(consumer.m_pubParamsCache.m_pub != nullptr);
+  BOOST_CHECK(consumer1.m_pubParamsCache.m_pub != nullptr);
+
+  // set up consumer
+  NDN_LOG_INFO("Create Consumer 2. Consumer 2 prefix:"<<consumerCert2.getIdentity());
+  Consumer consumer2 = Consumer(consumerCert2, consumerFace2, m_keyChain, aaCert.getIdentity());
+  tokenIssuer.m_trustConfig.m_trustAnchors.push_back(consumerCert2);
+  advanceClocks(time::milliseconds(20), 60);
+  BOOST_CHECK(consumer2.m_pubParamsCache.m_pub != nullptr);
   //***** need to compare pointer content *****
   //BOOST_CHECK(consumer->m_pubParamsCache.m_pub == aa->m_pubParams.m_pub);
 
@@ -198,7 +222,7 @@ BOOST_AUTO_TEST_CASE(IntegratedTest)
   );
 
   bool isConsumeCbCalled = false;
-  consumer.consume(producerCert.getIdentity().append(dataName), tokenIssuerCert.getIdentity(),
+  consumer1.consume(producerCert.getIdentity().append(dataName), tokenIssuerCert.getIdentity(),
     [&] (const Buffer& result) {
       isConsumeCbCalled = true;
       BOOST_CHECK_EQUAL_COLLECTIONS(result.begin(), result.end(),
@@ -217,6 +241,15 @@ BOOST_AUTO_TEST_CASE(IntegratedTest)
 
   BOOST_CHECK(isProdCbCalled);
   BOOST_CHECK(isConsumeCbCalled);
+
+  consumer2.consume(producerCert.getIdentity().append(dataName), tokenIssuerCert.getIdentity(),
+    [&] (const Buffer& result) {
+      isConsumeCbCalled = true;
+    },
+    [&] (const std::string& err) {
+      BOOST_CHECK(false);
+    }
+  );
 }
 
 BOOST_AUTO_TEST_SUITE_END()
