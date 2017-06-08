@@ -91,7 +91,7 @@ Producer::produce(const Name& dataPrefix, const std::string& accessPolicy,
     Data data(dataName);
     data.setContent(cipherText.wireEncode());
     m_keyChain.sign(data, signingByCertificate(m_cert));
-    onDataProduceCb(data);    
+    onDataProduceCb(data);
   }
 }
 
@@ -102,16 +102,16 @@ Producer::onPolicyInterest(const Interest& interest)
   //*** need verify signature ****
   _LOG_DEBUG("on policy Interest:"<<interest.getName());
   Name dataPrefix = interest.getName().getSubName(2,1);
-  Name policy = interest.getName().getSubName(3,1);
-  _LOG_DEBUG(dataPrefix<<", "<<policy);
+  // Name policy = interest.getName().getSubName(3,1);
+  // _LOG_DEBUG(dataPrefix<<", "<<policy);
 
   std::pair<std::map<Name,std::string>::iterator,bool> ret;
-  ret = m_policyCache.insert(std::pair<Name, std::string>(Name(dataPrefix), policy.toUri()));
+  ret = m_policyCache.insert(std::pair<Name, std::string>(Name(dataPrefix),
+                                                          encoding::readString(interest.getName().at(3))));
 
   Data reply;
   reply.setName(interest.getName());
   if (ret.second==false) {
-
     _LOG_DEBUG("dataPrefix already exist");
     reply.setContent(makeStringBlock(tlv::Content, "exist"));
   }
@@ -135,7 +135,8 @@ Producer::fetchPublicParams()
   interest.setMustBeFresh(true);
 
   m_face.expressInterest(interest, std::bind(&Producer::onAttributePubParams, this, _1, _2),
-                         nullptr, nullptr);
+                         [=](const Interest&, const lp::Nack&){},
+                         [=](const Interest&){});
 }
 
 } // namespace ndnabac

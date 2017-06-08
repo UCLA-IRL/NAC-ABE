@@ -56,13 +56,13 @@ DataOwner::commandProducerPolicy(const Name& prefix, const Name& dataPrefix, con
 
   // prepare callback functions
   auto validationCallback =
-    [=] (const shared_ptr<const Data>& validData) {
+    [=] (const Data& validData) {
     //try to know if register success;
-    if ( readString(validData->getContent()) != "success") {
+    if (readString(validData.getContent()) != "success") {
       errorCb("register failed");
     }
     else {
-      SuccessCb(*validData);
+      SuccessCb(validData);
     }
   };
 
@@ -70,10 +70,7 @@ DataOwner::commandProducerPolicy(const Name& prefix, const Name& dataPrefix, con
     if (!contentInterest.matchesData(contentData))
       return;
 
-    this->m_validator->validate(contentData, validationCallback,
-                                [=] (const shared_ptr<const Data>& d, const std::string& e) {
-                                  errorCb(e);
-                                });
+    validationCallback(contentData);
   };
 
   // set link object if it is available

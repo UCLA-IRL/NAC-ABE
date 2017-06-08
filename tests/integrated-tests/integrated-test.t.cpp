@@ -50,11 +50,11 @@ class TestIntegratedFixture : public IdentityManagementTimeFixture
 {
 public:
   TestIntegratedFixture()
-    : forwarder(m_io, m_keyChain)
+    : forwarder(m_io)
+    , producerFace(forwarder.addFace())
     , aaFace(forwarder.addFace())
     , tokenIssuerFace(forwarder.addFace())
     , consumerFace(forwarder.addFace())
-    , producerFace(forwarder.addFace())
     , dataOwnerFace(forwarder.addFace())
   {
   }
@@ -62,10 +62,11 @@ public:
 public:
   DummyForwarder forwarder;
 
+  Face& producerFace;
   Face& aaFace;
   Face& tokenIssuerFace;
   Face& consumerFace;
-  Face& producerFace;
+
   Face& dataOwnerFace;
 
   //shared_ptr<AttributeAuthority> aa;
@@ -79,7 +80,6 @@ BOOST_FIXTURE_TEST_SUITE(TestIntegrated, TestIntegratedFixture)
 
 BOOST_AUTO_TEST_CASE(IntegratedTest)
 {
-  
   // set up AA
   security::Identity aaId = addIdentity("/aaPrefix");
   security::Key aaKey = aaId.getDefaultKey();
@@ -100,16 +100,19 @@ BOOST_AUTO_TEST_CASE(IntegratedTest)
 
   // define attr list for consumer rights
   security::Identity consumerId = addIdentity("/consumerPrefix");
-  security::Key consumerKey = consumerId.getDefaultKey();
+  // m_keyChain.createKey(consumerId, RsaKeyParamsInfo());
+  security::Key consumerKey = m_keyChain.createKey(consumerId, RsaKeyParams());
   security::v2::Certificate consumerCert = consumerKey.getDefaultCertificate();
 
   std::list<std::string> attrList = {"attr1, attr3"};
-  tokenIssuer.m_tokens.insert(std::pair<Name, std::list<std::string> >(consumerCert.getIdentity(), attrList));
+  tokenIssuer.m_tokens.insert(std::pair<Name, std::list<std::string>>(consumerCert.getIdentity(),
+                                                                      attrList));
   BOOST_CHECK_EQUAL(tokenIssuer.m_tokens.size(), 1);
   _LOG_DEBUG("after token issuer");
 
   // set up consumer
   Consumer consumer = Consumer(consumerCert, consumerFace, m_keyChain, aaCert.getIdentity());
+  tokenIssuer.m_trustConfig.m_trustAnchors.push_back(consumerCert);
   advanceClocks(time::milliseconds(20), 60);
   BOOST_CHECK(consumer.m_pubParamsCache.m_pub != nullptr);
   //***** need to compare pointer content *****
@@ -134,6 +137,7 @@ BOOST_AUTO_TEST_CASE(IntegratedTest)
   security::Key dataOwnerKey = dataOwnerId.getDefaultKey();
   security::v2::Certificate dataOwnerCert = dataOwnerKey.getDefaultCertificate();
   DataOwner dataOwner = DataOwner(dataOwnerCert, dataOwnerFace, m_keyChain);
+  advanceClocks(time::milliseconds(20), 60);
 
   //==============================================
 
@@ -148,6 +152,8 @@ BOOST_AUTO_TEST_CASE(IntegratedTest)
                                      BOOST_CHECK_EQUAL(readString(response.getContent()), "success");
                                      auto it = producer.m_policyCache.find(dataName);
                                      BOOST_CHECK(it != producer.m_policyCache.end());
+                                     std::cout << it->second << std::endl;
+                                     std::cout << policy << std::endl;
                                      BOOST_CHECK(it->second == policy);
                                    },
                                    [=] (const std::string& err) {

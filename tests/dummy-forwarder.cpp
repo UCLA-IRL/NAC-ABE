@@ -25,9 +25,8 @@
 namespace ndn {
 namespace ndnabac {
 
-DummyForwarder::DummyForwarder(boost::asio::io_service& io, security::v2::KeyChain& keyChain)
+DummyForwarder::DummyForwarder(boost::asio::io_service& io)
   : m_io(io)
-  , m_keyChain(keyChain)
 {
 }
 
@@ -44,6 +43,7 @@ DummyForwarder::addFace()
       }
     });
   face->onSendData.connect([this, face] (const Data& data) {
+      std::cout << data.getName() << std::endl;
       for (auto& otherFace : m_faces) {
         if (&*face == &*otherFace) {
           continue;

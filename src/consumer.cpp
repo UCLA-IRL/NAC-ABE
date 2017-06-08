@@ -108,7 +108,7 @@ Consumer::onAttributePubParams(const Interest& request, const Data& pubParamData
       break;
     }
   }
-  
+
   auto block = pubParamData.getContent();
   m_pubParamsCache.fromBuffer(Buffer(block.value(), block.value_size()));
 }
@@ -118,6 +118,7 @@ Consumer::onTokenData(const Data& tokenData, const Name& tokenIssuerPrefix, algo
                       const ConsumptionCallback& successCallBack,
                       const ErrorCallback& errorCallback)
 {
+  _LOG_TRACE("Get token data");
   Name interestName = m_attrAuthorityPrefix;
   interestName.append(AttributeAuthority::DECRYPT_KEY);
   interestName.append(tokenData.wireEncode());
@@ -137,6 +138,7 @@ Consumer::onDecryptionKeyData(const Data& keyData, const Data& tokenData,
                               const ConsumptionCallback& successCallBack,
                               const ErrorCallback& errorCallback)
 {
+  _LOG_TRACE("Get D key data");
   algo::PrivateKey prv;
   const auto& block = keyData.getContent();
   prv.fromBuffer(Buffer(block.value(), block.value_size()));

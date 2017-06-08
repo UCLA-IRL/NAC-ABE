@@ -108,7 +108,7 @@ AttributeAuthority::onDecryptionKeyRequest(const Interest& interest)
   // parse token
   std::vector<std::string> attrs;
   JsonSection tokenJson = JsonHelper::getJsonFromDataContent(token);
-  std::string pubKeyStr = tokenJson.get(TokenIssuer::TOKEN_USER, "");
+  std::string pubKeyStr = tokenJson.get<std::string>(TokenIssuer::TOKEN_USER);
   JsonSection attrList = tokenJson.get_child(TokenIssuer::TOKEN_ATTR_SET);
   auto it = attrList.begin();
   for (; it != attrList.end(); it++) {
@@ -118,8 +118,8 @@ AttributeAuthority::onDecryptionKeyRequest(const Interest& interest)
 
   // generate private key
   security::transform::PublicKey pubKey;
-  std::stringstream ss;
-  ss << pubKeyStr;
+  std::stringstream ss(pubKeyStr);
+  _LOG_TRACE("key bits " << pubKeyStr);
   pubKey.loadPkcs8Base64(ss);
 
   algo::PrivateKey prvKey = algo::ABESupport::prvKeyGen(m_pubParams, m_masterKey, attrs);

@@ -38,7 +38,7 @@ class TestDataOwnerFixture : public IdentityManagementTimeFixture
 {
 public:
   TestDataOwnerFixture()
-    : forwarder(m_io, m_keyChain)
+    : forwarder(m_io)
   {
   }
 

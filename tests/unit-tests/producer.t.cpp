@@ -47,7 +47,7 @@ class TestProducerFixture : public IdentityManagementTimeFixture
 {
 public:
   TestProducerFixture()
-    : forwarder(m_io, m_keyChain)
+    : forwarder(m_io)
     , c1(forwarder.addFace())
     , c2(forwarder.addFace())
     , attrAuthorityPrefix("/authority")

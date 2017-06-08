@@ -35,7 +35,7 @@ class TestTokenIssuerFixture : public IdentityManagementTimeFixture
 {
 public:
   TestTokenIssuerFixture()
-    : forwarder(m_io, m_keyChain)
+    : forwarder(m_io)
   {
   }
 

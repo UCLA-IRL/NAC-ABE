@@ -36,7 +36,7 @@ class TestConsumerFixture : public IdentityManagementTimeFixture
 {
 public:
   TestConsumerFixture()
-    : forwarder(m_io, m_keyChain)
+    : forwarder(m_io)
     , c1(forwarder.addFace())
     , c2(forwarder.addFace())
     , attrAuthorityPrefix("/authority")
