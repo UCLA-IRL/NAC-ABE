@@ -250,6 +250,8 @@ BOOST_AUTO_TEST_CASE(IntegratedTest)
       BOOST_CHECK(false);
     }
   );
+  
+  advanceClocks(time::milliseconds(20), 60);
 }
 
 BOOST_AUTO_TEST_SUITE_END()
