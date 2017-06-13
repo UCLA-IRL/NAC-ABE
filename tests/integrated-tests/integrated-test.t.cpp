@@ -173,6 +173,8 @@ BOOST_AUTO_TEST_CASE(IntegratedTest)
 
   //==============================================
 
+  NDN_LOG_INFO("\n=================== start work flow ==================\n");
+
   Name dataName = "/dataName";
   std::string policy = "attr1 attr2 1of2 attr3 2of2";
 
@@ -250,7 +252,7 @@ BOOST_AUTO_TEST_CASE(IntegratedTest)
       BOOST_CHECK(false);
     }
   );
-  
+
   advanceClocks(time::milliseconds(20), 60);
 }
 

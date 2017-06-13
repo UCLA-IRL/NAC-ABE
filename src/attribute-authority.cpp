@@ -142,7 +142,7 @@ void
 AttributeAuthority::onPublicParamsRequest(const Interest& interest)
 {
   // naming: /AA-prefix/PUBLICPARAMS
-  _LOG_DEBUG("on public Params request:"<<interest.getName());
+  NDN_LOG_INFO("on public Params request:"<<interest.getName());
   Data result;
   Name dataName = interest.getName();
   dataName.appendTimestamp();
