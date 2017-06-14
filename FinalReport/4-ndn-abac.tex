@@ -1,11 +1,16 @@
 \section{Attribute-based Access Control Over NDN}
 
-The \textit{proceedings} are the records of a conference.\footnote{This
-  is a footnote}  ACM seeks
-to give these conference by-products a uniform, high-quality
-appearance.  To do this, ACM has some rigid requirements for the
-format of the proceedings documents: there is a specified format
-(balanced double columns), a specified set of fonts (Arial or
-Helvetica and Times Roman) in certain specified sizes, a specified
-live area, centered on the page, specified size of margins, specified
-column width and gutter size.
+To see whether the design works or not under NDN environment, we implemented the Attribute-based Access Control Over NDN (ABAC-NDN) in C++ and corresponding test cases to verify it. ABAC-NDN is a complete C/C++ library with unit tests and integrate tests. There are more than 3500 lines of code (without copyright). It combines the AES, RSA and ABE encryption/decryption. The code depends on the ndn-cxx:, the basic NDN library, and Libbswabe, the CPABE support.
+
+\subsection{ABAC-NDN code base}
+
+There are five main components in the code base: Attribute Authority, Data Owner, Token Issuer, Consumer and Producer, shown in Fig.\ref{}.
+
+When initializing the Attribute Authority, the public parameters and master key will be generated and uniquely used in global. All components except Token Issuer and Data Owner need to fetch public parameters for encryption and decryption. Besides, the Attribute Authority also registers the prefix to serve the decryption key request. All decryption keys will be generated for different users which will be verified and issued tokens. Since Attribute Authority trusts the Token Issuer, the token issued to a user will be verified and corresponding decryption key will be sent back to the user.
+
+The Token Issuer and Data Owner are usually in the site-admin node. The Token Issuer is in charge of authorizing users. If the user is the member of that site-admin, the site-admin can verify it and issue the token for that user. The token is presented in JSON format. The Data Owner in charge of managing content produced by the producer under the site-admin. To define the rule for a certain data produced by a certain producer, the Data Owner express the Interest contains the producer prefix, data prefix and policy. The producer with that producer prefix receives that Interest and add the certain rule for that data.
+
+The Producer and Consumer are corresponding to the encryption and decryption of the content. For Producer, when policy is set to a certain data, the Producer encrypts the content using public parameter and policy. The policy is in the form: $n$ attr1 to attrn mofn [attr2 to attrk jofk], where $m<=n$ and $j<=k$. It is the tree hierarchy structure which accepts any combination of the attributes. For example: attr1 attr2 1of2 attr3 2of2. Only who with attr1 or attr2 and at the same time with attr3 can decrypt the content encrypted by the above policy. To decrypt the content from the producer, the consumer first need to fetch the token from the Token Issuer which the producer belongs to. Then using the token to fetch the corresponding decryption key. If the decryption is created by the attributes satisfy the policy, with the public parameters, the content can be decrypt correctly.
+
+\subsection{Test cases}
+For now we verify the correctness of the ABAC-NDN using both unit tests and integrated tests. For unit test, all unit function in different components will be verified. And in integrated test, the whole work flow is tested and the consumer with correct attributes can decrypt the content and the consumer with insufficient attributes will be blocked from the content.
