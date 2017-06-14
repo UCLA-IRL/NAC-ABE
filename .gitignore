@@ -5,3 +5,11 @@
 **/*.pyc
 build/
 VERSION
+FinalReport/*.pdf
+FinalReport/*.log
+FinalReport/*.glo
+FinalReport/*.idx
+FinalReport/*.toc
+FinalReport/*.blg
+FinalReport/*.lot
+FinalReport/*.aux
