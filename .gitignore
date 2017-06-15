@@ -6,6 +6,9 @@
 build/
 VERSION
 FinalReport/*.pdf
+FinalReport/*.bbl
+FinalReport/*.out
+FinalReport/*.cls
 FinalReport/*.log
 FinalReport/*.glo
 FinalReport/*.idx

@@ -1,11 +1,22 @@
 \section{Introduction}
 
-The \textit{proceedings} are the records of a conference.\footnote{This
-  is a footnote}  ACM seeks
-to give these conference by-products a uniform, high-quality
-appearance.  To do this, ACM has some rigid requirements for the
-format of the proceedings documents: there is a specified format
-(balanced double columns), a specified set of fonts (Arial or
-Helvetica and Times Roman) in certain specified sizes, a specified
-live area, centered on the page, specified size of margins, specified
-column width and gutter size.
+Resource sharing across the Internet has always been a need that is widely recognized for decades.
+Yet, the isolation is still there and becomes a roadblock.
+A large amount of efforts have been made to achieve collaboration and break the isolation.
+However, it is still a big challenge to ensure the privacy, security, efficiency and semantic content at the same time.
+
+Today, most resource sharing among multiple organizations, i.e. service provider, data producer, is done through the direct communication between two parties.
+There is rarely or no collaboration platform that organize the resources from multiple organizations.
+Also, the security and privacy of current resource sharing are usually ensured by following two mechanisms:
+\begin{itemize}
+\item \textbf{Protecting the communication channel} \\
+Protocol like TLS encrypts the end-to-end channel to provide data exchange.
+However, protecting channel always means to sacrifice the efficiency of content distribution.
+For example, content multicast is not supported by channel-based security.
+\item \textbf{Protecting the content} \\
+There are mechanisms that provide encryption-based security.
+For example, there are encryption-based access control systems using traditional asymmetric public key encryption or attribute-based encryption.
+The content-based encryption allows the encrypted data to be stored publicly.
+However, protecting content always means the lost of the semantic meaning.
+For example, the resource sharing platform have no clue of the content and it's hard to organize millions of resources with blind eyes.
+\end{itemize}

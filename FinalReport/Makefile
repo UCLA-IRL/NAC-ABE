@@ -12,9 +12,9 @@ TARGET = ndn-abac-vo
 
 PDF = $(TARGET).pdf
 
-all:  ${PDF}
+all:  clean ${PDF}
 
-%.pdf:  %.dtx   $(TARGET).cls
+%.pdf: %.dtx $(TARGET).cls
 	pdflatex $<
 	- bibtex $*
 	pdflatex $<
