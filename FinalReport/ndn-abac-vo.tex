@@ -2,6 +2,20 @@
 
 \usepackage{booktabs} % For formal tables
 
+\usepackage{etoolbox}
+\usepackage{xstring}
+\DeclareListParser{\doslashlist}{/}
+\newcounter{ndnNameComponentCounter}%
+\newcommand{\ndnName}[1]{{%
+  \setcounter{ndnNameComponentCounter}{0}%
+  \renewcommand{\do}[1]{{%
+    \ifnumgreater{\value{ndnNameComponentCounter}}{0}{\allowbreak/}{}%
+    \ifnumodd{\value{ndnNameComponentCounter}}{}{}%
+    \detokenize{##1}}%
+    \stepcounter{ndnNameComponentCounter}}%
+``{\fontfamily{cmtt}\small\selectfont\IfBeginWith{#1}{/}{/}{}\doslashlist{#1}}''%
+}}
+
 \setcopyright{rightsretained}
 
 \begin{document}

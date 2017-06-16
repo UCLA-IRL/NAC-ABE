@@ -8,10 +8,7 @@
   \label{fig:example}
 \end{figure*}
 
-To facilitate explanation, in this paper, we will use the following example (\ref{fig:example}) to illustrate the VO system.
-The right side is the VO management system, which contains an \textbf{attribute authority} and a \textbf{VO manager}.
-Attribute authority will setup the CPABE environment by generating public parameters and a secret master key.
-The VO manager will create the VO, the data packet(s) containing the name category.
+To facilitate explanation, in this paper, we will use the following example (\ref{fig:example}) to illustrate the security design and VO system.
 There are two real-world organizations in our example: UCLA and MIT.
 Both UCLA and MIT will produce networking lecture data and Number-theory lecture data.
 Besides producers which are the green circles, each organization also contains one \textbf{data owner} and one \textbf{token issuer}.
@@ -113,8 +110,8 @@ In our system, the naming convention of data packet is like:
   \vspace{-3mm}
   \caption{Data packet naming convention}
 \end{figure}
-For instance, to produce data only for UCLA's professors, the producer \texttt{/ucla/network} should use the policy \texttt{professor AND ucla} to do the encryption.
-A possible name can be like: \textbf{/ucla/network/cs118-lesson1/''professor AND ucla''}.
+For instance, to produce data only for UCLA's professors, the producer \ndnName{/ucla/network} should use the policy \ndnName{professor AND ucla} to do the encryption.
+A possible name can be like: \ndnName{/ucla/network/cs118-lesson1/''professor AND ucla''}.
 One benefit is that the consumer can easily know whether his/her decryption is sufficient or not to decrypt the content.
 
 \subsubsection{Signed Interest Carries Attribute Policy}
@@ -130,8 +127,9 @@ The naming convention of attribute policy command interest is like:
   \caption{Policy interest naming convention}
 \end{figure}
 
-For example, if the UCLA data owner wants to command the producer \texttt{/ucla/num-theory} that all the data under the prefix \texttt{/lesson1} should have the policy \texttt{students AND (ucla or mit)}.
-In this case, the command interest would be like: \textbf{/ucla/num-theory/POLICY/lesson1/[signature]}.
+For example, if the UCLA data owner wants to command the producer \ndnName{/ucla/num-theory} that all the data under the prefix \ndnName{/lesson1} should have the policy \ndnName{students AND (ucla or mit)}.
+In this case, the command interest would be like:
+\ndnName{/ucla/num-theory/POLICY/lesson1/[signature]}.
 Once get the command from token issuer, the producer will first check the signature.
 If the interest can be trusted, the producer should follow the command.
 
@@ -152,11 +150,29 @@ Notice the interest is not a signed interest for there is already a signature in
 Because the replied data's content is encrypted by consumer's public key, no one except the consumer can get the key: it is secure to send back the data publicly.
 
 \subsection{Access Model}
-
-
 \subsubsection{Setup}
+In the setup phase, the attribute authority would first generate CPABE public parameters and master key.
+Public parameters would be wrapped into a data packet and be signed by VO management system.
+The master key should be carefully kept by AA.
+After the that, the AA should publish the public parameter data packet.
+To improve the efficiency, the data packet can be cached in some in-network storage system or be cached by network infrastructure like routers and switches.
 
+Notice every party in the system should fetch the public parameters packet.
+Once the signature is verified, the public parameters should be kept by each party until the public parameters expires.
 
 \subsubsection{Key Generation}
+In this phase, the token issuer should verify consumers belonging to their own organizations and generate tokens for consumers.
+The token issuer should then express the tokens to AA and ask AA to generate the decryption keys and fetch the keys back.
+Whenever the AA receives the token, AA must verify the token's signature first.
+After that, the AA could use the master key and the attribute list to generate the decryption key.
+Then the decryption key should be encrypted by the public key recorded in the token.
+
 \subsubsection{Encryption}
+Whenever a party wants to become a producer (and a data owner), it can immediately define the attribute policy and start producing content.
+As long as the host has the public parameter, there is no requirements for it to become a producer.
+The attribute policy is only a string containing the attribute and the logic gates.
+
 \subsubsection{Decryption}
+Once the consumer gets the decryption key, the consumer then has a set of attributes.
+Consumer can decide whether he/she is allowed to consume the content by checking the data name.
+If the consumer's attributes is sufficient, the consumer could use the key to decrypt the AES key first and then decrypt the content with the AES key.
