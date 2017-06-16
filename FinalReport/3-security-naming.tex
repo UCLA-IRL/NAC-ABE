@@ -51,9 +51,9 @@ Therefore, inside each data packet, the content mainly contains two parts:
 When consumer fetches data back, the authorized consumer should first decrypt the AES key and use the AES key to decrypt content.
 The format of the ciphertext is showed in \ref{fig:ciphertext}
 
-\begin{figure}[h]
+\begin{figure}[H]
   \centering
-  \includegraphics[width=0.45\textwidth]{figures/ciphertext}
+  \includegraphics[width=0.3\textwidth]{figures/ciphertext}
   \vspace{-3mm}
   \caption{The format of ciphertext}
   \label{fig:token}
@@ -86,9 +86,9 @@ The privacy can be ensured for organization will take it's own business to verif
 Also, this design saves attribute authority's resources.
 The only cost is for attribute authority to build up the trust to each token issuer.
 
-\begin{figure}[h]
+\begin{figure}[H]
   \centering
-  \includegraphics[width=0.45\textwidth]{figures/token}
+  \includegraphics[width=0.3\textwidth]{figures/token}
   \vspace{-3mm}
   \caption{The format of token}
   \label{fig:token}
@@ -107,11 +107,14 @@ To facilitate the use of NDN, we have the naming convention to simplify the whol
 \subsubsection{Data Name Carries Attribute Policy}
 
 In our system, the naming convention of data packet is like:
-\begin{verbatim}
-/[Data producer prefix]/[Data name]/<attribute policy>
-\end{verbatim}
+\begin{figure}[H]
+  \centering
+  \includegraphics[width=0.5\textwidth]{figures/data-name}
+  \vspace{-3mm}
+  \caption{Data packet naming convention}
+\end{figure}
 For instance, to produce data only for UCLA's professors, the producer \texttt{/ucla/network} should use the policy \texttt{professor AND ucla} to do the encryption.
-A possible name can be like: \texttt{/ucla/network/cs118-lesson1/''professor AND ucla''}.
+A possible name can be like: \textbf{/ucla/network/cs118-lesson1/''professor AND ucla''}.
 One benefit is that the consumer can easily know whether his/her decryption is sufficient or not to decrypt the content.
 
 \subsubsection{Signed Interest Carries Attribute Policy}
@@ -119,14 +122,16 @@ One benefit is that the consumer can easily know whether his/her decryption is s
 In NDN, it's difficult for a host to actively send out a data packet while it's easy to send out interest.
 In our system, we let data owner send out signed interest to command each producer.
 The naming convention of attribute policy command interest is like:
-\begin{verbatim}
-/[Data producer prefix]/POLICY/[Data prefix or name]/[sigature]
 
-Signature:
-/<timestamp>/<random number>/<signature info>/<signature value>
-\end{verbatim}
+\begin{figure}[H]
+  \centering
+  \includegraphics[width=0.5\textwidth]{figures/policy-interest}
+  \vspace{-3mm}
+  \caption{Policy interest naming convention}
+\end{figure}
+
 For example, if the UCLA data owner wants to command the producer \texttt{/ucla/num-theory} that all the data under the prefix \texttt{/lesson1} should have the policy \texttt{students AND (ucla or mit)}.
-In this case, the command interest would be like: \texttt{/ucla/num-theory/POLICY/lesson1/[signature]}.
+In this case, the command interest would be like: \textbf{/ucla/num-theory/POLICY/lesson1/[signature]}.
 Once get the command from token issuer, the producer will first check the signature.
 If the interest can be trusted, the producer should follow the command.
 
@@ -134,12 +139,14 @@ If the interest can be trusted, the producer should follow the command.
 
 Similar as the previous design, to make sure the security communication between token issuer and AA, we let the token issuer to send interest carrying the token to AA.
 The naming convention for this kind of  interest is like:
-\begin{verbatim}
-/[Attribute authority prefix]/TOKEN/[Token data]
 
-Signature:
-/<timestamp>/<random number>/<signature info>/<signature value>
-\end{verbatim}
+\begin{figure}[H]
+  \centering
+  \includegraphics[width=0.5\textwidth]{figures/token-interest}
+  \vspace{-3mm}
+  \caption{Token interest naming convention}
+\end{figure}
+
 This naming convention somehow abuse the interest to pass data content but it only happens during the preliminary phase and it does not hurt.
 Notice the interest is not a signed interest for there is already a signature inside the token.
 Because the replied data's content is encrypted by consumer's public key, no one except the consumer can get the key: it is secure to send back the data publicly.
