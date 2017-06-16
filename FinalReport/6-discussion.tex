@@ -1,11 +1,61 @@
 \section{Discussion}
 
-The \textit{proceedings} are the records of a conference.\footnote{This
-  is a footnote}  ACM seeks
-to give these conference by-products a uniform, high-quality
-appearance.  To do this, ACM has some rigid requirements for the
-format of the proceedings documents: there is a specified format
-(balanced double columns), a specified set of fonts (Arial or
-Helvetica and Times Roman) in certain specified sizes, a specified
-live area, centered on the page, specified size of margins, specified
-column width and gutter size.
+\subsection{Name-based Access Control v.s. VO system}
+There is an effort called Named-based Access Control (NAC) which realizes the access control over NDN.
+NAC achieve the access by the following structure:
+\textbf{Data owner} maintains a key-value list recording the access rights for each consumer.
+For each list item, the key is consumer identity name, and the value is the accessible data name prefix.
+Data owner will generate the RSA key pairs, where the public key is called EKEY and the private key is called DKEY.
+\textbf{Data producer} produces the data.
+Producer will first generate a symmetric key called CKEY to encrypt the content.
+Then the producer would fetch a EKEY from data owner and use the DKEY to encrypt the CKEY.
+The access control is done by the distribution of the DKEY: only authorised consumer can get the DKEY from the data owner.
+To consume data, \textbf{Data consumer} first needs to fetch back the data packet.
+Then the consumer needs to fetch the CKEY data.
+To decrypt CKEY data, the consumer needs to fetch DKEY data.
+Finally, the consumer can use the DKEY to decrypt CKEY, and use CKEY to decrypt content.
+
+Compared with NAC, there are two main differences.
+\begin{itemize}
+\item \textbf{The way of defining access rights} \\
+Since VO system is using CPABE to achieve the access control.
+The biggest difference is the way of defining access rights.
+NAC is using the name mapping to record the consumer's authority, while VO system is using the attributes to tag the consumer.
+VO system decouples the consumers and the target of the content.
+From VO system producer's perspective, the data is produced for a combination of attributes instead of a bunch of consumers.
+In NAC, the producer is producing data especially for the consumers managed by a specific data owner.
+
+Regarding the access key, in NAC, if there are multiple kinds of data, the consumer needs to maintain multiple DKEYs.
+Take the UCLA and MIT example to explain: assume each producer in UCLA and MIT produce only one kind of data and each data is targeted to different type of consumers.
+In this case, there should be at least four different EKEY/DKEY pairs for these four data types, because only in this way, the consumer who can access to one type of data cannot access to other types using the same DKEY.
+Assume there is a super high authority consumer, like the principle of UCLA.
+This consumer has access to all four types of data and this means the consumer would have four different keys.
+Notice that RSA key bits has no semantic meaning.
+If the system is large enough (hundreds of organization and thousands of producers), the number of keys would become a problem.
+
+In VO system, the decryption key has semantic meaning in the key bits.
+Also, even though there are a large amount of data types, each consumer is still supposed to have only one decryption key.
+Using attributes and logic gates to be the public key brings two benefits.
+First, a small number of attributes can combine together and support a large number of policies and thus a large number of data types.
+Another benefit is that the producer does not need to fetch any crypto keys from attribute authority or other parties and thus the overhead of the data production is lower than NAC.
+
+\item \textbf{Different types of fine-grained} \\
+NAC support fine-grained access control by designing the naming convention.
+In the NAC paper, the authors mentioned that by adding the timestamp to the data name and the key name, the granularity of the time could become small, like one hour.
+The main idea is that the consumer needs to fetch the CKEY or EKEY within the corresponding time period, and then the data owner could control the access in the granularity of a short period of time.
+
+In VO system, the fine-grained access control can be achieved not only by the design of the naming convention, but also can be achieved by the rich combination of attributes.
+Since the VO system is also designed over NDN, the producer have the flexibility to define fine-grained data naming conventions.
+Therefore, VO system can achieve the same fine-grained access control as NAC does.
+However, NAC cannot support the rich meaning of the access policy.
+For example, VO system support AND, OR or even LARGER THAN and SMALLER THAN.
+Those logic gates could express much richer meaning than the pure distribution of RSA keys.
+
+\end{itemize}
+
+\subsection{Pure CPABE system v.s. VO system}
+
+The main difference is caused by the network infrastructure.
+VO system is based on NDN, which has build-in content-centric security and packet-level security.
+NDN's decoupling content with location (IP address) also enable the efficient multicast model and the network-wide cache.
+Those NDN features make VO system more secure and more efficient.
