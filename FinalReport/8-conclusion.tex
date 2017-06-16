@@ -1,23 +1,16 @@
 \section{Conclusion}
 
-Citations to articles~\cite{bowman:reasoning,
-clark:pct, braams:babel, herlihy:methodology},
-conference proceedings~\cite{clark:pct} or maybe
-books \cite{Lamport:LaTeX, salas:calculus} listed
-in the Bibliography section of your
-article will occur throughout the text of your article.
-You should use BibTeX to automatically produce this bibliography;
-you simply need to insert one of several citation commands with
-a key of the item cited in the proper location in
-the \texttt{.tex} file~\cite{Lamport:LaTeX}.
-The key is a short reference you invent to uniquely
-identify each work; in this sample document, the key is
-the first author's surname and a
-word from the title.  This identifying key is included
-with each item in the \texttt{.bib} file for your article.
+In this paper, we proposed the Attribute-based Access Control over NDN which achieves the secure access control protocol over the NDN. The proposed ABAC-NDN includes the following advanced features:
 
-The details of the construction of the \texttt{.bib} file
-are beyond the scope of this sample document, but more
-information can be found in the \textit{Author's Guide},
-and exhaustive details in the \textit{\LaTeX\ User's
-Guide} by Lamport~\shortcite{Lamport:LaTeX}.
+\begin{itemize}
+	\item Semi-distributed system.
+	\item Asynchronous data production and consumption.
+	\item Decoupled access control and knowledge of the consumers.
+	\item Allow data owner and producer in different devices.
+	\item Allow attribute authority and token issuer in different devices.
+	\item Any party could become a producer immediately.
+\end{itemize}
+
+Compare to other encryption method in NDN, the ABAC is more feasible and more flexible. The attribute based encryption can serve NDN application in a good way, since the build-in distribution support in NDN can let consumer fetch the content based on Name and decrypt with attributes without other information like location in TCP/IP network. By encrypting and decrypting content based on the attributes, it can achieve the virtual organization concept we proposed in this paper.
+
+With above advance features, we implemented the ABAC-NDN in a C++ library. The library can support the ABAC based application in NDN in an easy way. For now the unit tests and integrated test can verify the correctness of the proposed ABAC-NDN. It shows that our code base can successfully achieve the concept of virtual organization based on the attributes.
