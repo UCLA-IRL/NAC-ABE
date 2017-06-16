@@ -1,36 +1,5 @@
 \section{Virtual Organization Over NDN}
 
-\begin{figure*}[t]
-  \centering
-  \includegraphics[scale=0.5]{figures/example}
-  \vspace{-3mm}
-  \caption{An example of how VO system work}
-  \label{fig:example}
-\end{figure*}
-
-To facilitate explanation, in this section, we will use the following example (\ref{fig:example}) to illustrate the VO system.
-The right side is the VO management system, which contains an \textbf{attribute authority} and a \textbf{VO manager}.
-Attribute authority will setup the CPABE environment by generating public parameters and a secret master key.
-The VO manager will create the VO, the data packet(s) containing the name category.
-Both UCLA and MIT will produce networking lecture data and Number-theory lecture data.
-There are two real-world organizations in our example: UCLA and MIT.
-Besides producers which are the green circles, each organization also contains one \textbf{data owner} and one \textbf{token issuer}.
-Data owner is the one who define the access rules for producer.
-Token issuer takes the duty to help attribute authority to verify consumer's identity.
-
-In NDN, each party is supposed to have an identity.
-To make the example clear, we have the name like:
-
-\begin{verbatim}
-VO attribute authority: /vo/authority
-VO manager: /vo/manager
-
-UCLA token issuer: /ucla/token-issuer
-UCLA data owner: /ucla/data-owner
-UCLA network producer: /ucla/network
-UCLA number theory producer: /ucla/num-theory
-\end{verbatim}
-
 In our example, there are also two VOs containing networking lecture data names and number theory lecture data names respectively.
 In this way, the authorised consumers could easily access the networking/number theory lecture data both from UCLA and MIT through VO.
 
