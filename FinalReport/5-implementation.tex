@@ -4,7 +4,7 @@ To see whether the design works or not under NDN environment, we implemented the
 
 \subsection{ABAC-NDN code base}
 
-There are five main components in the code base: Attribute Authority, Data Owner, Token Issuer, Consumer and Producer, shown in Fig.\ref{}.
+There are five main components in the code base: Attribute Authority, Data Owner, Token Issuer, Consumer and Producer. All the components are already shown in Fig.\ref{fig:example}.
 
 When initializing the Attribute Authority, the public parameters and master key will be generated and uniquely used in global. All components except Token Issuer and Data Owner need to fetch public parameters for encryption and decryption. Besides, the Attribute Authority also registers the prefix to serve the decryption key request. All decryption keys will be generated for different users which will be verified and issued tokens. Since Attribute Authority trusts the Token Issuer, the token issued to a user will be verified and corresponding decryption key will be sent back to the user.
 
