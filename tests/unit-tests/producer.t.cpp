@@ -80,7 +80,7 @@ BOOST_AUTO_TEST_CASE(Constructor)
                         result.setName(dataName);
                         const auto& contentBuf = m_pubParams.toBuffer();
                         result.setContent(makeBinaryBlock(ndn::tlv::Content,
-                                                          contentBuf.buf(), contentBuf.size()));
+                                                          contentBuf.data(), contentBuf.size()));
                         m_keyChain.sign(result, signingByCertificate(cert));
 
                         _LOG_TRACE("Reply public params request.");

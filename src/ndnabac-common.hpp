@@ -48,15 +48,15 @@
 
 #include <ndn-cxx/interest.hpp>
 #include <ndn-cxx/data.hpp>
+#include <ndn-cxx/face.hpp>
 #include <ndn-cxx/name.hpp>
 #include <ndn-cxx/encoding/block.hpp>
 #include <ndn-cxx/lp/nack.hpp>
 #include <ndn-cxx/util/backports.hpp>
-#include <ndn-cxx/util/face-uri.hpp>
 #include <ndn-cxx/util/signal.hpp>
 #include <ndn-cxx/security/v2/key-chain.hpp>
-#include <ndn-cxx/security/validator.hpp>
 #include <ndn-cxx/security/v2/certificate.hpp>
+#include <ndn-cxx/security/v2/validator.hpp>
 
 #include <boost/algorithm/string.hpp>
 #include <boost/assert.hpp>

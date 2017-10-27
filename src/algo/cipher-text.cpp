@@ -38,11 +38,11 @@ CipherText::wireEncode(EncodingImpl<TAG>& encoder) const
   // encrypted symmetric key
   Buffer aesKeyBuf(m_cph->data, m_cph->len);
   totalLength += encoder.prependByteArrayBlock(TLV_EncryptedAesKey,
-                                               aesKeyBuf.get(), aesKeyBuf.size());
+                                               aesKeyBuf.data(), aesKeyBuf.size());
 
   // encrypted content
   totalLength += encoder.prependByteArrayBlock(TLV_EncryptedContent,
-                                               m_content.get(), m_content.size());
+                                               m_content.data(), m_content.size());
 
   // plain text length
   totalLength += prependNonNegativeIntegerBlock(encoder, TLV_PlainTextSize, m_plainTextSize);
@@ -101,7 +101,7 @@ CipherText::wireDecode(const Block& wire)
   if (it != m_wire.elements_end() && it->type() == TLV_EncryptedAesKey) {
     Buffer cphBuffer(it->value(), it->value_size());
     m_cph = g_byte_array_new();
-    g_byte_array_append(m_cph, cphBuffer.buf(), static_cast<guint>(cphBuffer.size()));
+    g_byte_array_append(m_cph, cphBuffer.data(), static_cast<guint>(cphBuffer.size()));
     it++;
   }
   else

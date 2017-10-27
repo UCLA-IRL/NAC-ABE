@@ -38,9 +38,9 @@ PrivateKey::toBuffer()
 void
 PrivateKey::fromBuffer(const Buffer& buffer)
 {
-  Buffer tempBuf(buffer.buf(), buffer.size());
+  Buffer tempBuf(buffer.data(), buffer.size());
   m_prv = g_byte_array_new();
-  g_byte_array_append(m_prv, tempBuf.buf(), static_cast<guint>(tempBuf.size()));
+  g_byte_array_append(m_prv, tempBuf.data(), static_cast<guint>(tempBuf.size()));
 }
 
 } // namespace algo

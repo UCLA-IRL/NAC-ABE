@@ -75,7 +75,7 @@ TokenIssuer::onTokenRequest(const Interest& request)
 
       std::stringstream ss;
       namespace t = ndn::security::transform;
-      t::bufferSource(anchor.getPublicKey().buf(), anchor.getPublicKey().size())
+      t::bufferSource(anchor.getPublicKey().data(), anchor.getPublicKey().size())
         >> t::base64Encode() >> t::streamSink(ss);
       std::string keyBitsStr = ss.str();
 

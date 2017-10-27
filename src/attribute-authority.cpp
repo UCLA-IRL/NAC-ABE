@@ -133,7 +133,7 @@ AttributeAuthority::onDecryptionKeyRequest(const Interest& interest)
   Data result;
   result.setName(interest.getName());
   // result.setContent(Block(ndn::tlv::Content, encryptedKey));
-  result.setContent(makeBinaryBlock(tlv::Content, prvBuffer.get(), prvBuffer.size()));
+  result.setContent(makeBinaryBlock(tlv::Content, prvBuffer.data(), prvBuffer.size()));
   m_keyChain.sign(result, signingByCertificate(m_cert));
   m_face.put(result);
 }
@@ -149,7 +149,7 @@ AttributeAuthority::onPublicParamsRequest(const Interest& interest)
   result.setName(dataName);
   const auto& contentBuf = m_pubParams.toBuffer();
   result.setContent(makeBinaryBlock(ndn::tlv::Content,
-                                    contentBuf.buf(), contentBuf.size()));
+                                    contentBuf.data(), contentBuf.size()));
   _LOG_DEBUG("before sign");
   m_keyChain.sign(result, signingByCertificate(m_cert));
 

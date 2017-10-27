@@ -82,7 +82,7 @@ ABESupport::encrypt(const PublicParams& pubParams,
   bswabe_cph_free(cph);
   delete [] policyCharArray;
 
-  GByteArray content{plainText.buf(), static_cast<guint>(plainText.size())};
+  GByteArray content{plainText.data(), static_cast<guint>(plainText.size())};
   // GByteArray* content = new GByteArray{buf, length};
   GByteArray* encryptedContent = aes_128_encrypt(&content, m);
   element_clear(m);
@@ -105,7 +105,7 @@ ABESupport::decrypt(const PublicParams& pubParams,
     _LOG_ERROR("Decryption error!" + std::string(bswabe_error()));
   }
 
-  GByteArray content{cipherText.m_content.buf(), static_cast<guint>(cipherText.m_content.size())};
+  GByteArray content{cipherText.m_content.data(), static_cast<guint>(cipherText.m_content.size())};
   GByteArray* result = aes_128_decrypt(&content, m, cipherText.m_plainTextSize);
   return Buffer(result->data, result->len);
 }

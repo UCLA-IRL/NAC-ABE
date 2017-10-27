@@ -31,7 +31,7 @@ EncryptParams::EncryptParams(AlgorithmTypeValue algorithm, uint8_t ivLength)
   if (ivLength != 0){
     RandomNumberGenerator rng;
     m_iv.resize(ivLength);
-    rng.GenerateBlock(m_iv.buf(), m_iv.size());
+    rng.GenerateBlock(m_iv.data(), m_iv.size());
   }
 }
 

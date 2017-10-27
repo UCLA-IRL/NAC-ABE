@@ -37,9 +37,9 @@ PublicParams::toBuffer()
 void
 PublicParams::fromBuffer(const Buffer& buffer)
 {
-  Buffer tempBuf(buffer.buf(), buffer.size());
+  Buffer tempBuf(buffer.data(), buffer.size());
   m_pub = g_byte_array_new();
-  g_byte_array_append(m_pub, tempBuf.buf(), static_cast<guint>(tempBuf.size()));
+  g_byte_array_append(m_pub, tempBuf.data(), static_cast<guint>(tempBuf.size()));
 }
 
 } // namespace algo
