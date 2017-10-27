@@ -69,6 +69,10 @@ def configure(conf):
     conf.env.INCLUDES_BSWABE  = ['/usr/local/include']
     conf.check_cxx(lib = 'bswabe', use = 'BSWABE')
 
+    conf.env.STLIBPATH_BSWABE = ['/usr/local/lib']
+    conf.env.INCLUDES_BSWABE  = ['/usr/local/include']
+    conf.check_cxx(lib = 'cryptopp', use = 'CRYPTOPP')
+
     conf.write_config_header('src/ndnabac-config.hpp')
 
 def build(bld):
@@ -78,7 +82,7 @@ def build(bld):
         source =  bld.path.ant_glob(['src/**/*.cpp', 'src/**/*.c']),
         vnum = VERSION,
         cnum = VERSION,
-        use = 'NDN_CXX BOOST GMP GLIB PBC BSWABE',
+        use = 'NDN_CXX BOOST GMP GLIB PBC BSWABE CRYPTOPP',
         includes = ['src'],
         export_includes=['src'],
     )
