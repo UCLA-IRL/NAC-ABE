@@ -56,6 +56,13 @@ TokenIssuer::~TokenIssuer()
   }
 }
 
+bool
+TokenIssuer::insertAttributes(std::pair<Name, std::list<std::string>> nameWithAttr)
+{
+  m_tokens.insert(nameWithAttr);
+  return true;
+}
+
 void
 TokenIssuer::onTokenRequest(const Interest& request)
 {

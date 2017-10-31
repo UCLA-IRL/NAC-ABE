@@ -37,6 +37,9 @@ public:
 
   ~TokenIssuer();
 
+  bool
+  insertAttributes(std::pair<Name, std::list<std::string>>);
+
 private:
   void
   onTokenRequest(const Interest& request);
