@@ -40,6 +40,9 @@ public:
   bool
   insertAttributes(std::pair<Name, std::list<std::string>>);
 
+  void
+  addCert(const security::v2::Certificate& cert);
+
 private:
   void
   onTokenRequest(const Interest& request);

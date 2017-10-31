@@ -64,6 +64,12 @@ TokenIssuer::insertAttributes(std::pair<Name, std::list<std::string>> nameWithAt
 }
 
 void
+TokenIssuer::addCert(const security::v2::Certificate& cert)
+{
+  m_trustConfig.m_trustAnchors.push_back(cert);
+}
+
+void
 TokenIssuer::onTokenRequest(const Interest& request)
 {
   // Name: /token-issuer-name/TOKEN/<identity name block>
