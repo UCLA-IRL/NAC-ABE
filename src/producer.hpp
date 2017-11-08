@@ -69,6 +69,10 @@ public:
           const uint8_t* content, size_t contentLen,
           const SuccessCallback& onDataProduceCb, const ErrorCallback& errorCallback);
 
+  void
+  produce(const Name& dataPrefix, const uint8_t* content, size_t contentLen,
+          const SuccessCallback& onDataProduceCb, const ErrorCallback& errorCallback);
+
 private:
   void
   onAttributePubParams(const Interest& request, const Data& pubParamData);

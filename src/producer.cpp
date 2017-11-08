@@ -99,6 +99,21 @@ Producer::produce(const Name& dataPrefix, const std::string& accessPolicy,
   }
 }
 
+void
+Producer::produce(const Name& dataPrefix, const uint8_t* content, size_t contentLen,
+                  const SuccessCallback& onDataProduceCb, const ErrorCallback& errorCallback)
+{
+  // Encrypt data based on data prefix.
+  auto it = m_policyCache.find(dataPrefix);
+  if (it == m_policyCache.end()) {
+    errorCallback("policy missing");
+    NDN_LOG_INFO("policy doesn't exist");
+    return;
+  }
+  produce(dataPrefix, it->second, content, contentLen, onDataProduceCb, errorCallback);
+  
+}
+
 //private:
 void
 Producer::onPolicyInterest(const Interest& interest)
