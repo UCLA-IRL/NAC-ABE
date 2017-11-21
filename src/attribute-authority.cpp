@@ -119,21 +119,20 @@ AttributeAuthority::onDecryptionKeyRequest(const Interest& interest)
     attrs.push_back(attrName);
   }
 
-  // generate private key
-  // security::transform::PublicKey pubKey;
-  // std::stringstream ss(pubKeyStr);
-  // _LOG_TRACE("key bits " << pubKeyStr);
-  // pubKey.loadPkcs8Base64(ss);
+  // generate ABE private key and do encryption
+  algo::PrivateKey ABEPrvKey = algo::ABESupport::prvKeyGen(m_pubParams, m_masterKey, attrs);
+  auto prvBuffer = ABEPrvKey.toBuffer();
 
-  algo::PrivateKey prvKey = algo::ABESupport::prvKeyGen(m_pubParams, m_masterKey, attrs);
-  auto prvBuffer = prvKey.toBuffer();
-  // auto encryptedKey = pubKey.encrypt(prvBuffer.buf(), prvBuffer.size());
+  security::transform::PublicKey pubKey;
+  pubKey.loadPkcs8Base64(reinterpret_cast<const uint8_t*>(pubKeyStr.c_str()),
+                         pubKeyStr.size());
+  auto encryptedKey = pubKey.encrypt(prvBuffer.data(), prvBuffer.size());
 
   // reply interest with encrypted private key
   Data result;
   result.setName(interest.getName());
-  // result.setContent(Block(ndn::tlv::Content, encryptedKey));
-  result.setContent(makeBinaryBlock(tlv::Content, prvBuffer.data(), prvBuffer.size()));
+  result.setContent(Block(ndn::tlv::Content, encryptedKey));
+  // result.setContent(makeBinaryBlock(tlv::Content, prvBuffer.data(), prvBuffer.size()));
   m_keyChain.sign(result, signingByCertificate(m_cert));
   m_face.put(result);
 }
