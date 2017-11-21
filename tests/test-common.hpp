@@ -39,6 +39,7 @@
 #include <ndn-cxx/name.hpp>
 #include <ndn-cxx/data.hpp>
 #include <ndn-cxx/lp/nack.hpp>
+#include <ndn-cxx/link.hpp>
 #include <ndn-cxx/util/time-unit-test-clock.hpp>
 #include <ndn-cxx/util/string-helper.hpp>
 
