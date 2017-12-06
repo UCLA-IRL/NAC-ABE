@@ -69,6 +69,7 @@ PUBLIC_WITH_TESTS_ELSE_PRIVATE:
   security::v2::KeyChain& m_keyChain;
 
   TrustConfig m_trustConfig;
+  std::list<const RegisteredPrefixId*> m_registeredPrefixIds;
   std::list<const InterestFilterId*> m_interestFilterIds;
   std::map<Name/* Consumer Identity */, std::list<std::string>/* Attr */> m_tokens;
 };

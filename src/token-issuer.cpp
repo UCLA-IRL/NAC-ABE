@@ -44,15 +44,32 @@ TokenIssuer::TokenIssuer(const security::v2::Certificate& identityCert, Face& fa
 {
   // prefix registration
   const InterestFilterId* filterId;
-  filterId = m_face.setInterestFilter(Name(m_cert.getIdentity()).append(TOKEN_REQUEST),
-                                      bind(&TokenIssuer::onTokenRequest, this, _2));
-  m_interestFilterIds.push_back(filterId);
+    // prefix registration
+  const RegisteredPrefixId* prefixId = m_face.registerPrefix(m_cert.getIdentity(),
+    [&] (const Name& name) {
+      _LOG_TRACE("Prefix " << name << " got registered");
+      const InterestFilterId* filterId;
+
+      // public parameter filter
+      filterId = m_face.setInterestFilter(Name(m_cert.getIdentity()).append(TOKEN_REQUEST),
+                                          bind(&TokenIssuer::onTokenRequest, this, _2));
+      m_interestFilterIds.push_back(filterId);
+      _LOG_TRACE("InterestFilter " << Name(m_cert.getIdentity()).append(TOKEN_REQUEST) << " got set");
+
+    },
+    [&] (const Name& name, const std::string& reason) {
+      _LOG_TRACE("Error: failed to register prefix in local hub's daemon, REASON: " << reason);
+    });
+  m_registeredPrefixIds.push_back(prefixId);
 }
 
 TokenIssuer::~TokenIssuer()
 {
   for (auto prefixId : m_interestFilterIds) {
     m_face.unsetInterestFilter(prefixId);
+  }
+  for (auto prefixId : m_registeredPrefixIds) {
+    m_face.unregisterPrefix(prefixId, nullptr, nullptr);
   }
 }
 

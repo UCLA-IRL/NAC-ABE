@@ -56,7 +56,8 @@ Consumer::consume(const Name& dataName, const Name& tokenIssuerPrefix,
   DataCallback dataCb = std::bind(&Consumer::decryptContent, this, _2, tokenIssuerPrefix,
                                   consumptionCb, errorCallback);
 
-  NDN_LOG_INFO(m_cert.getIdentity()<<" asking for data"<<interest.getName() );
+  NDN_LOG_INFO(m_cert.getIdentity()<<" asking for data"<<interest.getName());
+  NDN_LOG_INFO("express interest:" << interest.getName());
   m_face.expressInterest(interest, dataCb,
                          std::bind(&Consumer::handleNack, this, _1, _2, errorCallback),
                          std::bind(&Consumer::handleTimeout, this, _1, m_repeatAttempts, dataCb, errorCallback));

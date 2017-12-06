@@ -45,10 +45,19 @@ Producer::Producer(const security::v2::Certificate& identityCert, Face& face,
 {
   // prefix registration
   const InterestFilterId* filterId;
-  filterId = m_face.setInterestFilter(Name(m_cert.getIdentity()).append(SET_POLICY),
-                                      bind(&Producer::onPolicyInterest, this, _2));
-  _LOG_DEBUG("set prefix:"<<m_cert.getIdentity());
-  m_interestFilterIds.push_back(filterId);
+  const RegisteredPrefixId* prefixId = m_face.registerPrefix(m_cert.getIdentity(),
+    [&] (const Name& name) {
+      _LOG_TRACE("Prefix " << name << " got registered");
+      const InterestFilterId* filterId;
+
+      // set policy filter
+      filterId = m_face.setInterestFilter(Name(m_cert.getIdentity()).append(SET_POLICY),
+                                          bind(&Producer::onPolicyInterest, this, _2));
+      m_interestFilterIds.push_back(filterId);
+      _LOG_TRACE("InterestFilter " << Name(m_cert.getIdentity()).append(SET_POLICY) << " got set");
+    },
+    bind(&Producer::onRegisterFailed, this, _2));
+  m_registeredPrefixIds.push_back(prefixId);
   fetchPublicParams();
 }
 
@@ -57,12 +66,16 @@ Producer::~Producer()
   for (auto prefixId : m_interestFilterIds) {
     m_face.unsetInterestFilter(prefixId);
   }
+
+  for (auto prefixId : m_registeredPrefixIds) {
+    m_face.unregisterPrefix(prefixId, nullptr, nullptr);
+  }
 }
 
 void
 Producer::onAttributePubParams(const Interest& request, const Data& pubParamData)
 {
-  NDN_LOG_INFO("Get public parameters");
+  NDN_LOG_INFO("Get public parameters.");
   Name attrAuthorityKey = pubParamData.getSignature().getKeyLocator().getName();
   for (auto anchor : m_trustConfig.m_trustAnchors) {
     if (anchor.getKeyName() == attrAuthorityKey) {
@@ -72,6 +85,7 @@ Producer::onAttributePubParams(const Interest& request, const Data& pubParamData
   }
   auto block = pubParamData.getContent();
   m_pubParamsCache.fromBuffer(Buffer(block.value(), block.value_size()));
+  NDN_LOG_INFO("Set public parameters done.");
 }
 
 void
@@ -107,7 +121,7 @@ Producer::produce(const Name& dataPrefix, const uint8_t* content, size_t content
   auto it = m_policyCache.find(dataPrefix);
   if (it == m_policyCache.end()) {
     errorCallback("policy missing");
-    NDN_LOG_INFO("policy doesn't exist");
+    NDN_LOG_INFO("policy doesn't exist"<<dataPrefix);
     return;
   }
   produce(dataPrefix, it->second, content, contentLen, onDataProduceCb, errorCallback);
@@ -161,6 +175,12 @@ Producer::fetchPublicParams()
   m_face.expressInterest(interest, std::bind(&Producer::onAttributePubParams, this, _1, _2),
                          [=](const Interest&, const lp::Nack&){},
                          [=](const Interest&){});
+}
+
+void
+Producer::onRegisterFailed(const std::string& reason)
+{
+  _LOG_TRACE("Error: failed to register prefix in local hub's daemon, REASON: " << reason);
 }
 
 } // namespace ndnabac

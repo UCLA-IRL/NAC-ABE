@@ -60,16 +60,20 @@ DataOwner::commandProducerPolicy(const Name& prefix, const Name& dataPrefix, con
   // prepare callback functions
   auto validationCallback =
     [=] (const Data& validData) {
+    NDN_LOG_INFO("validate:"<<validData.getName()<<","<<readString(validData.getContent()));
     //try to know if register success;
     if (readString(validData.getContent()) != "success") {
+      NDN_LOG_INFO("validate failed");
       errorCb("register failed");
     }
     else {
+      NDN_LOG_INFO("validate success");
       SuccessCb(validData);
     }
   };
 
   auto dataCallback = [=] (const Interest& contentInterest, const Data& contentData) {
+    NDN_LOG_INFO("data received"<<contentData.getName());
     if (!contentInterest.matchesData(contentData))
       return;
 
@@ -78,9 +82,12 @@ DataOwner::commandProducerPolicy(const Name& prefix, const Name& dataPrefix, con
 
   // set link object if it is available
 
-
+  NDN_LOG_INFO(interest->getName().toUri());
+  interest->setMustBeFresh(true);
   m_face.expressInterest(*interest, dataCallback,
-                         nullptr,
+                         [=] (const Interest&, const lp::Nack&) {
+                           errorCb("Nack");
+                         },
                          [=] (const Interest&) {
                            errorCb("time out");
                          });
