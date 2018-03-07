@@ -5,11 +5,7 @@ NDN-Attribute-Based-Access-Control
 Overview
 --------
 
-There are two main parts in this project:
-
-* Named Data Networking Attribute-based Encryption Support Library: ndn-abac
-* Virtual Organization System Implementation
-
+Named Data Networking Attribute-based Encryption Support Library: ndn-abac
 
 Quick Start
 -----------
@@ -71,6 +67,20 @@ Really simple to make it using waf.
 // bash
 // in the root directory of ndn-abac
 ./waf install
+```
+
+### Run Tests ###
+
+```
+// bash
+// in the root directory of ndn-abac
+./waf configure --with-tests
+
+// test abe support (encryption decryption)
+./build/unit-tests -t TestAbeSupport
+
+// integrate test
+./build/tests/integrated-tests/integrated-test.t
 ```
 
 Contact
