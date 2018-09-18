@@ -19,7 +19,6 @@
  */
 
 #include "token-issuer.hpp"
-#include "logging.hpp"
 
 #include <ndn-cxx/security/transform.hpp>
 #include <ndn-cxx/security/signing-helpers.hpp>
@@ -28,7 +27,7 @@
 namespace ndn {
 namespace ndnabac {
 
-_LOG_INIT(ndnabac.token-issuer);
+NDN_LOG_INIT(ndnabac.token-issuer);
 
 const Name TokenIssuer::TOKEN_REQUEST = "/TOKEN";
 
@@ -72,7 +71,7 @@ TokenIssuer::addCert(const security::v2::Certificate& cert)
 void
 TokenIssuer::onTokenRequest(const Interest& request)
 {
-  // Name: /token-issuer-name/TOKEN/<identity name block>
+  // Name: /token-issuer-name/TOKEN/<identity name block>/<signature>
 
   NDN_LOG_INFO("get token request:"<<request.getName());
   Name identityName(request.getName().at(m_cert.getIdentity().size() + 1).blockFromValue());
@@ -82,7 +81,7 @@ TokenIssuer::onTokenRequest(const Interest& request)
   for (auto anchor : m_trustConfig.m_trustAnchors) {
     if (anchor.getIdentity() == identityName) {
       if (!security::verifySignature(request, anchor)) {
-        _LOG_TRACE("Interest is with bad signature");
+        NDN_LOG_TRACE("Interest is with bad signature");
         return;
       }
 
@@ -92,7 +91,7 @@ TokenIssuer::onTokenRequest(const Interest& request)
         >> t::base64Encode() >> t::streamSink(ss);
       std::string keyBitsStr = ss.str();
 
-      _LOG_TRACE("Token identity field: " << keyBitsStr);
+      NDN_LOG_TRACE("Token identity field: " << keyBitsStr);
 
       root.put(TOKEN_USER, keyBitsStr);
       break;

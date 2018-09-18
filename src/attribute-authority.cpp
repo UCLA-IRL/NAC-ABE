@@ -22,7 +22,6 @@
 #include "json-helper.hpp"
 #include "token-issuer.hpp"
 #include "algo/rsa.hpp"
-#include "logging.hpp"
 
 #include <ndn-cxx/security/transform/public-key.hpp>
 #include <ndn-cxx/security/signing-helpers.hpp>
@@ -31,8 +30,7 @@
 namespace ndn {
 namespace ndnabac {
 
-_LOG_INIT(ndnabac.attribute-authority);
-
+NDN_LOG_INIT(ndnabac.attribute-authority);
 
 const Name AttributeAuthority::PUBLIC_PARAMS = "/PUBPARAMS";
 const Name AttributeAuthority::DECRYPT_KEY = "/DKEY";
@@ -51,20 +49,20 @@ AttributeAuthority::AttributeAuthority(const security::v2::Certificate& identity
   // prefix registration
   const RegisteredPrefixId* prefixId = m_face.registerPrefix(m_cert.getIdentity(),
     [&] (const Name& name) {
-      _LOG_TRACE("Prefix " << name << " got registered");
+      NDN_LOG_TRACE("Prefix " << name << " got registered");
       const InterestFilterId* filterId;
 
       // public parameter filter
       filterId = m_face.setInterestFilter(Name(name).append(PUBLIC_PARAMS),
                                           bind(&AttributeAuthority::onPublicParamsRequest, this, _2));
       m_interestFilterIds.push_back(filterId);
-      _LOG_TRACE("InterestFilter " << Name(name).append(PUBLIC_PARAMS) << " got set");
+      NDN_LOG_TRACE("InterestFilter " << Name(name).append(PUBLIC_PARAMS) << " got set");
 
       // decryption key filter
       filterId = m_face.setInterestFilter(Name(name).append(DECRYPT_KEY),
                                           bind(&AttributeAuthority::onDecryptionKeyRequest, this, _2));
       m_interestFilterIds.push_back(filterId);
-      _LOG_TRACE("InterestFilter " << Name(name).append(DECRYPT_KEY) << " got set");
+      NDN_LOG_TRACE("InterestFilter " << Name(name).append(DECRYPT_KEY) << " got set");
     },
     bind(&AttributeAuthority::onRegisterFailed, this, _2));
   m_registeredPrefixIds.push_back(prefixId);
@@ -81,41 +79,28 @@ AttributeAuthority::~AttributeAuthority()
 }
 
 void
-AttributeAuthority::onDecryptionKeyRequest(const Interest& interest)
+AttributeAuthority::onDecryptionKeyRequest(const Interest& request)
 {
-  // naming: /AA-prefix/DKEY/<token>
+  // naming: /AA-prefix/DKEY/<identity name block>/<signature>
 
-  // get token
-  NDN_LOG_INFO("get decryption key request:"<<interest.getName());
-  Data token;
-  try {
-    token.wireDecode(interest.getName().at(m_cert.getIdentity().size() + 1).blockFromValue());
-  }
-  catch (const std::exception& e) {
-    _LOG_TRACE("Unrecognized token " << e.what());
-    return;
-  }
+  NDN_LOG_INFO("get DKEY request:"<<request.getName());
+  Name identityName(request.getName().at(m_cert.getIdentity().size() + 1).blockFromValue());
 
-  // verify token
-  Name tokenIssuerKey = token.getSignature().getKeyLocator().getName();
+  // verify request and generate token
+  JsonSection root;
+  security::v2::Certificate consumerCert;
   for (auto anchor : m_trustConfig.m_trustAnchors) {
-    if (anchor.getKeyName() == tokenIssuerKey) {
-      if (!security::verifySignature(token, anchor)) {
-        _LOG_TRACE("Invalid token");
+    if (anchor.getIdentity() == identityName) {
+      if (!security::verifySignature(request, anchor)) {
+        NDN_LOG_TRACE("Interest is with bad signature");
         return;
       }
+      consumerCert = anchor;
       break;
     }
   }
-
-  // parse token
   std::vector<std::string> attrs;
-  JsonSection tokenJson = JsonHelper::getJsonFromDataContent(token);
-  std::string pubKeyStr = tokenJson.get<std::string>(TokenIssuer::TOKEN_USER);
-  JsonSection attrList = tokenJson.get_child(TokenIssuer::TOKEN_ATTR_SET);
-  auto it = attrList.begin();
-  for (; it != attrList.end(); it++) {
-    std::string attrName = it->second.get(TokenIssuer::TOKEN_ATTR_NAME, "");
+  for (auto attrName : m_tokens[identityName]) {
     attrs.push_back(attrName);
   }
 
@@ -124,13 +109,13 @@ AttributeAuthority::onDecryptionKeyRequest(const Interest& interest)
   auto prvBuffer = ABEPrvKey.toBuffer();
 
   security::transform::PublicKey pubKey;
-  pubKey.loadPkcs8Base64(reinterpret_cast<const uint8_t*>(pubKeyStr.c_str()),
-                         pubKeyStr.size());
+  pubKey.loadPkcs8Base64(reinterpret_cast<const uint8_t*>(consumerCert.getPublicKey().data()),
+                         consumerCert.getPublicKey().size());
   auto encryptedKey = pubKey.encrypt(prvBuffer.data(), prvBuffer.size());
 
   // reply interest with encrypted private key
   Data result;
-  result.setName(interest.getName());
+  result.setName(request.getName());
   result.setContent(Block(ndn::tlv::Content, encryptedKey));
   // result.setContent(makeBinaryBlock(tlv::Content, prvBuffer.data(), prvBuffer.size()));
   m_keyChain.sign(result, signingByCertificate(m_cert));
@@ -149,11 +134,11 @@ AttributeAuthority::onPublicParamsRequest(const Interest& interest)
   const auto& contentBuf = m_pubParams.toBuffer();
   result.setContent(makeBinaryBlock(ndn::tlv::Content,
                                     contentBuf.data(), contentBuf.size()));
-  _LOG_DEBUG("before sign");
+  NDN_LOG_DEBUG("before sign");
   m_keyChain.sign(result, signingByCertificate(m_cert));
 
-  _LOG_TRACE("Reply public params request.");
-  _LOG_TRACE("Pub params size: " << contentBuf.size());
+  NDN_LOG_TRACE("Reply public params request.");
+  NDN_LOG_TRACE("Pub params size: " << contentBuf.size());
 
   m_face.put(result);
 }
@@ -161,7 +146,7 @@ AttributeAuthority::onPublicParamsRequest(const Interest& interest)
 void
 AttributeAuthority::onRegisterFailed(const std::string& reason)
 {
-  _LOG_TRACE("Error: failed to register prefix in local hub's daemon, REASON: " << reason);
+  NDN_LOG_TRACE("Error: failed to register prefix in local hub's daemon, REASON: " << reason);
 }
 
 void

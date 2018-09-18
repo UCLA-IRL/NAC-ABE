@@ -21,7 +21,7 @@
 #ifndef NDNABAC_ALGO_COMMON_HPP
 #define NDNABAC_ALGO_COMMON_HPP
 
-#include "../ndnabac-common.hpp"
+#include "../common.hpp"
 
 #include <pbc.h>
 #include <glib.h>

@@ -21,7 +21,6 @@
 #ifndef NDNABAC_CONSUMER_HPP
 #define NDNABAC_CONSUMER_HPP
 
-#include "ndnabac-common.hpp"
 #include "trust-config.hpp"
 #include "algo/public-params.hpp"
 #include "algo/private-key.hpp"

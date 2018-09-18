@@ -21,7 +21,6 @@
 #ifndef NDNABAC_TOKEN_ISSUER_HPP
 #define NDNABAC_TOKEN_ISSUER_HPP
 
-#include "ndnabac-common.hpp"
 #include "trust-config.hpp"
 #include "json-helper.hpp"
 #include <list>

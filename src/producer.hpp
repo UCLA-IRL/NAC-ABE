@@ -21,7 +21,6 @@
 #ifndef NDNABAC_PRODUCER_HPP
 #define NDNABAC_PRODUCER_HPP
 
-#include "ndnabac-common.hpp"
 #include "trust-config.hpp"
 #include "algo/public-params.hpp"
 

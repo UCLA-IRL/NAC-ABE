@@ -20,7 +20,6 @@
 #ifndef NDNABAC_TRUST_CONFIG_HPP
 #define NDNABAC_TRUST_CONFIG_HPP
 
-#include "ndnabac-common.hpp"
 #include "json-helper.hpp"
 
 namespace ndn {

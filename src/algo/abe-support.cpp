@@ -19,13 +19,12 @@
  */
 
 #include "abe-support.hpp"
-#include "../logging.hpp"
 
 namespace ndn {
 namespace ndnabac {
 namespace algo {
 
-_LOG_INIT(ndnabac.ABESupport);
+NDN_LOG_INIT(ndnabac.ABESupport);
 
 void
 ABESupport::setup(PublicParams& pubParams, MasterKey& masterKey)
@@ -102,7 +101,7 @@ ABESupport::decrypt(const PublicParams& pubParams,
   element_t m;
 
   if (!bswabe_dec(pub, prv, cph, m)) {
-    _LOG_ERROR("Decryption error!" + std::string(bswabe_error()));
+    NDN_LOG_ERROR("Decryption error!" + std::string(bswabe_error()));
   }
 
   GByteArray content{cipherText.m_content.data(), static_cast<guint>(cipherText.m_content.size())};

@@ -21,7 +21,7 @@
 #ifndef NDNABAC_ATTRIBUTE_AUTHORITY_HPP
 #define NDNABAC_ATTRIBUTE_AUTHORITY_HPP
 
-#include "ndnabac-common.hpp"
+#include "common.hpp"
 #include "trust-config.hpp"
 #include "algo/abe-support.hpp"
 
@@ -61,8 +61,9 @@ PUBLIC_WITH_TESTS_ELSE_PRIVATE:
   algo::PublicParams m_pubParams;
   algo::MasterKey m_masterKey;
 
-  std::list<security::v2::Certificate> m_trustAnchors;
   TrustConfig m_trustConfig;
+
+  std::map<Name/* Consumer Identity */, std::list<std::string>/* Attr */> m_tokens;
 
 PUBLIC_WITH_TESTS_ELSE_PRIVATE:
   std::list<const RegisteredPrefixId*> m_registeredPrefixIds;

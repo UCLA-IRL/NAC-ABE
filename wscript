@@ -1,29 +1,26 @@
 # -*- Mode: python; py-indent-offset: 4; indent-tabs-mode: nil; coding: utf-8; -*-
 VERSION = "0.1.0"
-APPNAME = "ndnabac"
-GIT_TAG_PREFIX = "ndnabac"
+APPNAME = "libnac-abe"
+GIT_TAG_PREFIX = "nac-abe"
 
 from waflib import Logs, Utils, Context
 import os
 
 def options(opt):
     opt.load(['compiler_cxx', 'gnu_dirs'])
-    opt.load(['boost', 'default-compiler-flags', 'sqlite3', 'glib2',
-              'coverage', 'sanitizers',
-              'doxygen', 'sphinx_build'], tooldir=['.waf-tools'])
+    opt.load(['boost', 'default-compiler-flags', 'glib2', 'sanitizers', 'doxygen'],
+                 tooldir=['.waf-tools'])
 
-    syncopt = opt.add_option_group ("ndnabac options")
+    syncopt = opt.add_option_group ("NAC-ABE options")
     syncopt.add_option('--with-tests', action='store_true', default=False, dest='with_tests',
                        help='''build unit tests''')
 
 def configure(conf):
     conf.load(['compiler_cxx', 'gnu_dirs',
-               'boost', 'default-compiler-flags', 'sqlite3', 'glib2',
-               'doxygen', 'sphinx_build'])
+               'boost', 'default-compiler-flags', 'glib2', 'doxygen'])
 
     if 'PKG_CONFIG_PATH' not in os.environ:
        os.environ['PKG_CONFIG_PATH'] = Utils.subst_vars('${LIBDIR}/pkgconfig', conf.env)
-
     conf.check_cfg(package='libndn-cxx', args=['--cflags', '--libs'],
                    uselib_store='NDN_CXX', mandatory=True)
 
@@ -42,16 +39,10 @@ def configure(conf):
                     " (https://redmine.named-data.net/projects/nfd/wiki/Boost_FAQ)")
         return
 
-    # Loading "late" to prevent tests to be compiled with profiling flags
-    conf.load('coverage')
-
     conf.load('sanitizers')
 
     conf.define('SYSCONFDIR', conf.env['SYSCONFDIR'])
 
-    # If there happens to be a static library, waf will put the corresponding -L flags
-    # before dynamic library flags.  This can result in compilation failure when the
-    # system has a different version of the ndnabac library installed.
     conf.env['STLIBPATH'] = ['.'] + conf.env['STLIBPATH']
 
     conf.check_cfg (package='glib-2.0', uselib_store='GLIB', atleast_version='2.25.0',
@@ -73,11 +64,11 @@ def configure(conf):
     conf.env.INCLUDES_BSWABE  = ['/usr/local/include']
     conf.check_cxx(lib = 'cryptopp', use = 'CRYPTOPP')
 
-    conf.write_config_header('src/ndnabac-config.hpp')
+    conf.write_config_header('src/nac-abe-config.hpp')
 
 def build(bld):
     core = bld(
-        target = "ndn-abac",
+        target = "nac-abe",
         features=['cxx', 'cxxshlib'],
         source =  bld.path.ant_glob(['src/**/*.cpp', 'src/**/*.c']),
         vnum = VERSION,
@@ -90,24 +81,24 @@ def build(bld):
     bld.recurse('tests')
 
     bld.install_files(
-        dest = "%s/ndnabac" % bld.env['INCLUDEDIR'],
+        dest = "%s/nac-abe" % bld.env['INCLUDEDIR'],
         files = bld.path.ant_glob(['src/**/*.hpp', 'src/**/*.h']),
         cwd = bld.path.find_dir("src"),
         relative_trick = True,
         )
 
     bld.install_files(
-        dest = "%s/ndnabac" % bld.env['INCLUDEDIR'],
+        dest = "%s/nac-abe" % bld.env['INCLUDEDIR'],
         files = bld.path.get_bld().ant_glob(['src/**/*.hpp']),
         cwd = bld.path.get_bld().find_dir("src"),
         relative_trick = False,
         )
 
     bld(features = "subst",
-        source='libndn-abac.pc.in',
-        target='libndn-abac.pc',
+        source='libnac-abe.pc.in',
+        target='libnac-abe.pc',
         install_path = '${LIBDIR}/pkgconfig',
         PREFIX       = bld.env['PREFIX'],
-        INCLUDEDIR   = "%s/ndnabac" % bld.env['INCLUDEDIR'],
+        INCLUDEDIR   = "%s/nac-abe" % bld.env['INCLUDEDIR'],
         VERSION      = VERSION,
         )

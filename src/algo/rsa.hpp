@@ -21,8 +21,9 @@
 #ifndef NDN_ABAC_ALGO_RSA_HPP
 #define NDN_ABAC_ALGO_RSA_HPP
 
-#include <ndn-cxx/security/key-params.hpp>
 #include "encrypt-params.hpp"
+#include "algo-common.hpp"
+#include <ndn-cxx/security/key-params.hpp>
 
 namespace ndn {
 namespace abac {

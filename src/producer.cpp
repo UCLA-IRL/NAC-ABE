@@ -19,7 +19,6 @@
  */
 
 #include "producer.hpp"
-#include "logging.hpp"
 #include "attribute-authority.hpp"
 
 #include <ndn-cxx/security/signing-helpers.hpp>
@@ -29,7 +28,7 @@
 namespace ndn {
 namespace ndnabac {
 
-_LOG_INIT(ndnabac.producer);
+NDN_LOG_INIT(ndnabac.producer);
 
 const Name Producer::SET_POLICY = "/SET_POLICY";
 
@@ -47,7 +46,7 @@ Producer::Producer(const security::v2::Certificate& identityCert, Face& face,
   const InterestFilterId* filterId;
   filterId = m_face.setInterestFilter(Name(m_cert.getIdentity()).append(SET_POLICY),
                                       bind(&Producer::onPolicyInterest, this, _2));
-  _LOG_DEBUG("set prefix:"<<m_cert.getIdentity());
+  NDN_LOG_DEBUG("set prefix:"<<m_cert.getIdentity());
   m_interestFilterIds.push_back(filterId);
   fetchPublicParams();
 }
@@ -111,7 +110,7 @@ Producer::produce(const Name& dataPrefix, const uint8_t* content, size_t content
     return;
   }
   produce(dataPrefix, it->second, content, contentLen, onDataProduceCb, errorCallback);
-  
+
 }
 
 //private:
@@ -119,7 +118,7 @@ void
 Producer::onPolicyInterest(const Interest& interest)
 {
   //*** need verify signature ****
-  _LOG_DEBUG("on policy Interest:"<<interest.getName());
+  NDN_LOG_DEBUG("on policy Interest:"<<interest.getName());
   NDN_LOG_INFO("on policy Interest:"<<interest.getName());
   Name dataPrefix = interest.getName().getSubName(2,1);
   // Name policy = interest.getName().getSubName(3,1);
@@ -132,19 +131,19 @@ Producer::onPolicyInterest(const Interest& interest)
   Data reply;
   reply.setName(interest.getName());
   if (ret.second==false) {
-    _LOG_DEBUG("dataPrefix already exist");
+    NDN_LOG_DEBUG("dataPrefix already exist");
 
     NDN_LOG_INFO("insert data prefix "<<dataPrefix<<" policy failed");
     reply.setContent(makeStringBlock(tlv::Content, "exist"));
   }
   else {
-    _LOG_DEBUG("insert success");
+    NDN_LOG_DEBUG("insert success");
     NDN_LOG_INFO("insert data prefix "<<dataPrefix<<" with policy "<<encoding::readString(interest.getName().at(3)) );
     reply.setContent(makeStringBlock(tlv::Content, "success"));
   }
-  _LOG_DEBUG("before sign");
+  NDN_LOG_DEBUG("before sign");
   m_keyChain.sign(reply, signingByCertificate(m_cert));
-  _LOG_DEBUG("after sign");
+  NDN_LOG_DEBUG("after sign");
   m_face.put(reply);
 }
 

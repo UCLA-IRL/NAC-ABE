@@ -21,7 +21,6 @@
 #include <ndn-cxx/encoding/buffer-stream.hpp>
 #include "rsa.hpp"
 #include "cryptopp.hpp"
-#include "../logging.hpp"
 
 namespace ndn {
 namespace abac {
@@ -29,7 +28,7 @@ namespace algo {
 
 using namespace CryptoPP;
 
-_LOG_INIT(ndnabac.algoRSA);
+NDN_LOG_INIT(ndnabac.algoRSA);
 
 static Buffer
 transform(SimpleProxyFilter* filter, const uint8_t* data, size_t dataLen)
@@ -65,7 +64,7 @@ Rsa::decrypt(const uint8_t* key, size_t keyLen,
       return transform(filter_oaep_sha, payload, payloadLen);
     }
     default:
-      _LOG_ERROR("unsupported padding scheme");
+      NDN_LOG_DEBUG("unsupported padding scheme");
   }
 }
 
@@ -93,7 +92,7 @@ Rsa::encrypt(const uint8_t* key, size_t keyLen,
       return transform(filter_oaep_sha, payload, payloadLen);
     }
     default:
-      _LOG_ERROR("unsupported padding scheme");
+      NDN_LOG_DEBUG("unsupported padding scheme");
   }
 }
 

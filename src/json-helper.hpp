@@ -21,7 +21,7 @@
 #ifndef NDNABAC_JSON_HELPER_HPP
 #define NDNABAC_JSON_HELPER_HPP
 
-#include "ndnabac-common.hpp"
+#include "common.hpp"
 
 namespace ndn {
 namespace ndnabac {

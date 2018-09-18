@@ -54,9 +54,12 @@
 #include <ndn-cxx/lp/nack.hpp>
 #include <ndn-cxx/util/backports.hpp>
 #include <ndn-cxx/util/signal.hpp>
-#include <ndn-cxx/security/v2/key-chain.hpp>
-#include <ndn-cxx/security/v2/certificate.hpp>
-#include <ndn-cxx/security/v2/validator.hpp>
+#include <ndn-cxx/security/key-chain.hpp>
+#include <ndn-cxx/security/V2/certificate.hpp>
+#include <ndn-cxx/security/V2/validator.hpp>
+#include <ndn-cxx/util/logger.hpp>
+
+#include <iostream>
 
 #include <boost/algorithm/string.hpp>
 #include <boost/assert.hpp>

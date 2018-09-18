@@ -19,7 +19,6 @@
  */
 
 #include "data-owner.hpp"
-#include "logging.hpp"
 
 #include <ndn-cxx/encoding/block-helpers.hpp>
 
@@ -27,7 +26,7 @@ namespace ndn {
 namespace ndnabac {
 
 const Name DataOwner::SET_POLICY = "/SET_POLICY";
-_LOG_INIT(ndnabac.dataOwner);
+NDN_LOG_INIT(ndnabac.dataOwner);
 
 DataOwner::DataOwner(const security::v2::Certificate& identityCert, Face& face,
                      security::v2::KeyChain& keyChain)

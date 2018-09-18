@@ -21,7 +21,6 @@
 #include "consumer.hpp"
 #include "attribute-authority.hpp"
 #include "token-issuer.hpp"
-#include "logging.hpp"
 
 #include <ndn-cxx/security/signing-helpers.hpp>
 #include <ndn-cxx/security/verification-helpers.hpp>
@@ -30,7 +29,7 @@
 namespace ndn {
 namespace ndnabac {
 
-_LOG_INIT(ndnabac.consumer);
+NDN_LOG_INIT(ndnabac.consumer);
 
 // public
 Consumer::Consumer(const security::v2::Certificate& identityCert,
@@ -77,7 +76,6 @@ Consumer::decryptContent(const Data& data, const Name& tokenIssuerPrefix,
 
   auto it = m_keyCache.find(tokenIssuerPrefix);
   if (it == m_keyCache.end()) {
-    _LOG_TRACE("Private key is not there: we need to fetch token and private key");
     NDN_LOG_INFO(m_cert.getIdentity()<<" Private key is not there: we need to fetch token and private key");
 
     Name requestTokenName = tokenIssuerPrefix;
@@ -125,7 +123,6 @@ Consumer::onTokenData(const Data& tokenData, const Name& tokenIssuerPrefix, algo
                       const ConsumptionCallback& successCallBack,
                       const ErrorCallback& errorCallback)
 {
-  _LOG_TRACE("Get token data");
   NDN_LOG_INFO(m_cert.getIdentity()<<" get token data");
   Name interestName = m_attrAuthorityPrefix;
   interestName.append(AttributeAuthority::DECRYPT_KEY);
@@ -146,7 +143,6 @@ Consumer::onDecryptionKeyData(const Data& keyData, const Data& tokenData,
                               const ConsumptionCallback& successCallBack,
                               const ErrorCallback& errorCallback)
 {
-  _LOG_TRACE("Get D key data");
   NDN_LOG_INFO(m_cert.getIdentity()<< " get decrypt key data");
 
   auto& tpm = m_keyChain.getTpm();
@@ -190,8 +186,6 @@ void
 Consumer::fetchPublicParams()
 {
   // fetch pub parameters
-  _LOG_DEBUG("fetch public parameters");
-
   Name interestName = m_attrAuthorityPrefix;
   interestName.append(AttributeAuthority::PUBLIC_PARAMS);
   Interest interest(interestName);
