@@ -25,10 +25,6 @@ namespace ndn {
 namespace ndnabac {
 namespace algo {
 
-const uint32_t CipherText::TLV_EncryptedAesKey = 1;
-const uint32_t CipherText::TLV_EncryptedContent = 2;
-const uint32_t CipherText::TLV_PlainTextSize = 3;
-
 template<encoding::Tag TAG>
 size_t
 CipherText::wireEncode(EncodingImpl<TAG>& encoder) const
@@ -111,6 +107,26 @@ CipherText::wireDecode(const Block& wire)
   if (it != m_wire.elements_end())
     BOOST_THROW_EXCEPTION(tlv::Error("Unexpected TLV structure after decoding the block"));
 }
+
+Block
+CipherText::makeDataContent()
+{
+  auto encryptedBlock = makeBinaryBlock(TLV_EncryptedContent,
+                                        m_content.data(), m_content.size());
+  return encryptedBlock;
+}
+
+Block
+CipherText::makeCKContent()
+{
+  auto ckBlock = makeEmptyBlock(tlv::Content);
+  Buffer aesKeyBuf(m_cph->data, m_cph->len);
+  ckBlock.push_back(makeBinaryBlock(TLV_EncryptedAesKey, aesKeyBuf.data(), aesKeyBuf.size()));
+  ckBlock.push_back(makeNonNegativeIntegerBlock(TLV_PlainTextSize, m_plainTextSize));
+  ckBlock.encode();
+  return ckBlock;
+}
+
 
 } // namespace algo
 } // namespace ndnabac

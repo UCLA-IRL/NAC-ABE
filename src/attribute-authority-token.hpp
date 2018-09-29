@@ -18,8 +18,8 @@
  * See AUTHORS.md for complete list of ndnabac authors and contributors.
  */
 
-#ifndef NDNABAC_ATTRIBUTE_AUTHORITY_HPP
-#define NDNABAC_ATTRIBUTE_AUTHORITY_HPP
+#ifndef NDNABAC_ATTRIBUTE_AUTHORITY_TOKEN_HPP
+#define NDNABAC_ATTRIBUTE_AUTHORITY_TOKEN_HPP
 
 #include "common.hpp"
 #include "trust-config.hpp"
@@ -28,13 +28,13 @@
 namespace ndn {
 namespace ndnabac {
 
-class AttributeAuthority
+class AttributeAuthorityToken
 {
 public:
-  AttributeAuthority(const security::v2::Certificate& identityCert, Face& m_face,
-                     security::v2::KeyChain& keyChain);
+  AttributeAuthorityToken(const security::v2::Certificate& identityCert, Face& m_face,
+                          security::v2::KeyChain& keyChain);
 
-  ~AttributeAuthority();
+  ~AttributeAuthorityToken();
 
 PUBLIC_WITH_TESTS_ELSE_PRIVATE:
   void

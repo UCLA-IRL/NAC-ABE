@@ -32,7 +32,7 @@ namespace tests {
 
 namespace fs = boost::filesystem;
 
-_LOG_INIT(Test.DataOwner);
+NDN_LOG_INIT(Test.DataOwner);
 
 class TestDataOwnerFixture : public IdentityManagementTimeFixture
 {
@@ -58,15 +58,15 @@ BOOST_AUTO_TEST_CASE(setPolicy)
 
   DataOwner dataowner(cert, c1, m_keyChain);
 
-  Name producerPrefix = Name("/producer1");
-  Name dataPrefix = Name("/data");
+  Name producerPrefix = Name("/producer");
+  Name dataPrefix = Name("/dataset1/example");
   std::string policy = "attr1 and attr2 or attr3";
   Name interestName = producerPrefix;
   interestName.append(dataPrefix)
               .append(DataOwner::SET_POLICY)
               .append(policy);
 
-  c2.setInterestFilter(Name("/producer1"),
+  c2.setInterestFilter(Name("/producer"),
                        [&] (const ndn::InterestFilter&, const ndn::Interest& interest) {
                          BOOST_CHECK_EQUAL(interest.getName().get(0).toUri(), "/producer1");
                          BOOST_CHECK_EQUAL(interest.getName().get(1).toUri(), DataOwner::SET_POLICY.toUri());

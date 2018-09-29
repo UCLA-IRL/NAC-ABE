@@ -33,18 +33,9 @@ namespace tests {
 
 namespace fs = boost::filesystem;
 
-const uint8_t PLAIN_TEXT[] = {
-  0x41, 0x45, 0x53, 0x2d, 0x45, 0x6e, 0x63, 0x72,
-  0x79, 0x70, 0x74, 0x2d, 0x54, 0x65, 0x73, 0x74,
-  0x41, 0x45, 0x53, 0x2d, 0x45, 0x6e, 0x63, 0x72,
-  0x79, 0x70, 0x74, 0x2d, 0x54, 0x65, 0x73, 0x74,
-  0x41, 0x45, 0x53, 0x2d, 0x45, 0x6e, 0x63, 0x72,
-  0x79, 0x70, 0x74, 0x2d, 0x54, 0x65, 0x73, 0x74,
-  0x41, 0x45, 0x53, 0x2d, 0x45, 0x6e, 0x63, 0x72,
-  0x79, 0x70, 0x74, 0x2d, 0x54, 0x65, 0x73, 0x74
-};
+const uint8_t PLAIN_TEXT[1024] = {1};
 
-_LOG_INIT(Test.IntegratedTest);
+NDN_LOG_INIT(Test.IntegratedTest);
 
 class TestIntegratedFixture : public IdentityManagementTimeFixture
 {
@@ -91,6 +82,8 @@ BOOST_AUTO_TEST_CASE(IntegratedTest)
   AttributeAuthority aa = AttributeAuthority(aaCert, aaFace, m_keyChain);
   advanceClocks(time::milliseconds(20), 60);
 
+  std::cout << "hello" << std::endl;
+
   BOOST_CHECK(aa.m_pubParams.m_pub != nullptr);
   BOOST_CHECK(aa.m_masterKey.m_msk != nullptr);
 
@@ -130,7 +123,7 @@ BOOST_AUTO_TEST_CASE(IntegratedTest)
                                                                       attrList1));
   BOOST_CHECK_EQUAL(tokenIssuer.m_tokens.size(), 2);
 
-  _LOG_DEBUG("after token issuer");
+  NDN_LOG_DEBUG("after token issuer");
 
   // set up consumer
   NDN_LOG_INFO("Create Consumer 1. Consumer 1 prefix:"<<consumerCert1.getIdentity());
@@ -181,7 +174,7 @@ BOOST_AUTO_TEST_CASE(IntegratedTest)
   bool isPolicySet = false;
   dataOwner.commandProducerPolicy(producerCert.getIdentity(), dataName, policy,
                                    [&] (const Data& response) {
-                                    _LOG_DEBUG("on policy set data callback");
+                                    NDN_LOG_DEBUG("on policy set data callback");
                                      isPolicySet = true;
                                      BOOST_CHECK_EQUAL(readString(response.getContent()), "success");
                                      auto it = producer.m_policyCache.find(dataName);
@@ -194,7 +187,7 @@ BOOST_AUTO_TEST_CASE(IntegratedTest)
                                      BOOST_CHECK(false);
                                    });
 
-  _LOG_DEBUG("before policy set");
+  NDN_LOG_DEBUG("before policy set");
   advanceClocks(time::milliseconds(20), 60);
   BOOST_CHECK(isPolicySet);
 
@@ -207,9 +200,6 @@ BOOST_AUTO_TEST_CASE(IntegratedTest)
       BOOST_CHECK(it != producer.m_policyCache.end());
       BOOST_CHECK(it->second == policy);
       std::string str;
-      for(int i =0;i<sizeof(PLAIN_TEXT);++i)
-        str.push_back(PLAIN_TEXT[i]);
-      NDN_LOG_INFO("plain text:"<<str);
       producer.produce(dataName, it->second, PLAIN_TEXT, sizeof(PLAIN_TEXT),
         [&] (const Data& data) {
           isProdCbCalled = true;

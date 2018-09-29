@@ -21,6 +21,7 @@
 #include "data-owner.hpp"
 
 #include <ndn-cxx/encoding/block-helpers.hpp>
+#include <ndn-cxx/security/signing-helpers.hpp>
 
 namespace ndn {
 namespace ndnabac {
@@ -45,6 +46,18 @@ void
 DataOwner::commandProducerPolicy(const Name& prefix, const Name& dataPrefix, const std::string& policy,
                                  const SuccessCallback& SuccessCb, const ErrorCallback& errorCb)
 {
+  Data kek;
+  Name kekName = prefix;
+  kekName.append("NAC").append(dataPrefix).append("KEK").append(policy);
+  kek.setName(kekName);
+  m_keyChain.sign(kek, signingByCertificate(m_cert));
+
+  std::cout << kek;
+  std::cout << "kek Data length: " << kek.wireEncode().size() << std::endl;
+  std::cout << "kek Name length: " << kek.getName().wireEncode().size() << std::endl;
+  std::cout << "=================================\n";
+
+
   // shared_ptr<Interest> interest = make_shared<Interest>(dataName);
   // sendInterest(*Interest);
   NDN_LOG_INFO("Set data " << dataPrefix<<" in Producer "<<prefix<<" with policy "<<policy);

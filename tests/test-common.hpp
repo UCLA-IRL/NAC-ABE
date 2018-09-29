@@ -28,8 +28,6 @@
 #ifndef CHRONOSHARE_TESTS_TEST_COMMON_HPP
 #define CHRONOSHARE_TESTS_TEST_COMMON_HPP
 
-#include "logging.hpp"
-
 #include "boost-test.hpp"
 
 #include <boost/asio/io_service.hpp>
@@ -42,6 +40,7 @@
 #include <ndn-cxx/link.hpp>
 #include <ndn-cxx/util/time-unit-test-clock.hpp>
 #include <ndn-cxx/util/string-helper.hpp>
+#include <ndn-cxx/util/logger.hpp>
 
 namespace ndn {
 namespace ndnabac {

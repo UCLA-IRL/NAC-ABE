@@ -22,6 +22,9 @@
 #define NDNABAC_ALGO_COMMON_HPP
 
 #include "../common.hpp"
+#include <ndn-cxx/encoding/block-helpers.hpp>
+#include <ndn-cxx/encoding/estimator.hpp>
+
 
 #include <pbc.h>
 #include <glib.h>

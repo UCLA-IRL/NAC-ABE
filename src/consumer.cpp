@@ -21,6 +21,7 @@
 #include "consumer.hpp"
 #include "attribute-authority.hpp"
 #include "token-issuer.hpp"
+#include "ndn-crypto/data-enc-dec.hpp"
 
 #include <ndn-cxx/security/signing-helpers.hpp>
 #include <ndn-cxx/security/verification-helpers.hpp>
@@ -145,14 +146,13 @@ Consumer::onDecryptionKeyData(const Data& keyData, const Data& tokenData,
 {
   NDN_LOG_INFO(m_cert.getIdentity()<< " get decrypt key data");
 
-  auto& tpm = m_keyChain.getTpm();
+  const auto& tpm = m_keyChain.getTpm();
 
   const auto& block = keyData.getContent();
-  auto prvBlock = tpm.decrypt(block.value(), block.value_size(),
-                              security::v2::extractKeyNameFromCertName(m_cert.getName()));
+  auto prvBlock = decryptDataContent(block, tpm, m_cert.getName());
 
   algo::PrivateKey prv;
-  prv.fromBuffer(Buffer(prvBlock->data(), prvBlock->size()));
+  prv.fromBuffer(Buffer(prvBlock.data(), prvBlock.size()));
 
   m_keyCache[tokenIssuerPrefix] = make_tuple(keyData, prv);
 

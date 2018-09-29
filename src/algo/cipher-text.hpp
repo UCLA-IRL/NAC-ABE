@@ -50,10 +50,11 @@ public:
   void
   wireDecode(const Block& wire);
 
-private:
-  static const uint32_t TLV_EncryptedAesKey;
-  static const uint32_t TLV_EncryptedContent;
-  static const uint32_t TLV_PlainTextSize;
+  Block
+  makeDataContent();
+
+  Block
+  makeCKContent();
 
 public:
   GByteArray* m_cph; // encrypted AES key

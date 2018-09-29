@@ -30,8 +30,8 @@
 #define PROTECTED_WITH_TESTS_ELSE_PRIVATE protected
 #else
 #define VIRTUAL_WITH_TESTS
-#define PUBLIC_WITH_TESTS_ELSE_PROTECTED protected
-#define PUBLIC_WITH_TESTS_ELSE_PRIVATE private
+#define PUBLIC_WITH_TESTS_ELSE_PROTECTED public
+#define PUBLIC_WITH_TESTS_ELSE_PRIVATE public
 #define PROTECTED_WITH_TESTS_ELSE_PRIVATE private
 #endif
 
@@ -93,6 +93,12 @@ using ndn::PartialName;
 using ndn::Block;
 using ndn::time::system_clock;
 using ndn::time::toUnixTimestamp;
+
+const uint32_t TLV_EncryptedAesKey = 601;
+const uint32_t TLV_EncryptedContent = 602;
+const uint32_t TLV_PlainTextSize = 603;
+const uint32_t TLV_AesKeyId = 604;
+const uint32_t TLV_InitialVector = 605;
 
 } // namespace ndnabac
 } // namespace ndn

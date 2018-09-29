@@ -20,7 +20,7 @@
 
 #include "producer.hpp"
 #include "attribute-authority.hpp"
-
+#include <ndn-cxx/util/random.hpp>
 #include <ndn-cxx/security/signing-helpers.hpp>
 #include <ndn-cxx/encoding/block-helpers.hpp>
 #include <ndn-cxx/security/verification-helpers.hpp>
@@ -89,11 +89,35 @@ Producer::produce(const Name& dataPrefix, const std::string& accessPolicy,
     auto cipherText = algo::ABESupport::encrypt(m_pubParamsCache, accessPolicy,
                                                 Buffer(content, contentLen));
 
+    Name ckName = security::v2::extractIdentityFromCertName(m_cert.getName());
+    ckName.append("CK").append(std::to_string(random::generateSecureWord32()));
+
     Name dataName = m_cert.getIdentity();
     dataName.append(dataPrefix);
     Data data(dataName);
-    data.setContent(cipherText.wireEncode());
+    auto dataBlock = makeEmptyBlock(tlv::Content);
+    dataBlock.push_back(cipherText.makeDataContent());
+    dataBlock.push_back(ckName.wireEncode());
+    dataBlock.encode();
+    data.setContent(dataBlock);
     m_keyChain.sign(data, signingByCertificate(m_cert));
+
+    std::cout << data;
+    std::cout << "Content Data length: " << data.wireEncode().size() << std::endl;
+    std::cout << "Content Name length: " << data.getName().wireEncode().size() << std::endl;
+    std::cout << "=================================\n";
+
+    Name ckDataName = ckName;
+    ckDataName.append("ENC-BY").append(accessPolicy);
+    Data ckData(ckDataName);
+    ckData.setContent(cipherText.makeCKContent());
+    m_keyChain.sign(ckData, signingByCertificate(m_cert));
+
+    std::cout << ckData;
+    std::cout << "CK Data length: " << ckData.wireEncode().size() << std::endl;
+    std::cout << "CK Name length: " << ckData.getName().wireEncode().size() << std::endl;
+    std::cout << "=================================\n";
+
     onDataProduceCb(data);
   }
 }

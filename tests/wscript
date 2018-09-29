@@ -36,7 +36,7 @@ def build(bld):
         target='../unit-tests',
         features='cxx cxxprogram',
         source=bld.path.ant_glob(['unit-tests/*.cpp']),
-        use='ndn-abac unit-tests-main',
+        use='nac-abe unit-tests-main',
         install_path=None,
         defines=['UNIT_TEST_CONFIG_PATH=\"%s/tmp-files/\"' % (bld.bldnode)],
         includes='.. ../src .')

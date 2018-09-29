@@ -19,6 +19,7 @@
  */
 
 #include "abe-support.hpp"
+#include <ndn-cxx/util/logger.hpp>
 
 namespace ndn {
 namespace ndnabac {

@@ -21,7 +21,7 @@
 #include "attribute-authority.hpp"
 #include "json-helper.hpp"
 #include "token-issuer.hpp"
-#include "algo/rsa.hpp"
+#include "ndn-crypto/data-enc-dec.hpp"
 
 #include <ndn-cxx/security/transform/public-key.hpp>
 #include <ndn-cxx/security/signing-helpers.hpp>
@@ -108,16 +108,12 @@ AttributeAuthority::onDecryptionKeyRequest(const Interest& request)
   algo::PrivateKey ABEPrvKey = algo::ABESupport::prvKeyGen(m_pubParams, m_masterKey, attrs);
   auto prvBuffer = ABEPrvKey.toBuffer();
 
-  security::transform::PublicKey pubKey;
-  pubKey.loadPkcs8Base64(reinterpret_cast<const uint8_t*>(consumerCert.getPublicKey().data()),
-                         consumerCert.getPublicKey().size());
-  auto encryptedKey = pubKey.encrypt(prvBuffer.data(), prvBuffer.size());
-
   // reply interest with encrypted private key
   Data result;
   result.setName(request.getName());
-  result.setContent(Block(ndn::tlv::Content, encryptedKey));
-  // result.setContent(makeBinaryBlock(tlv::Content, prvBuffer.data(), prvBuffer.size()));
+  result.setContent(encryptDataContentWithCK(prvBuffer.data(), prvBuffer.size(),
+                                             consumerCert.getPublicKey().data(),
+                                             consumerCert.getPublicKey().size()));
   m_keyChain.sign(result, signingByCertificate(m_cert));
   m_face.put(result);
 }

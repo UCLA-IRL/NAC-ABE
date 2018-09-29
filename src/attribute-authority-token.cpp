@@ -18,10 +18,10 @@
  * See AUTHORS.md for complete list of ndnabac authors and contributors.
  */
 
-#include "attribute-authority.hpp"
+#include "attribute-authority-token.hpp"
 #include "json-helper.hpp"
 #include "token-issuer.hpp"
-#include "algo/rsa.hpp"
+#include "ndn-crypto/data-enc-dec.hpp"
 
 #include <ndn-cxx/security/transform/public-key.hpp>
 #include <ndn-cxx/security/signing-helpers.hpp>
@@ -33,12 +33,12 @@ namespace ndnabac {
 NDN_LOG_INIT(ndnabac.attribute-authority);
 
 
-const Name AttributeAuthority::PUBLIC_PARAMS = "/PUBPARAMS";
-const Name AttributeAuthority::DECRYPT_KEY = "/DKEY-TOKEN";
+const Name AttributeAuthorityToken::PUBLIC_PARAMS = "/PUBPARAMS";
+const Name AttributeAuthorityToken::DECRYPT_KEY = "/DKEY-TOKEN";
 
 //public
-AttributeAuthority::AttributeAuthority(const security::v2::Certificate& identityCert, Face& face,
-                                       security::v2::KeyChain& keyChain)
+AttributeAuthorityToken::AttributeAuthorityToken(const security::v2::Certificate& identityCert, Face& face,
+                                                 security::v2::KeyChain& keyChain)
   : m_cert(identityCert)
   , m_face(face)
   , m_keyChain(keyChain)
@@ -55,21 +55,21 @@ AttributeAuthority::AttributeAuthority(const security::v2::Certificate& identity
 
       // public parameter filter
       filterId = m_face.setInterestFilter(Name(name).append(PUBLIC_PARAMS),
-                                          bind(&AttributeAuthority::onPublicParamsRequest, this, _2));
+                                          bind(&AttributeAuthorityToken::onPublicParamsRequest, this, _2));
       m_interestFilterIds.push_back(filterId);
       NDN_LOG_TRACE("InterestFilter " << Name(name).append(PUBLIC_PARAMS) << " got set");
 
       // decryption key filter
       filterId = m_face.setInterestFilter(Name(name).append(DECRYPT_KEY),
-                                          bind(&AttributeAuthority::onDecryptionKeyRequest, this, _2));
+                                          bind(&AttributeAuthorityToken::onDecryptionKeyRequest, this, _2));
       m_interestFilterIds.push_back(filterId);
       NDN_LOG_TRACE("InterestFilter " << Name(name).append(DECRYPT_KEY) << " got set");
     },
-    bind(&AttributeAuthority::onRegisterFailed, this, _2));
+    bind(&AttributeAuthorityToken::onRegisterFailed, this, _2));
   m_registeredPrefixIds.push_back(prefixId);
 }
 
-AttributeAuthority::~AttributeAuthority()
+AttributeAuthorityToken::~AttributeAuthorityToken()
 {
   for (auto prefixId : m_interestFilterIds) {
     m_face.unsetInterestFilter(prefixId);
@@ -80,7 +80,7 @@ AttributeAuthority::~AttributeAuthority()
 }
 
 void
-AttributeAuthority::onDecryptionKeyRequest(const Interest& interest)
+AttributeAuthorityToken::onDecryptionKeyRequest(const Interest& interest)
 {
   // naming: /AA-prefix/DKEY-TOKEN/<token>
 
@@ -122,22 +122,18 @@ AttributeAuthority::onDecryptionKeyRequest(const Interest& interest)
   algo::PrivateKey ABEPrvKey = algo::ABESupport::prvKeyGen(m_pubParams, m_masterKey, attrs);
   auto prvBuffer = ABEPrvKey.toBuffer();
 
-  security::transform::PublicKey pubKey;
-  pubKey.loadPkcs8Base64(reinterpret_cast<const uint8_t*>(pubKeyStr.c_str()),
-                         pubKeyStr.size());
-  auto encryptedKey = pubKey.encrypt(prvBuffer.data(), prvBuffer.size());
-
   // reply interest with encrypted private key
   Data result;
   result.setName(interest.getName());
-  result.setContent(Block(ndn::tlv::Content, encryptedKey));
-  // result.setContent(makeBinaryBlock(tlv::Content, prvBuffer.data(), prvBuffer.size()));
+  result.setContent(encryptDataContentWithCK(prvBuffer.data(), prvBuffer.size(),
+                                             reinterpret_cast<const uint8_t*>(pubKeyStr.c_str()),
+                                             pubKeyStr.size()));
   m_keyChain.sign(result, signingByCertificate(m_cert));
   m_face.put(result);
 }
 
 void
-AttributeAuthority::onPublicParamsRequest(const Interest& interest)
+AttributeAuthorityToken::onPublicParamsRequest(const Interest& interest)
 {
   // naming: /AA-prefix/PUBLICPARAMS
   NDN_LOG_INFO("on public Params request:"<<interest.getName());
@@ -158,13 +154,13 @@ AttributeAuthority::onPublicParamsRequest(const Interest& interest)
 }
 
 void
-AttributeAuthority::onRegisterFailed(const std::string& reason)
+AttributeAuthorityToken::onRegisterFailed(const std::string& reason)
 {
   NDN_LOG_TRACE("Error: failed to register prefix in local hub's daemon, REASON: " << reason);
 }
 
 void
-AttributeAuthority::init()
+AttributeAuthorityToken::init()
 {
   // do noting for now
 }
