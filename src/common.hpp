@@ -21,7 +21,7 @@
 #ifndef NDNABAC_COMMON_HPP
 #define NDNABAC_COMMON_HPP
 
-#include "ndnabac-config.hpp"
+#include "nac-abe-config.hpp"
 
 #ifdef HAVE_TESTS
 #define VIRTUAL_WITH_TESTS virtual
