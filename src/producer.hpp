@@ -93,7 +93,7 @@ PUBLIC_WITH_TESTS_ELSE_PRIVATE:
   uint8_t m_repeatAttempts;
 
   std::map<Name/* data prefix */, std::string/* policy */> m_policyCache;
-  std::list<const InterestFilterId*> m_interestFilterIds;
+  std::list<InterestFilterHandle> m_interestFilterIds;
   algo::PublicParams m_pubParamsCache;
   TrustConfig m_trustConfig;
 };

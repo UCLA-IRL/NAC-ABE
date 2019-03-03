@@ -42,16 +42,15 @@ TokenIssuer::TokenIssuer(const security::v2::Certificate& identityCert, Face& fa
   , m_keyChain(keyChain)
 {
   // prefix registration
-  const InterestFilterId* filterId;
-  filterId = m_face.setInterestFilter(Name(m_cert.getIdentity()).append(TOKEN_REQUEST),
-                                      bind(&TokenIssuer::onTokenRequest, this, _2));
+  auto filterId = m_face.setInterestFilter(Name(m_cert.getIdentity()).append(TOKEN_REQUEST),
+                                            bind(&TokenIssuer::onTokenRequest, this, _2));
   m_interestFilterIds.push_back(filterId);
 }
 
 TokenIssuer::~TokenIssuer()
 {
   for (auto prefixId : m_interestFilterIds) {
-    m_face.unsetInterestFilter(prefixId);
+    prefixId.cancel();
   }
 }
 

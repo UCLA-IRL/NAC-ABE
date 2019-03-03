@@ -48,14 +48,12 @@ AttributeAuthorityToken::AttributeAuthorityToken(const security::v2::Certificate
   algo::ABESupport::setup(m_pubParams, m_masterKey);
 
   // prefix registration
-  const RegisteredPrefixId* prefixId = m_face.registerPrefix(m_cert.getIdentity(),
+  auto prefixId = m_face.registerPrefix(m_cert.getIdentity(),
     [&] (const Name& name) {
       NDN_LOG_TRACE("Prefix " << name << " got registered");
-      const InterestFilterId* filterId;
-
       // public parameter filter
-      filterId = m_face.setInterestFilter(Name(name).append(PUBLIC_PARAMS),
-                                          bind(&AttributeAuthorityToken::onPublicParamsRequest, this, _2));
+      auto filterId = m_face.setInterestFilter(Name(name).append(PUBLIC_PARAMS),
+                                               bind(&AttributeAuthorityToken::onPublicParamsRequest, this, _2));
       m_interestFilterIds.push_back(filterId);
       NDN_LOG_TRACE("InterestFilter " << Name(name).append(PUBLIC_PARAMS) << " got set");
 
@@ -72,10 +70,10 @@ AttributeAuthorityToken::AttributeAuthorityToken(const security::v2::Certificate
 AttributeAuthorityToken::~AttributeAuthorityToken()
 {
   for (auto prefixId : m_interestFilterIds) {
-    m_face.unsetInterestFilter(prefixId);
+    prefixId.cancel();
   }
   for (auto prefixId : m_registeredPrefixIds) {
-    m_face.unregisterPrefix(prefixId, nullptr, nullptr);
+    prefixId.unregister();
   }
 }
 

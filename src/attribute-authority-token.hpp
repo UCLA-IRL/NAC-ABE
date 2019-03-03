@@ -64,8 +64,8 @@ PUBLIC_WITH_TESTS_ELSE_PRIVATE:
   TrustConfig m_trustConfig;
 
 PUBLIC_WITH_TESTS_ELSE_PRIVATE:
-  std::list<const RegisteredPrefixId*> m_registeredPrefixIds;
-  std::list<const InterestFilterId*> m_interestFilterIds;
+  std::list<RegisteredPrefixHandle> m_registeredPrefixIds;
+  std::list<InterestFilterHandle> m_interestFilterIds;
 };
 
 } // namespace ndnabac

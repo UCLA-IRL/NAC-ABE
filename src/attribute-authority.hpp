@@ -66,8 +66,8 @@ PUBLIC_WITH_TESTS_ELSE_PRIVATE:
   std::map<Name/* Consumer Identity */, std::list<std::string>/* Attr */> m_tokens;
 
 PUBLIC_WITH_TESTS_ELSE_PRIVATE:
-  std::list<const RegisteredPrefixId*> m_registeredPrefixIds;
-  std::list<const InterestFilterId*> m_interestFilterIds;
+  std::list<RegisteredPrefixHandle> m_registeredPrefixIds;
+  std::list<InterestFilterHandle> m_interestFilterIds;
 };
 
 } // namespace ndnabac

@@ -43,10 +43,9 @@ Producer::Producer(const security::v2::Certificate& identityCert, Face& face,
   , m_repeatAttempts(repeatAttempts)
 {
   // prefix registration
-  const InterestFilterId* filterId;
-  filterId = m_face.setInterestFilter(Name(m_cert.getIdentity()).append(SET_POLICY),
-                                      bind(&Producer::onPolicyInterest, this, _2));
-  NDN_LOG_DEBUG("set prefix:"<<m_cert.getIdentity());
+  auto filterId = m_face.setInterestFilter(Name(m_cert.getIdentity()).append(SET_POLICY),
+                                           bind(&Producer::onPolicyInterest, this, _2));
+  NDN_LOG_DEBUG("set prefix:" << m_cert.getIdentity());
   m_interestFilterIds.push_back(filterId);
   fetchPublicParams();
 }
@@ -54,7 +53,7 @@ Producer::Producer(const security::v2::Certificate& identityCert, Face& face,
 Producer::~Producer()
 {
   for (auto prefixId : m_interestFilterIds) {
-    m_face.unsetInterestFilter(prefixId);
+    prefixId.cancel();
   }
 }
 
