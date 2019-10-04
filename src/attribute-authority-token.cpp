@@ -123,6 +123,7 @@ AttributeAuthorityToken::onDecryptionKeyRequest(const Interest& interest)
   // reply interest with encrypted private key
   Data result;
   result.setName(interest.getName());
+  result.setFreshnessPeriod(5_s);
   result.setContent(encryptDataContentWithCK(prvBuffer.data(), prvBuffer.size(),
                                              reinterpret_cast<const uint8_t*>(pubKeyStr.c_str()),
                                              pubKeyStr.size()));
@@ -139,6 +140,7 @@ AttributeAuthorityToken::onPublicParamsRequest(const Interest& interest)
   Name dataName = interest.getName();
   dataName.appendTimestamp();
   result.setName(dataName);
+  result.setFreshnessPeriod(5_s);
   const auto& contentBuf = m_pubParams.toBuffer();
   result.setContent(makeBinaryBlock(ndn::tlv::Content,
                                     contentBuf.data(), contentBuf.size()));

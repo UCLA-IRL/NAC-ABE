@@ -41,7 +41,7 @@ class TestIntegratedFixture : public IdentityManagementTimeFixture
 {
 public:
   TestIntegratedFixture()
-    : forwarder(m_io)
+    : forwarder(m_io, m_keyChain)
     , producerFace(forwarder.addFace())
     , aaFace(forwarder.addFace())
     , tokenIssuerFace(forwarder.addFace())

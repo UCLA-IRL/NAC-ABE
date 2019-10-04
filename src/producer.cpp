@@ -58,7 +58,7 @@ Producer::~Producer()
 }
 
 void
-Producer::onAttributePubParams(const Interest& request, const Data& pubParamData)
+Producer::onAttributePubParams(const Data& pubParamData)
 {
   NDN_LOG_INFO("Get public parameters");
   Name attrAuthorityKey = pubParamData.getSignature().getKeyLocator().getName();
@@ -99,6 +99,7 @@ Producer::produce(const Name& dataPrefix, const std::string& accessPolicy,
     dataBlock.push_back(ckName.wireEncode());
     dataBlock.encode();
     data.setContent(dataBlock);
+    data.setFreshnessPeriod(5_s);
     m_keyChain.sign(data, signingByCertificate(m_cert));
 
     std::cout << data;
@@ -133,7 +134,6 @@ Producer::produce(const Name& dataPrefix, const uint8_t* content, size_t content
     return;
   }
   produce(dataPrefix, it->second, content, contentLen, onDataProduceCb, errorCallback);
-
 }
 
 //private:
@@ -164,6 +164,7 @@ Producer::onPolicyInterest(const Interest& interest)
     NDN_LOG_INFO("insert data prefix "<<dataPrefix<<" with policy "<<encoding::readString(interest.getName().at(3)) );
     reply.setContent(makeStringBlock(tlv::Content, "success"));
   }
+  reply.setFreshnessPeriod(5_s);
   NDN_LOG_DEBUG("before sign");
   m_keyChain.sign(reply, signingByCertificate(m_cert));
   NDN_LOG_DEBUG("after sign");
@@ -178,11 +179,13 @@ Producer::fetchPublicParams()
   interestName.append(AttributeAuthority::PUBLIC_PARAMS);
   Interest interest(interestName);
   interest.setMustBeFresh(true);
+  interest.setCanBePrefix(true);
 
-  NDN_LOG_INFO("Requeset public parameters:"<<interest.getName());
-  m_face.expressInterest(interest, std::bind(&Producer::onAttributePubParams, this, _1, _2),
-                         [=](const Interest&, const lp::Nack&){},
-                         [=](const Interest&){});
+  NDN_LOG_INFO("Request public parameters:"<<interest.getName());
+  m_face.expressInterest(interest,
+                         [this] (const Interest&, const Data& data) { onAttributePubParams(data); },
+                         [=](const Interest&, const lp::Nack&){ NDN_LOG_INFO("NACK"); },
+                         [=](const Interest&){ NDN_LOG_INFO("Timeout"); });
 }
 
 } // namespace ndnabac

@@ -110,6 +110,7 @@ AttributeAuthority::onDecryptionKeyRequest(const Interest& request)
   // reply interest with encrypted private key
   Data result;
   result.setName(request.getName());
+  result.setFreshnessPeriod(5_s);
   result.setContent(encryptDataContentWithCK(prvBuffer.data(), prvBuffer.size(),
                                              consumerCert.getPublicKey().data(),
                                              consumerCert.getPublicKey().size()));
@@ -127,6 +128,7 @@ AttributeAuthority::onPublicParamsRequest(const Interest& interest)
   dataName.appendTimestamp();
   result.setName(dataName);
   const auto& contentBuf = m_pubParams.toBuffer();
+  result.setFreshnessPeriod(5_s);
   result.setContent(makeBinaryBlock(ndn::tlv::Content,
                                     contentBuf.data(), contentBuf.size()));
   NDN_LOG_DEBUG("before sign");

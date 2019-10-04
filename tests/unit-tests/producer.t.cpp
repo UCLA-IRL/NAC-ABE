@@ -38,20 +38,19 @@ class TestProducerFixture : public IdentityManagementTimeFixture
 {
 public:
   TestProducerFixture()
-    : forwarder(m_io)
-    , c1(forwarder.addFace())
-    , c2(forwarder.addFace())
+    : c1(m_io, m_keyChain, util::DummyClientFace::Options{true, true})
+    , c2(m_io, m_keyChain, util::DummyClientFace::Options{true, true})
     , attrAuthorityPrefix("/authority")
   {
     auto id = addIdentity("/producer");
     auto key = id.getDefaultKey();
     cert = key.getDefaultCertificate();
+    c1.linkTo(c2);
   }
 
 public:
-  DummyForwarder forwarder;
-  Face& c1;
-  Face& c2;
+  util::DummyClientFace c1;
+  util::DummyClientFace c2;
   Name attrAuthorityPrefix;
   security::v2::Certificate cert;
 };
@@ -61,14 +60,15 @@ BOOST_FIXTURE_TEST_SUITE(TestProducer, TestProducerFixture)
 BOOST_AUTO_TEST_CASE(Constructor)
 {
   algo::PublicParams m_pubParams;
-  c2.setInterestFilter((attrAuthorityPrefix),
-                     [&] (const ndn::InterestFilter&, const ndn::Interest& interest) {
+  c2.setInterestFilter(InterestFilter(attrAuthorityPrefix),
+                       [&] (const ndn::InterestFilter&, const ndn::Interest& interest) {
                         algo::MasterKey m_masterKey;
                         algo::ABESupport::setup(m_pubParams, m_masterKey);
                         Data result;
                         Name dataName = interest.getName();
                         dataName.appendTimestamp();
                         result.setName(dataName);
+                        result.setFreshnessPeriod(10_s);
                         const auto& contentBuf = m_pubParams.toBuffer();
                         result.setContent(makeBinaryBlock(ndn::tlv::Content,
                                                           contentBuf.data(), contentBuf.size()));
@@ -80,10 +80,8 @@ BOOST_AUTO_TEST_CASE(Constructor)
                         c2.put(result);
                      });
 
-  advanceClocks(time::milliseconds(20), 60);
-
   Producer producer(cert, c1, m_keyChain, attrAuthorityPrefix);
-  advanceClocks(time::milliseconds(20), 60);
+  advanceClocks(time::milliseconds(10), 100);
 
   BOOST_CHECK(producer.m_pubParamsCache.m_pub != nullptr);
   BOOST_CHECK_EQUAL(producer.m_interestFilterIds.size(), 1);
@@ -142,7 +140,7 @@ BOOST_AUTO_TEST_CASE(onPolicyInterest)
 
   advanceClocks(time::milliseconds(20), 60);
 
-    c2.expressInterest(setPolicyInterest,
+  c2.expressInterest(setPolicyInterest,
                      [&](const Interest&, const Data& response){
                       BOOST_CHECK(security::verifySignature(response, cert));
                       BOOST_CHECK(readString(response.getContent()) == "exist");

@@ -53,6 +53,7 @@ Consumer::consume(const Name& dataName, const Name& tokenIssuerPrefix,
 {
   Interest interest(dataName);
   interest.setMustBeFresh(true);
+  interest.setCanBePrefix(true);
 
   DataCallback dataCb = std::bind(&Consumer::decryptContent, this, _2, tokenIssuerPrefix,
                                   consumptionCb, errorCallback);
@@ -85,6 +86,7 @@ Consumer::decryptContent(const Data& data, const Name& tokenIssuerPrefix,
     Interest interest(requestTokenName);
     m_keyChain.sign(interest, signingByCertificate(m_cert));
     interest.setMustBeFresh(true);
+    interest.setCanBePrefix(true);
 
     DataCallback dataCb = std::bind(&Consumer::onTokenData, this, _2, tokenIssuerPrefix, cipherText,
                                     successCallBack, errorCallback);
@@ -130,6 +132,7 @@ Consumer::onTokenData(const Data& tokenData, const Name& tokenIssuerPrefix, algo
   interestName.append(tokenData.wireEncode());
   Interest interest(interestName);
   interest.setMustBeFresh(true);
+  interest.setCanBePrefix(true);
 
   DataCallback dataCb = std::bind(&Consumer::onDecryptionKeyData, this, _2, tokenData,
                                   tokenIssuerPrefix, cipherText, successCallBack, errorCallback);
@@ -190,8 +193,9 @@ Consumer::fetchPublicParams()
   interestName.append(AttributeAuthority::PUBLIC_PARAMS);
   Interest interest(interestName);
   interest.setMustBeFresh(true);
+  interest.setCanBePrefix(true);
 
-  NDN_LOG_INFO(m_cert.getIdentity()<< " Requeset public parameters:"<<interest.getName());
+  NDN_LOG_INFO(m_cert.getIdentity()<< " Request public parameters:"<<interest.getName());
   m_face.expressInterest(interest, std::bind(&Consumer::onAttributePubParams, this, _1, _2),
                          nullptr, nullptr);
 }

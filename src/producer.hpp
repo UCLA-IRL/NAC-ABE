@@ -74,7 +74,7 @@ public:
 
 private:
   void
-  onAttributePubParams(const Interest& request, const Data& pubParamData);
+  onAttributePubParams(const Data& pubParamData);
 
   void
   onPolicyInterest(const Interest& interest);

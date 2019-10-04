@@ -25,39 +25,49 @@
 namespace ndn {
 namespace ndnabac {
 
-DummyForwarder::DummyForwarder(boost::asio::io_service& io)
+DummyForwarder::DummyForwarder(boost::asio::io_service& io, KeyChain& keyChain)
   : m_io(io)
+  , m_keyChain(keyChain)
 {
 }
+
 
 Face&
 DummyForwarder::addFace()
 {
-  auto face = std::make_shared<util::DummyClientFace>(m_io, util::DummyClientFace::Options{true, true});
-  face->onSendInterest.connect([this, face] (const Interest& interest) {
-      for (auto& otherFace : m_faces) {
-        if (&*face == &*otherFace) {
-          continue;
+  auto face = std::make_shared<util::DummyClientFace>(m_io, m_keyChain,
+                                                      util::DummyClientFace::Options{true, true});
+  std::weak_ptr<Face> weakFace(face);
+  face->onSendInterest.connect([this, weakFace] (const Interest& interest) {
+      if (auto face = weakFace.lock()) {
+        for (auto& otherFace : m_faces) {
+          if (&*face == &*otherFace) {
+            continue;
+          }
+          otherFace->receive(interest);
         }
-        otherFace->receive(interest);
-      }
-    });
-  face->onSendData.connect([this, face] (const Data& data) {
-      //std::cout << data.getName() << std::endl;
-      for (auto& otherFace : m_faces) {
-        if (&*face == &*otherFace) {
-          continue;
-        }
-        otherFace->receive(data);
       }
     });
 
-  face->onSendNack.connect([this, face] (const lp::Nack& nack) {
-      for (auto& otherFace : m_faces) {
-        if (&*face == &*otherFace) {
-          continue;
+  face->onSendData.connect([this, weakFace] (const Data& data) {
+      if (auto face = weakFace.lock()) {
+        for (auto& otherFace : m_faces) {
+          if (&*face == &*otherFace) {
+            continue;
+          }
+          otherFace->receive(data);
         }
-        otherFace->receive(nack);
+      }
+    });
+
+  face->onSendNack.connect([this, weakFace] (const lp::Nack& nack) {
+      if (auto face = weakFace.lock()) {
+        for (auto& otherFace : m_faces) {
+          if (&*face == &*otherFace) {
+            continue;
+          }
+          otherFace->receive(nack);
+        }
       }
     });
 

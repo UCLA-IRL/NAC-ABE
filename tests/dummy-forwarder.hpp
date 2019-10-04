@@ -39,7 +39,7 @@ namespace ndnabac {
 class DummyForwarder
 {
 public:
-  DummyForwarder(boost::asio::io_service& io);
+  DummyForwarder(boost::asio::io_service& io, KeyChain& keyChain);
 
   Face&
   addFace();
@@ -52,6 +52,7 @@ public:
 
 private:
   boost::asio::io_service& m_io;
+  KeyChain& m_keyChain;
   std::vector<shared_ptr<util::DummyClientFace>> m_faces;
 };
 
