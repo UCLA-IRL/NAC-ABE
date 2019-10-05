@@ -9,20 +9,20 @@
  *                          The University of Memphis.
  *
  * This file, originally written as part of NFD (Named Data Networking Forwarding Daemon),
- * is a part of nac-abe, a certificate management system based on NDN.
+ * is a part of NAC-ABE.
  *
- * nac-abe is free software: you can redistribute it and/or modify it under the terms
+ * NAC-ABE is free software: you can redistribute it and/or modify it under the terms
  * of the GNU General Public License as published by the Free Software Foundation, either
  * version 3 of the License, or (at your option) any later version.
  *
- * nac-abe is distributed in the hope that it will be useful, but WITHOUT ANY
+ * NAC-ABE is distributed in the hope that it will be useful, but WITHOUT ANY
  * WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A
  * PARTICULAR PURPOSE.  See the GNU General Public License for more details.
  *
  * You should have received copies of the GNU General Public License along with
- * nac-abe, e.g., in COPYING.md file.  If not, see <http://www.gnu.org/licenses/>.
+ * NAC-ABE, e.g., in COPYING.md file.  If not, see <http://www.gnu.org/licenses/>.
  *
- * See AUTHORS.md for complete list of nac-abe authors and contributors.
+ * See AUTHORS.md for complete list of NAC-ABE authors and contributors.
  */
 
 #define BOOST_TEST_MODULE NAC-ABE Unit Tests
