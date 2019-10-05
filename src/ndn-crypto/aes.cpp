@@ -27,7 +27,7 @@
 #include <ndn-cxx/security/transform/stream-sink.hpp>
 
 namespace ndn {
-namespace ndnabac {
+namespace nacabe {
 
 Buffer
 Aes::generateKey(const AesKeyParams& keyParams)
@@ -109,5 +109,5 @@ Aes::encrypt(const uint8_t* key, size_t keyLen,
   return *result;
 }
 
-} // namespace ndnabac
+} // namespace nacabe
 } // namespace ndn

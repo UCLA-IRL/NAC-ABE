@@ -43,7 +43,7 @@
 #include <ndn-cxx/util/logger.hpp>
 
 namespace ndn {
-namespace ndnabac {
+namespace nacabe {
 namespace tests {
 
 /** \brief base test fixture
@@ -172,7 +172,7 @@ ndn::ConstBufferPtr
 digestFromFile(const boost::filesystem::path& filename);
 
 } // namespace tests
-} // namespace ndnabac
+} // namespace nacabe
 } // namespace ndn
 
 #include "identity-management-fixture.hpp"

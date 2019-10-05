@@ -1,31 +1,30 @@
 /* -*- Mode:C++; c-file-style:"gnu"; indent-tabs-mode:nil; -*- */
 /**
- * Copyright (c) 2013-2017, Regents of the University of California.
+ * Copyright (c) 2017-2019, Regents of the University of California.
  *
- * This file is part of ChronoShare, a decentralized file sharing application over NDN.
+ * This file is part of NAC-ABE.
  *
- * ChronoShare is free software: you can redistribute it and/or modify it under the terms
+ * NAC-ABE is free software: you can redistribute it and/or modify it under the terms
  * of the GNU General Public License as published by the Free Software Foundation, either
  * version 3 of the License, or (at your option) any later version.
  *
- * ChronoShare is distributed in the hope that it will be useful, but WITHOUT ANY
+ * NAC-ABE is distributed in the hope that it will be useful, but WITHOUT ANY
  * WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A
  * PARTICULAR PURPOSE.  See the GNU General Public License for more details.
  *
  * You should have received copies of the GNU General Public License along with
- * ChronoShare, e.g., in COPYING.md file.  If not, see <http://www.gnu.org/licenses/>.
+ * NAC-ABE, e.g., in COPYING.md file.  If not, see <http://www.gnu.org/licenses/>.
  *
- * See AUTHORS.md for complete list of ChronoShare authors and contributors.
+ * See AUTHORS.md for complete list of NAC-ABE authors and contributors.
  */
 
 #include "consumer.hpp"
-
 #include "test-common.hpp"
-#include "dummy-forwarder.hpp"
 #include "algo/abe-support.hpp"
+#include <ndn-cxx/util/dummy-client-face.hpp>
 
 namespace ndn {
-namespace ndnabac {
+namespace nacabe {
 namespace tests {
 
 namespace fs = boost::filesystem;
@@ -36,21 +35,20 @@ class TestConsumerFixture : public IdentityManagementTimeFixture
 {
 public:
   TestConsumerFixture()
-    : forwarder(m_io, m_keyChain)
-    , c1(forwarder.addFace())
-    , c2(forwarder.addFace())
+    : c1(m_io, m_keyChain, util::DummyClientFace::Options{true, true})
+    , c2(m_io, m_keyChain, util::DummyClientFace::Options{true, true})
     , attrAuthorityPrefix("/authority")
     , tokenIssuerPrefix("/token/issuer")
   {
+    c1.linkTo(c2);
     auto id = addIdentity("/consumer");
     auto key = id.getDefaultKey();
     cert = key.getDefaultCertificate();
   }
 
 public:
-  DummyForwarder forwarder;
-  Face& c1;
-  Face& c2;
+  util::DummyClientFace c1;
+  util::DummyClientFace c2;
   Name attrAuthorityPrefix;
   Name tokenIssuerPrefix;
   security::v2::Certificate cert;
@@ -100,5 +98,5 @@ BOOST_AUTO_TEST_CASE(comsumeData)
 BOOST_AUTO_TEST_SUITE_END()
 
 } // namespace tests
-} // namespace ndnabac
+} // namespace nacabe
 } // namespace ndn

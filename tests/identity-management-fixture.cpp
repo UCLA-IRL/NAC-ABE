@@ -31,7 +31,7 @@
 #include <boost/filesystem.hpp>
 
 namespace ndn {
-namespace ndnabac {
+namespace nacabe {
 namespace tests {
 
 IdentityManagementFixture::IdentityManagementFixture()
@@ -124,5 +124,5 @@ IdentityManagementFixture::saveCertToFile(const Data& obj, const std::string& fi
 }
 
 } // namespace tests
-} // namespace ndnabac
+} // namespace nacabe
 } // namespace ndn

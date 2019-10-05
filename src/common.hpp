@@ -1,25 +1,25 @@
 /* -*- Mode:C++; c-file-style:"gnu"; indent-tabs-mode:nil; -*- */
 /**
- * Copyright (c) 2017, Regents of the University of California.
+ * Copyright (c) 2017-2019, Regents of the University of California.
  *
- * This file is part of ndnabac, a certificate management system based on NDN.
+ * This file is part of NAC-ABE.
  *
- * ndnabac is free software: you can redistribute it and/or modify it under the terms
+ * NAC-ABE is free software: you can redistribute it and/or modify it under the terms
  * of the GNU General Public License as published by the Free Software Foundation, either
  * version 3 of the License, or (at your option) any later version.
  *
- * ndnabac is distributed in the hope that it will be useful, but WITHOUT ANY
+ * NAC-ABE is distributed in the hope that it will be useful, but WITHOUT ANY
  * WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A
  * PARTICULAR PURPOSE.  See the GNU General Public License for more details.
  *
  * You should have received copies of the GNU General Public License along with
- * ndnabac, e.g., in COPYING.md file.  If not, see <http://www.gnu.org/licenses/>.
+ * NAC-ABE, e.g., in COPYING.md file.  If not, see <http://www.gnu.org/licenses/>.
  *
- * See AUTHORS.md for complete list of ndnabac authors and contributors.
+ * See AUTHORS.md for complete list of NAC-ABE authors and contributors.
  */
 
-#ifndef NDNABAC_COMMON_HPP
-#define NDNABAC_COMMON_HPP
+#ifndef NAC_ABE_COMMON_HPP
+#define NAC_ABE_COMMON_HPP
 
 #include "nac-abe-config.hpp"
 
@@ -70,7 +70,7 @@
 #include <boost/throw_exception.hpp>
 
 namespace ndn {
-namespace ndnabac {
+namespace nacabe {
 
 using std::size_t;
 
@@ -103,7 +103,7 @@ const uint32_t TLV_InitialVector = 605;
 static const Name PUBLIC_PARAMS = "/PUBPARAMS";
 static const Name DECRYPT_KEY = "/DKEY";
 
-} // namespace ndnabac
+} // namespace nacabe
 } // namespace ndn
 
-#endif // NDNABAC_COMMON_HPP
+#endif // NAC_ABE_COMMON_HPP

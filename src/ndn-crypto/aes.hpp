@@ -27,7 +27,7 @@
 #include <ndn-cxx/security/key-params.hpp>
 
 namespace ndn {
-namespace ndnabac {
+namespace nacabe {
 
 class Aes
 {
@@ -52,7 +52,7 @@ public:
           const Buffer& iv, const AES_BLOCK_CIPHER_MODE& mode = AES_CBC);
 };
 
-} // namespace ndnabac
+} // namespace nacabe
 } // namespace ndn
 
 #endif // NAC_ABE_CRYPTO_AES_HPP

@@ -1,30 +1,30 @@
 /* -*- Mode:C++; c-file-style:"gnu"; indent-tabs-mode:nil; -*- */
 /**
- * Copyright (c) 2017, Regents of the University of California.
+ * Copyright (c) 2017-2019, Regents of the University of California.
  *
- * This file is part of ndnabac, a certificate management system based on NDN.
+ * This file is part of NAC-ABE.
  *
- * ndnabac is free software: you can redistribute it and/or modify it under the terms
+ * NAC-ABE is free software: you can redistribute it and/or modify it under the terms
  * of the GNU General Public License as published by the Free Software Foundation, either
  * version 3 of the License, or (at your option) any later version.
  *
- * ndnabac is distributed in the hope that it will be useful, but WITHOUT ANY
+ * NAC-ABE is distributed in the hope that it will be useful, but WITHOUT ANY
  * WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A
  * PARTICULAR PURPOSE.  See the GNU General Public License for more details.
  *
  * You should have received copies of the GNU General Public License along with
- * ndnabac, e.g., in COPYING.md file.  If not, see <http://www.gnu.org/licenses/>.
+ * NAC-ABE, e.g., in COPYING.md file.  If not, see <http://www.gnu.org/licenses/>.
  *
- * See AUTHORS.md for complete list of ndnabac authors and contributors.
+ * See AUTHORS.md for complete list of NAC-ABE authors and contributors.
  */
 
-#ifndef NDNABAC_ALGO_PRIVATE_KEY_HPP
-#define NDNABAC_ALGO_PRIVATE_KEY_HPP
+#ifndef NAC_ABE_ALGO_PRIVATE_KEY_HPP
+#define NAC_ABE_ALGO_PRIVATE_KEY_HPP
 
 #include "algo-common.hpp"
 
 namespace ndn {
-namespace ndnabac {
+namespace nacabe {
 namespace algo {
 
 class PrivateKey
@@ -41,7 +41,7 @@ public:
 };
 
 } // namespace algo
-} // namespace ndnabac
+} // namespace nacabe
 } // namespace ndn
 
-#endif // NDNABAC_ALGO_PRIVATE_KEY_HPP
+#endif // NAC_ABE_ALGO_PRIVATE_KEY_HPP

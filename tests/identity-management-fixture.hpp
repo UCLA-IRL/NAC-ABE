@@ -34,7 +34,7 @@
 #include <ndn-cxx/security/signing-helpers.hpp>
 
 namespace ndn {
-namespace ndnabac {
+namespace nacabe {
 namespace tests {
 
 /**
@@ -101,7 +101,7 @@ class IdentityManagementTimeFixture : public UnitTestTimeFixture
 };
 
 } // namespace tests
-} // namespace ndnabac
+} // namespace nacabe
 } // namespace ndn
 
 #endif // NDNCERT_TESTS_IDENTITY_MANAGEMENT_FIXTURE_HPP

@@ -23,7 +23,7 @@
 #include "test-common.hpp"
 
 namespace ndn {
-namespace ndnabac {
+namespace nacabe {
 namespace tests {
 
 class GlobalConfigurationFixture : boost::noncopyable
@@ -79,5 +79,5 @@ BOOST_GLOBAL_FIXTURE(GlobalConfigurationFixture)
 #endif // BOOST_VERSION >= 105900
 
 } // namespace tests
-} // namespace ndnabac
+} // namespace nacabe
 } // namespace ndn
