@@ -30,13 +30,13 @@ namespace tests {
 
 namespace fs = boost::filesystem;
 
-_LOG_INIT(Test.Consumer);
+NDN_LOG_INIT(Test.Consumer);
 
 class TestConsumerFixture : public IdentityManagementTimeFixture
 {
 public:
   TestConsumerFixture()
-    : forwarder(m_io)
+    : forwarder(m_io, m_keyChain)
     , c1(forwarder.addFace())
     , c2(forwarder.addFace())
     , attrAuthorityPrefix("/authority")
@@ -74,8 +74,8 @@ BOOST_AUTO_TEST_CASE(Constructor)
                                                           contentBuf.data(), contentBuf.size()));
                         m_keyChain.sign(result, signingByCertificate(cert));
 
-                        _LOG_TRACE("Reply public params request.");
-                        _LOG_TRACE("Pub params size: " << contentBuf.size());
+                        NDN_LOG_TRACE("Reply public params request.");
+                        NDN_LOG_TRACE("Pub params size: " << contentBuf.size());
 
                         c2.put(result);
                      });

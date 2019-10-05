@@ -29,13 +29,13 @@ namespace tests {
 
 namespace fs = boost::filesystem;
 
-_LOG_INIT(Test.TokenIssuer);
+NDN_LOG_INIT(Test.TokenIssuer);
 
 class TestTokenIssuerFixture : public IdentityManagementTimeFixture
 {
 public:
   TestTokenIssuerFixture()
-    : forwarder(m_io)
+    : forwarder(m_io, m_keyChain)
   {
   }
 

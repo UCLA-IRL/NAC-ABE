@@ -36,7 +36,7 @@ const uint8_t PLAIN_TEXT[] = {
   0x79, 0x70, 0x74, 0x2d, 0x54, 0x65, 0x73, 0x74
 };
 
-_LOG_INIT(Test.ABESupport);
+NDN_LOG_INIT(Test.ABESupport);
 
 BOOST_AUTO_TEST_SUITE(TestAbeSupport)
 
