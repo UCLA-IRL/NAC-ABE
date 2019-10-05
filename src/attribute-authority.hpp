@@ -49,10 +49,6 @@ PUBLIC_WITH_TESTS_ELSE_PRIVATE:
   void
   init();
 
-public:
-  const static Name PUBLIC_PARAMS;
-  const static Name DECRYPT_KEY;
-
 PUBLIC_WITH_TESTS_ELSE_PRIVATE:
   security::v2::Certificate m_cert;
   Face& m_face;

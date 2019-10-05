@@ -173,19 +173,10 @@ BOOST_AUTO_TEST_CASE(encryptContent)
                                        "attr6", "attr7", "attr8", "attr9", "attr10"};
   algo::PrivateKey prvKey = algo::ABESupport::prvKeyGen(pubParams, masterKey, attrList);
 
-  producer.produce(Name("/dataset1/example/data1"), "attr1 attr2 1of2", PLAIN_TEXT, sizeof(PLAIN_TEXT),
-                   [&] (const Data& data) {
-                     // BOOST_CHECK_EQUAL(data.getName(), producer.m_cert.getIdentity().append(Name("/dataPrefix")));
-                     // algo::CipherText cipherText;
-                     // cipherText.wireDecode(data.getContent());
-                     // Buffer result = algo::ABESupport::decrypt(pubParams, prvKey, cipherText);
-
-                     // BOOST_CHECK_EQUAL_COLLECTIONS(result.begin(), result.end(),
-                     //                               PLAIN_TEXT, PLAIN_TEXT + sizeof(PLAIN_TEXT));
-                   },
-                   [&] (const std::string& err) {
-                     BOOST_CHECK(false);
-                   });
+  std::shared_ptr<Data> data, ckData;
+  std::tie(data, ckData) = producer.produce(Name("/dataset1/example/data1"), "attr1 attr2 1of2", PLAIN_TEXT, sizeof(PLAIN_TEXT));
+  BOOST_CHECK(data != nullptr);
+  BOOST_CHECK(ckData != nullptr);
 }
 
 BOOST_AUTO_TEST_SUITE_END()

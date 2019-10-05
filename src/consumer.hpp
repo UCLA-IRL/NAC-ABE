@@ -49,30 +49,32 @@ public:
            uint8_t repeatAttempts = 3);
 
   void
-  consume(const Name& dataName, const Name& tokenIssuerPrefix,
+  obtainAttributes(const Name& tokenIssuerPrefix);
+
+  void
+  obtainAttributes();
+
+  void
+  consume(const Name& dataName,
           const ConsumptionCallback& consumptionCb,
           const ErrorCallback& errorCallback);
 
 private:
   void
-  decryptContent(const Data& data, const Name& tokenIssuerPrefix,
+  decryptContent(const Data& data,
                  const ConsumptionCallback& successCallBack,
                  const ErrorCallback& errorCallback);
 
   void
   onAttributePubParams(const Interest& request, const Data& pubParamData);
 
+  void
+  onCkeyData(const Data& data, std::shared_ptr<algo::CipherText> cipherText,
+                         const ConsumptionCallback& successCallBack,
+                         const ErrorCallback& errorCallback);
 
   void
-  onTokenData(const Data& tokenData, const Name& tokenIssuerPrefix, algo::CipherText cipherText,
-              const ConsumptionCallback& successCallBack,
-              const ErrorCallback& errorCallback);
-
-  void
-  onDecryptionKeyData(const Data& keyData, const Data& tokenData,
-                      const Name& tokenIssuerPrefix, algo::CipherText cipherText,
-                      const ConsumptionCallback& successCallBack,
-                      const ErrorCallback& errorCallback);
+  onTokenData(const Data& tokenData);
 
   void
   handleNack(const Interest& interest, const lp::Nack& nack,
@@ -94,8 +96,7 @@ PUBLIC_WITH_TESTS_ELSE_PRIVATE:
 
   algo::PublicParams m_pubParamsCache;
   TrustConfig m_trustConfig;
-  std::map<Name/*tokenIssuerPrefix*/,
-           std::tuple<Data/*token*/, algo::PrivateKey>> m_keyCache;
+  algo::PrivateKey m_keyCache;
 };
 
 } // namespace ndnabac

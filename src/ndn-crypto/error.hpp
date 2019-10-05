@@ -27,11 +27,11 @@
 namespace ndn {
 namespace ndnabac {
 
-class Error : public std::runtime_error
+class NacAlgoError : public std::runtime_error
 {
 public:
   explicit
-  Error(const std::string& what)
+  NacAlgoError(const std::string& what)
     : std::runtime_error(what)
   {
   }

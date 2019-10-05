@@ -63,7 +63,7 @@ BOOST_AUTO_TEST_CASE(onPublicParams)
   util::DummyClientFace face(m_io, {true, true});
   AttributeAuthority aa(cert, face, m_keyChain);
   Name interestName = attrAuthorityPrefix;
-  Interest request(interestName.append(AttributeAuthority::PUBLIC_PARAMS));
+  Interest request(interestName.append(PUBLIC_PARAMS));
   auto requiredBuffer = aa.m_pubParams.toBuffer();
 
   advanceClocks(time::milliseconds(20), 60);

@@ -100,6 +100,9 @@ const uint32_t TLV_PlainTextSize = 603;
 const uint32_t TLV_AesKeyId = 604;
 const uint32_t TLV_InitialVector = 605;
 
+static const Name PUBLIC_PARAMS = "/PUBPARAMS";
+static const Name DECRYPT_KEY = "/DKEY";
+
 } // namespace ndnabac
 } // namespace ndn
 

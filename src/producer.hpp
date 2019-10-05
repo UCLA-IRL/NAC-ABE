@@ -39,7 +39,7 @@ public:
   };
 
   using ErrorCallback = function<void (const std::string&)>;
-  using SuccessCallback = function<void (const Data&)>;
+  using SuccessCallback = function<void (const Data&, const Data&)>;
 
 public:
   /**
@@ -63,14 +63,12 @@ public:
    * @param contentLen
    * @param errorCallBack
    */
-  void
-  produce(const Name& dataName, const std::string& accessPolicy,
-          const uint8_t* content, size_t contentLen,
-          const SuccessCallback& onDataProduceCb, const ErrorCallback& errorCallback);
+  std::tuple<std::shared_ptr<Data>, std::shared_ptr<Data>>
+  produce(const Name& dataPrefix, const std::string& accessPolicy,
+          const uint8_t* content, size_t contentLen);
 
-  void
-  produce(const Name& dataPrefix, const uint8_t* content, size_t contentLen,
-          const SuccessCallback& onDataProduceCb, const ErrorCallback& errorCallback);
+  std::tuple<std::shared_ptr<Data>, std::shared_ptr<Data>>
+  produce(const Name& dataPrefix, const uint8_t* content, size_t contentLen);
 
 private:
   void

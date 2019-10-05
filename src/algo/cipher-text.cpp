@@ -25,6 +25,8 @@ namespace ndn {
 namespace ndnabac {
 namespace algo {
 
+NDN_LOG_INIT(nacabe.ciphertext);
+
 template<encoding::Tag TAG>
 size_t
 CipherText::wireEncode(EncodingImpl<TAG>& encoder) const
@@ -119,6 +121,8 @@ CipherText::makeDataContent()
 Block
 CipherText::makeCKContent()
 {
+  NDN_LOG_INFO("plaintext size : " << m_plainTextSize);
+  NDN_LOG_INFO("encrypted aes key size : " << m_cph->len);
   auto ckBlock = makeEmptyBlock(tlv::Content);
   Buffer aesKeyBuf(m_cph->data, m_cph->len);
   ckBlock.push_back(makeBinaryBlock(TLV_EncryptedAesKey, aesKeyBuf.data(), aesKeyBuf.size()));

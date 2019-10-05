@@ -32,9 +32,6 @@ namespace ndnabac {
 
 NDN_LOG_INIT(ndnabac.attribute-authority);
 
-const Name AttributeAuthority::PUBLIC_PARAMS = "/PUBPARAMS";
-const Name AttributeAuthority::DECRYPT_KEY = "/DKEY";
-
 //public
 AttributeAuthority::AttributeAuthority(const security::v2::Certificate& identityCert, Face& face,
                                        security::v2::KeyChain& keyChain)
@@ -90,8 +87,9 @@ AttributeAuthority::onDecryptionKeyRequest(const Interest& request)
   security::v2::Certificate consumerCert;
   for (auto anchor : m_trustConfig.m_trustAnchors) {
     if (anchor.getIdentity() == identityName) {
+      NDN_LOG_INFO("Find corresponding identity and its certificate");
       if (!security::verifySignature(request, anchor)) {
-        NDN_LOG_TRACE("Interest is with bad signature");
+        NDN_LOG_INFO("Interest is with bad signature");
         return;
       }
       consumerCert = anchor;

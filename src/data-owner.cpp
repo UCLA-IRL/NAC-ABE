@@ -68,6 +68,8 @@ DataOwner::commandProducerPolicy(const Name& prefix, const Name& dataPrefix, con
   //add sig
 
   shared_ptr<Interest> interest = make_shared<Interest>(policyName);
+  interest->setCanBePrefix(false);
+  interest->setMustBeFresh(true);
 
   // prepare callback functions
   auto validationCallback =

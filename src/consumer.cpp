@@ -47,38 +47,9 @@ Consumer::Consumer(const security::v2::Certificate& identityCert,
 }
 
 void
-Consumer::consume(const Name& dataName, const Name& tokenIssuerPrefix,
-                  const ConsumptionCallback& consumptionCb,
-                  const ErrorCallback& errorCallback)
+Consumer::obtainAttributes(const Name& tokenIssuerPrefix)
 {
-  Interest interest(dataName);
-  interest.setMustBeFresh(true);
-  interest.setCanBePrefix(true);
-
-  DataCallback dataCb = std::bind(&Consumer::decryptContent, this, _2, tokenIssuerPrefix,
-                                  consumptionCb, errorCallback);
-
-  NDN_LOG_INFO(m_cert.getIdentity()<<" asking for data"<<interest.getName() );
-  m_face.expressInterest(interest, dataCb,
-                         std::bind(&Consumer::handleNack, this, _1, _2, errorCallback),
-                         std::bind(&Consumer::handleTimeout, this, _1, m_repeatAttempts, dataCb, errorCallback));
-}
-
-void
-Consumer::decryptContent(const Data& data, const Name& tokenIssuerPrefix,
-                         const ConsumptionCallback& successCallBack,
-                         const ErrorCallback& errorCallback)
-{
-  // get encrypted content
-
-  NDN_LOG_INFO(m_cert.getIdentity()<<" get data "<<data.getName()<<" from producer" );
-  Block encryptedContent = data.getContent();
-  algo::CipherText cipherText;
-  cipherText.wireDecode(encryptedContent);
-
-  auto it = m_keyCache.find(tokenIssuerPrefix);
-  if (it == m_keyCache.end()) {
-    NDN_LOG_INFO(m_cert.getIdentity()<<" Private key is not there: we need to fetch token and private key");
+    NDN_LOG_INFO(m_cert.getIdentity() << "Fetch token and private key");
 
     Name requestTokenName = tokenIssuerPrefix;
     requestTokenName.append(TokenIssuer::TOKEN_REQUEST);
@@ -88,78 +59,128 @@ Consumer::decryptContent(const Data& data, const Name& tokenIssuerPrefix,
     interest.setMustBeFresh(true);
     interest.setCanBePrefix(true);
 
-    DataCallback dataCb = std::bind(&Consumer::onTokenData, this, _2, tokenIssuerPrefix, cipherText,
-                                    successCallBack, errorCallback);
-
-    NDN_LOG_INFO(m_cert.getIdentity()<<"Request token:"<<interest.getName());
-    m_face.expressInterest(interest, dataCb,
-                           std::bind(&Consumer::handleNack, this, _1, _2, errorCallback),
-                           std::bind(&Consumer::handleTimeout, this, _1, m_repeatAttempts, dataCb, errorCallback));
-  }
-  else {
-    algo::PrivateKey prvKey;
-    std::tie(std::ignore, prvKey) = it->second;
-
-    Buffer result = algo::ABESupport::decrypt(m_pubParamsCache, prvKey, cipherText);
-    successCallBack(result);
-  }
+    NDN_LOG_INFO(m_cert.getIdentity() << " Request token: " << interest.getName());
+    m_face.expressInterest(interest,
+                           [&](const Interest&, const Data& tokenData) {
+                             onTokenData(tokenData);
+                           }, nullptr, nullptr);
 }
 
 void
-Consumer::onAttributePubParams(const Interest& request, const Data& pubParamData)
+Consumer::onTokenData(const Data& tokenData)
 {
-  NDN_LOG_INFO(m_cert.getIdentity()<<" Get public parameters");
-  Name attrAuthorityKey = pubParamData.getSignature().getKeyLocator().getName();
-  for (auto anchor : m_trustConfig.m_trustAnchors) {
-    if (anchor.getKeyName() == attrAuthorityKey) {
-      BOOST_ASSERT(security::verifySignature(pubParamData, anchor));
-      break;
-    }
-  }
-
-  auto block = pubParamData.getContent();
-  m_pubParamsCache.fromBuffer(Buffer(block.value(), block.value_size()));
-}
-
-void
-Consumer::onTokenData(const Data& tokenData, const Name& tokenIssuerPrefix, algo::CipherText cipherText,
-                      const ConsumptionCallback& successCallBack,
-                      const ErrorCallback& errorCallback)
-{
-  NDN_LOG_INFO(m_cert.getIdentity()<<" get token data");
+  NDN_LOG_INFO(m_cert.getIdentity() << " get token data");
   Name interestName = m_attrAuthorityPrefix;
-  interestName.append(AttributeAuthority::DECRYPT_KEY);
+  interestName.append("DKEY-TOKEN");
   interestName.append(tokenData.wireEncode());
   Interest interest(interestName);
   interest.setMustBeFresh(true);
   interest.setCanBePrefix(true);
 
-  DataCallback dataCb = std::bind(&Consumer::onDecryptionKeyData, this, _2, tokenData,
-                                  tokenIssuerPrefix, cipherText, successCallBack, errorCallback);
-  m_face.expressInterest(interest, dataCb,
-                         std::bind(&Consumer::handleNack, this, _1, _2, errorCallback),
-                         std::bind(&Consumer::handleTimeout, this, _1, m_repeatAttempts, dataCb, errorCallback));
+  m_face.expressInterest(interest,
+                         [&](const Interest&, const Data& keyData) {
+                           NDN_LOG_INFO(m_cert.getIdentity() << " get decrypt key data");
+                           const auto& tpm = m_keyChain.getTpm();
+                            const auto& block = keyData.getContent();
+                            auto prvBlock = decryptDataContent(block, tpm, m_cert.getName());
+                            algo::PrivateKey prv;
+                            prv.fromBuffer(Buffer(prvBlock.data(), prvBlock.size()));
+                            m_keyCache = prv;
+                         }, nullptr, nullptr);
 }
 
 void
-Consumer::onDecryptionKeyData(const Data& keyData, const Data& tokenData,
-                              const Name& tokenIssuerPrefix, algo::CipherText cipherText,
-                              const ConsumptionCallback& successCallBack,
-                              const ErrorCallback& errorCallback)
+Consumer::obtainAttributes()
 {
-  NDN_LOG_INFO(m_cert.getIdentity()<< " get decrypt key data");
+  NDN_LOG_INFO(m_cert.getIdentity() << "Fetch private key");
+  Name interestName = m_attrAuthorityPrefix;
+  interestName.append("DKEY");
+  interestName.append(m_cert.getIdentity().wireEncode());
+  Interest interest(interestName);
+  interest.setMustBeFresh(true);
+  interest.setCanBePrefix(true);
+  m_keyChain.sign(interest, signingByCertificate(m_cert));
 
-  const auto& tpm = m_keyChain.getTpm();
+  m_face.expressInterest(interest,
+                         [&](const Interest&, const Data& keyData) {
+                           NDN_LOG_INFO(m_cert.getIdentity() << " get decrypt key data");
+                           const auto& tpm = m_keyChain.getTpm();
+                            const auto& block = keyData.getContent();
+                            auto prvBlock = decryptDataContent(block, tpm, m_cert.getName());
+                            algo::PrivateKey prv;
+                            prv.fromBuffer(Buffer(prvBlock.data(), prvBlock.size()));
+                            m_keyCache = prv;
+                         }, nullptr, nullptr);
+}
 
-  const auto& block = keyData.getContent();
-  auto prvBlock = decryptDataContent(block, tpm, m_cert.getName());
+void
+Consumer::consume(const Name& dataName,
+                  const ConsumptionCallback& consumptionCb,
+                  const ErrorCallback& errorCallback)
+{
+  Interest interest(dataName);
+  interest.setMustBeFresh(true);
+  interest.setCanBePrefix(true);
 
-  algo::PrivateKey prv;
-  prv.fromBuffer(Buffer(prvBlock.data(), prvBlock.size()));
+  NDN_LOG_INFO(m_cert.getIdentity() << " Ask for data " << interest.getName() );
+  m_face.expressInterest(interest,
+                         [&] (const Interest&, const Data& data) {
+                           decryptContent(data, consumptionCb, errorCallback);
+                         }, nullptr, nullptr);
+}
 
-  m_keyCache[tokenIssuerPrefix] = make_tuple(keyData, prv);
+void
+Consumer::decryptContent(const Data& data,
+                         const ConsumptionCallback& successCallBack,
+                         const ErrorCallback& errorCallback)
+{
+  // get encrypted content
+  NDN_LOG_INFO(m_cert.getIdentity() << " Get content data " << data.getName());
+  Block encryptedContent = data.getContent();
+  encryptedContent.parse();
+  auto encryptedContentTLV = encryptedContent.get(TLV_EncryptedContent);
+  NDN_LOG_INFO("encrypted Content size is " << encryptedContentTLV.value_size());
+  auto cipherText = std::make_shared<algo::CipherText>();
+  cipherText->m_content = Buffer(encryptedContentTLV.value(), encryptedContentTLV.value_size());
+  Name ckName(encryptedContent.get(tlv::Name));
+  NDN_LOG_INFO("CK Name is " << ckName);
 
-  Buffer result = algo::ABESupport::decrypt(m_pubParamsCache, prv, cipherText);
+  Interest ckInterest(ckName);
+  ckInterest.setMustBeFresh(true);
+  ckInterest.setCanBePrefix(true);
+  m_face.expressInterest(ckInterest,
+                         [=] (const Interest&, const Data& data) {
+                           onCkeyData(data, cipherText, successCallBack, errorCallback);
+                         }, nullptr, nullptr);
+}
+
+void
+Consumer::onCkeyData(const Data& data, std::shared_ptr<algo::CipherText> cipherText,
+                         const ConsumptionCallback& successCallBack,
+                         const ErrorCallback& errorCallback)
+{
+  NDN_LOG_INFO(m_cert.getIdentity() << " Get CKEY data " << data.getName());
+  Block ckContent = data.getContent();
+  ckContent.parse();
+  auto encAesKey = ckContent.get(TLV_EncryptedAesKey);
+
+  cipherText->m_cph = g_byte_array_new();
+  g_byte_array_append(cipherText->m_cph, encAesKey.value(), static_cast<guint>(encAesKey.value_size()));
+  cipherText->m_plainTextSize = readNonNegativeInteger(ckContent.get(TLV_PlainTextSize));
+
+  NDN_LOG_INFO("content size : " << cipherText->m_content.size());
+  NDN_LOG_INFO("plaintext size : " << cipherText->m_plainTextSize);
+  NDN_LOG_INFO("encrypted aes key size : " << cipherText->m_cph->len);
+
+  Buffer result;
+  try{
+    result = algo::ABESupport::decrypt(m_pubParamsCache, m_keyCache, *cipherText);
+  }
+  catch (const std::exception& e) {
+    errorCallback(e.what());
+    return;
+  }
+  NDN_LOG_INFO("result length : " << result.size());
   successCallBack(result);
 }
 
@@ -186,11 +207,26 @@ Consumer::handleTimeout(const Interest& interest, int nRetrials,
 }
 
 void
+Consumer::onAttributePubParams(const Interest& request, const Data& pubParamData)
+{
+  NDN_LOG_INFO(m_cert.getIdentity()<<" Get public parameters");
+  Name attrAuthorityKey = pubParamData.getSignature().getKeyLocator().getName();
+  for (auto anchor : m_trustConfig.m_trustAnchors) {
+    if (anchor.getKeyName() == attrAuthorityKey) {
+      BOOST_ASSERT(security::verifySignature(pubParamData, anchor));
+      break;
+    }
+  }
+  auto block = pubParamData.getContent();
+  m_pubParamsCache.fromBuffer(Buffer(block.value(), block.value_size()));
+}
+
+void
 Consumer::fetchPublicParams()
 {
   // fetch pub parameters
   Name interestName = m_attrAuthorityPrefix;
-  interestName.append(AttributeAuthority::PUBLIC_PARAMS);
+  interestName.append(PUBLIC_PARAMS);
   Interest interest(interestName);
   interest.setMustBeFresh(true);
   interest.setCanBePrefix(true);

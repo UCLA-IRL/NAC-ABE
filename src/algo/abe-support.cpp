@@ -19,6 +19,7 @@
  */
 
 #include "abe-support.hpp"
+#include "../ndn-crypto/error.hpp"
 #include <ndn-cxx/util/logger.hpp>
 
 namespace ndn {
@@ -103,6 +104,7 @@ ABESupport::decrypt(const PublicParams& pubParams,
 
   if (!bswabe_dec(pub, prv, cph, m)) {
     NDN_LOG_ERROR("Decryption error!" + std::string(bswabe_error()));
+    BOOST_THROW_EXCEPTION(NacAlgoError("Decryption error!" + std::string(bswabe_error())));
   }
 
   GByteArray content{cipherText.m_content.data(), static_cast<guint>(cipherText.m_content.size())};

@@ -19,6 +19,7 @@
  */
 
 #include "attribute-authority.hpp"
+#include "attribute-authority-token.hpp"
 #include "consumer.hpp"
 #include "data-owner.hpp"
 #include "producer.hpp"
@@ -49,6 +50,29 @@ public:
     , consumerFace2(forwarder.addFace())
     , dataOwnerFace(forwarder.addFace())
   {
+    security::Identity aaId = addIdentity("/aaPrefix");
+    security::Key aaKey = aaId.getDefaultKey();
+    aaCert = aaKey.getDefaultCertificate();
+
+    security::Identity tokenIssuerId = addIdentity("/tokenIssuerPrefix");
+    security::Key tokenIssuerKey = tokenIssuerId.getDefaultKey();
+    tokenIssuerCert = tokenIssuerKey.getDefaultCertificate();
+
+    security::Identity consumerId1 = addIdentity("/consumerPrefix1");
+    security::Key consumerKey1 = m_keyChain.createKey(consumerId1, RsaKeyParams());
+    consumerCert1 = consumerKey1.getDefaultCertificate();
+
+    security::Identity consumerId2 = addIdentity("/consumerPrefix2");
+    security::Key consumerKey2 = m_keyChain.createKey(consumerId2, RsaKeyParams());
+    consumerCert2 = consumerKey2.getDefaultCertificate();
+
+    security::Identity producerId = addIdentity("/producerPrefix");
+    security::Key producerKey = producerId.getDefaultKey();
+    producerCert = producerKey.getDefaultCertificate();
+
+    security::Identity dataOwnerId = addIdentity("/dataOwnerPrefix");
+    security::Key dataOwnerKey = dataOwnerId.getDefaultKey();
+    dataOwnerCert = dataOwnerKey.getDefaultCertificate();
   }
 
 public:
@@ -59,14 +83,14 @@ public:
   Face& tokenIssuerFace;
   Face& consumerFace1;
   Face& consumerFace2;
-
   Face& dataOwnerFace;
 
-  //shared_ptr<AttributeAuthority> aa;
-  //shared_ptr<TokenIssuer> tokenIssuer;
-  //shared_ptr<Consumer> consumer;
-  //shared_ptr<Producer> producer;
-  //shared_ptr<DataOwner> dataOwner;
+  security::v2::Certificate aaCert;
+  security::v2::Certificate tokenIssuerCert;
+  security::v2::Certificate consumerCert1;
+  security::v2::Certificate consumerCert2;
+  security::v2::Certificate producerCert;
+  security::v2::Certificate dataOwnerCert;
 };
 
 BOOST_FIXTURE_TEST_SUITE(TestIntegrated, TestIntegratedFixture)
@@ -74,92 +98,47 @@ BOOST_FIXTURE_TEST_SUITE(TestIntegrated, TestIntegratedFixture)
 BOOST_AUTO_TEST_CASE(IntegratedTest)
 {
   // set up AA
-  security::Identity aaId = addIdentity("/aaPrefix");
-  security::Key aaKey = aaId.getDefaultKey();
-  security::v2::Certificate aaCert = aaKey.getDefaultCertificate();
-
-  NDN_LOG_INFO("Create Attribute Authority. AA prefix:"<<aaCert.getIdentity());
+  NDN_LOG_INFO("Create Attribute Authority. AA prefix: " << aaCert.getIdentity());
   AttributeAuthority aa = AttributeAuthority(aaCert, aaFace, m_keyChain);
   advanceClocks(time::milliseconds(20), 60);
 
-  std::cout << "hello" << std::endl;
-
-  BOOST_CHECK(aa.m_pubParams.m_pub != nullptr);
-  BOOST_CHECK(aa.m_masterKey.m_msk != nullptr);
-
-  // set up token issuer
-  security::Identity tokenIssuerId = addIdentity("/tokenIssuerPrefix");
-  security::Key tokenIssuerKey = tokenIssuerId.getDefaultKey();
-  security::v2::Certificate tokenIssuerCert = tokenIssuerKey.getDefaultCertificate();
-
-  NDN_LOG_INFO("Create Token Issuer. Token Issuer prefix:"<<tokenIssuerCert.getIdentity());
-  TokenIssuer tokenIssuer = TokenIssuer(tokenIssuerCert, tokenIssuerFace, m_keyChain);
-  advanceClocks(time::milliseconds(20), 60);
-  BOOST_CHECK_EQUAL(tokenIssuer.m_interestFilterIds.size(), 1);
-
   // define attr list for consumer rights
-  security::Identity consumerId1 = addIdentity("/consumerPrefix1");
-  // m_keyChain.createKey(consumerId, RsaKeyParamsInfo());
-  security::Key consumerKey1 = m_keyChain.createKey(consumerId1, RsaKeyParams());
-  security::v2::Certificate consumerCert1 = consumerKey1.getDefaultCertificate();
-
-
-  // define attr list for consumer rights
-  security::Identity consumerId2 = addIdentity("/consumerPrefix2");
-  // m_keyChain.createKey(consumerId, RsaKeyParamsInfo());
-  security::Key consumerKey2 = m_keyChain.createKey(consumerId2, RsaKeyParams());
-  security::v2::Certificate consumerCert2 = consumerKey2.getDefaultCertificate();
-
   std::list<std::string> attrList = {"attr1", "attr3"};
   NDN_LOG_INFO("Add comsumer 1 "<<consumerCert1.getIdentity()<<" with attributes: attr1, attr3");
-  tokenIssuer.m_tokens.insert(std::pair<Name, std::list<std::string>>(consumerCert1.getIdentity(),
+  aa.m_tokens.insert(std::pair<Name, std::list<std::string>>(consumerCert1.getIdentity(),
                                                                       attrList));
-  BOOST_CHECK_EQUAL(tokenIssuer.m_tokens.size(), 1);
+  BOOST_CHECK_EQUAL(aa.m_tokens.size(), 1);
 
 
   std::list<std::string> attrList1 = {"attr1"};
   NDN_LOG_INFO("Add comsumer 2 "<<consumerCert2.getIdentity()<<" with attributes: attr1");
-  tokenIssuer.m_tokens.insert(std::pair<Name, std::list<std::string>>(consumerCert2.getIdentity(),
+  aa.m_tokens.insert(std::pair<Name, std::list<std::string>>(consumerCert2.getIdentity(),
                                                                       attrList1));
-  BOOST_CHECK_EQUAL(tokenIssuer.m_tokens.size(), 2);
-
-  NDN_LOG_DEBUG("after token issuer");
+  BOOST_CHECK_EQUAL(aa.m_tokens.size(), 2);
 
   // set up consumer
   NDN_LOG_INFO("Create Consumer 1. Consumer 1 prefix:"<<consumerCert1.getIdentity());
   Consumer consumer1 = Consumer(consumerCert1, consumerFace1, m_keyChain, aaCert.getIdentity());
-  tokenIssuer.m_trustConfig.m_trustAnchors.push_back(consumerCert1);
+  aa.m_trustConfig.m_trustAnchors.push_back(consumerCert1);
   advanceClocks(time::milliseconds(20), 60);
   BOOST_CHECK(consumer1.m_pubParamsCache.m_pub != nullptr);
 
   // set up consumer
   NDN_LOG_INFO("Create Consumer 2. Consumer 2 prefix:"<<consumerCert2.getIdentity());
   Consumer consumer2 = Consumer(consumerCert2, consumerFace2, m_keyChain, aaCert.getIdentity());
-  tokenIssuer.m_trustConfig.m_trustAnchors.push_back(consumerCert2);
+  aa.m_trustConfig.m_trustAnchors.push_back(consumerCert2);
   advanceClocks(time::milliseconds(20), 60);
   BOOST_CHECK(consumer2.m_pubParamsCache.m_pub != nullptr);
-  //***** need to compare pointer content *****
-  //BOOST_CHECK(consumer->m_pubParamsCache.m_pub == aa->m_pubParams.m_pub);
-
-  //NDN_LOG_INFO("after consumer");
 
   // set up producer
-  security::Identity producerId = addIdentity("/producerPrefix");
-  security::Key producerKey = producerId.getDefaultKey();
-  security::v2::Certificate producerCert = producerKey.getDefaultCertificate();
   NDN_LOG_INFO("Create Producer. Producer prefix:"<<producerCert.getIdentity());
   Producer producer = Producer(producerCert, producerFace, m_keyChain, aaCert.getIdentity());
   advanceClocks(time::milliseconds(20), 60);
 
   BOOST_CHECK(producer.m_pubParamsCache.m_pub != nullptr);
-  //***** need to compare pointer content *****
-  //BOOST_CHECK(producer->m_pubParamsCache.m_pub == aa->m_pubParams.m_pub);
   BOOST_CHECK_EQUAL(producer.m_interestFilterIds.size(), 1);
 
   // set up data owner
-  security::Identity dataOwnerId = addIdentity("/dataOwnerPrefix");
-  security::Key dataOwnerKey = dataOwnerId.getDefaultKey();
-  security::v2::Certificate dataOwnerCert = dataOwnerKey.getDefaultCertificate();
   NDN_LOG_INFO("Create Data Owner. Data Owner prefix:"<<dataOwnerCert.getIdentity());
   DataOwner dataOwner = DataOwner(dataOwnerCert, dataOwnerFace, m_keyChain);
   advanceClocks(time::milliseconds(20), 60);
@@ -179,8 +158,6 @@ BOOST_AUTO_TEST_CASE(IntegratedTest)
                                      BOOST_CHECK_EQUAL(readString(response.getContent()), "success");
                                      auto it = producer.m_policyCache.find(dataName);
                                      BOOST_CHECK(it != producer.m_policyCache.end());
-                                     //std::cout << it->second << std::endl;
-                                     //std::cout << policy << std::endl;
                                      BOOST_CHECK(it->second == policy);
                                    },
                                    [=] (const std::string& err) {
@@ -191,30 +168,30 @@ BOOST_AUTO_TEST_CASE(IntegratedTest)
   advanceClocks(time::milliseconds(20), 60);
   BOOST_CHECK(isPolicySet);
 
-  bool isProdCbCalled = false;
-  producerFace.setInterestFilter(producerCert.getIdentity().append(dataName),
+  std::shared_ptr<Data> contentData, ckData;
+  auto it = producer.m_policyCache.find(dataName);
+  BOOST_CHECK(it != producer.m_policyCache.end());
+  BOOST_CHECK(it->second == policy);
+  std::tie(contentData, ckData) = producer.produce(dataName, it->second, PLAIN_TEXT, sizeof(PLAIN_TEXT));
+  BOOST_CHECK(contentData != nullptr);
+  BOOST_CHECK(ckData != nullptr);
+
+  producerFace.setInterestFilter(producerCert.getIdentity(),
     [&] (const ndn::InterestFilter&, const ndn::Interest& interest) {
-
       NDN_LOG_INFO("consumer request for"<<interest.toUri());
-      auto it = producer.m_policyCache.find(dataName);
-      BOOST_CHECK(it != producer.m_policyCache.end());
-      BOOST_CHECK(it->second == policy);
-      std::string str;
-      producer.produce(dataName, it->second, PLAIN_TEXT, sizeof(PLAIN_TEXT),
-        [&] (const Data& data) {
-          isProdCbCalled = true;
-
-          NDN_LOG_INFO("data successfully encrypted");
-          producerFace.put(data);
-        },
-        [&] (const std::string& err) {
-          BOOST_CHECK(false);
-        });
+      if (interest.getName().isPrefixOf(contentData->getName())) {
+        producerFace.put(*contentData);
+      }
+      if (interest.getName().isPrefixOf(ckData->getName())) {
+        producerFace.put(*ckData);
+      }
     }
   );
 
   bool isConsumeCbCalled = false;
-  consumer1.consume(producerCert.getIdentity().append(dataName), tokenIssuerCert.getIdentity(),
+  consumer1.obtainAttributes();
+  advanceClocks(time::milliseconds(20), 60);
+  consumer1.consume(producerCert.getIdentity().append(dataName),
     [&] (const Buffer& result) {
       isConsumeCbCalled = true;
       BOOST_CHECK_EQUAL_COLLECTIONS(result.begin(), result.end(),
@@ -230,20 +207,46 @@ BOOST_AUTO_TEST_CASE(IntegratedTest)
     }
   );
   advanceClocks(time::milliseconds(20), 60);
-
-  BOOST_CHECK(isProdCbCalled);
   BOOST_CHECK(isConsumeCbCalled);
 
-  consumer2.consume(producerCert.getIdentity().append(dataName), tokenIssuerCert.getIdentity(),
+  isConsumeCbCalled = false;
+  consumer2.obtainAttributes();
+  advanceClocks(time::milliseconds(20), 60);
+  consumer2.consume(producerCert.getIdentity().append(dataName),
     [&] (const Buffer& result) {
-      isConsumeCbCalled = true;
+      BOOST_CHECK(false);
     },
     [&] (const std::string& err) {
-      BOOST_CHECK(false);
+      isConsumeCbCalled = true;
     }
   );
-
   advanceClocks(time::milliseconds(20), 60);
+  BOOST_CHECK(isConsumeCbCalled);
+}
+
+BOOST_AUTO_TEST_CASE(IntegratedTest2)
+{
+  // set up token issuer
+  NDN_LOG_INFO("Create Token Issuer. Token Issuer prefix:"<<tokenIssuerCert.getIdentity());
+  TokenIssuer tokenIssuer = TokenIssuer(tokenIssuerCert, tokenIssuerFace, m_keyChain);
+  advanceClocks(time::milliseconds(20), 60);
+  BOOST_CHECK_EQUAL(tokenIssuer.m_interestFilterIds.size(), 1);
+
+  // define attr list for consumer rights
+  std::list<std::string> attrList = {"attr1", "attr3"};
+  NDN_LOG_INFO("Add comsumer 1 "<<consumerCert1.getIdentity()<<" with attributes: attr1, attr3");
+  tokenIssuer.m_tokens.insert(std::pair<Name, std::list<std::string>>(consumerCert1.getIdentity(),
+                                                                      attrList));
+  BOOST_CHECK_EQUAL(tokenIssuer.m_tokens.size(), 1);
+
+
+  std::list<std::string> attrList1 = {"attr1"};
+  NDN_LOG_INFO("Add comsumer 2 "<<consumerCert2.getIdentity()<<" with attributes: attr1");
+  tokenIssuer.m_tokens.insert(std::pair<Name, std::list<std::string>>(consumerCert2.getIdentity(),
+                                                                      attrList1));
+  BOOST_CHECK_EQUAL(tokenIssuer.m_tokens.size(), 2);
+
+  NDN_LOG_DEBUG("after token issuer");
 }
 
 BOOST_AUTO_TEST_SUITE_END()

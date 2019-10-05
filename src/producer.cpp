@@ -72,19 +72,17 @@ Producer::onAttributePubParams(const Data& pubParamData)
   m_pubParamsCache.fromBuffer(Buffer(block.value(), block.value_size()));
 }
 
-void
+std::tuple<std::shared_ptr<Data>, std::shared_ptr<Data>>
 Producer::produce(const Name& dataPrefix, const std::string& accessPolicy,
-                  const uint8_t* content, size_t contentLen,
-                  const SuccessCallback& onDataProduceCb, const ErrorCallback& errorCallback)
+                  const uint8_t* content, size_t contentLen)
 {
   // do encryption
   if (m_pubParamsCache.m_pub == nullptr) {
-    errorCallback("public key missing");
-
     NDN_LOG_INFO("public parameters doesn't exist" );
+    return std::make_tuple(nullptr, nullptr);
   }
   else {
-    NDN_LOG_INFO("encrypt data:"<<dataPrefix );
+    NDN_LOG_INFO("encrypt data:"<<dataPrefix);
     auto cipherText = algo::ABESupport::encrypt(m_pubParamsCache, accessPolicy,
                                                 Buffer(content, contentLen));
 
@@ -93,47 +91,46 @@ Producer::produce(const Name& dataPrefix, const std::string& accessPolicy,
 
     Name dataName = m_cert.getIdentity();
     dataName.append(dataPrefix);
-    Data data(dataName);
+    auto data = std::make_shared<Data>(dataName);
     auto dataBlock = makeEmptyBlock(tlv::Content);
     dataBlock.push_back(cipherText.makeDataContent());
     dataBlock.push_back(ckName.wireEncode());
     dataBlock.encode();
-    data.setContent(dataBlock);
-    data.setFreshnessPeriod(5_s);
-    m_keyChain.sign(data, signingByCertificate(m_cert));
+    data->setContent(dataBlock);
+    data->setFreshnessPeriod(5_s);
+    m_keyChain.sign(*data, signingByCertificate(m_cert));
 
-    std::cout << data;
-    std::cout << "Content Data length: " << data.wireEncode().size() << std::endl;
-    std::cout << "Content Name length: " << data.getName().wireEncode().size() << std::endl;
+    std::cout << *data;
+    std::cout << "Content Data length: " << data->wireEncode().size() << std::endl;
+    std::cout << "Content Name length: " << data->getName().wireEncode().size() << std::endl;
     std::cout << "=================================\n";
 
     Name ckDataName = ckName;
     ckDataName.append("ENC-BY").append(accessPolicy);
-    Data ckData(ckDataName);
-    ckData.setContent(cipherText.makeCKContent());
-    m_keyChain.sign(ckData, signingByCertificate(m_cert));
+    auto ckData = std::make_shared<Data>(ckDataName);
+    ckData->setContent(cipherText.makeCKContent());
+    ckData->setFreshnessPeriod(5_s);
+    m_keyChain.sign(*ckData, signingByCertificate(m_cert));
 
-    std::cout << ckData;
-    std::cout << "CK Data length: " << ckData.wireEncode().size() << std::endl;
-    std::cout << "CK Name length: " << ckData.getName().wireEncode().size() << std::endl;
+    std::cout << *ckData;
+    std::cout << "CK Data length: " << ckData->wireEncode().size() << std::endl;
+    std::cout << "CK Name length: " << ckData->getName().wireEncode().size() << std::endl;
     std::cout << "=================================\n";
 
-    onDataProduceCb(data);
+    return std::make_tuple(data, ckData);
   }
 }
 
-void
-Producer::produce(const Name& dataPrefix, const uint8_t* content, size_t contentLen,
-                  const SuccessCallback& onDataProduceCb, const ErrorCallback& errorCallback)
+std::tuple<std::shared_ptr<Data>, std::shared_ptr<Data>>
+Producer::produce(const Name& dataPrefix, const uint8_t* content, size_t contentLen)
 {
   // Encrypt data based on data prefix.
   auto it = m_policyCache.find(dataPrefix);
   if (it == m_policyCache.end()) {
-    errorCallback("policy missing");
     NDN_LOG_INFO("policy doesn't exist");
-    return;
+    return std::make_tuple(nullptr, nullptr);
   }
-  produce(dataPrefix, it->second, content, contentLen, onDataProduceCb, errorCallback);
+  return produce(dataPrefix, it->second, content, contentLen);
 }
 
 //private:
@@ -176,7 +173,7 @@ Producer::fetchPublicParams()
 {
   // fetch pub parameters
   Name interestName = m_attrAuthorityPrefix;
-  interestName.append(AttributeAuthority::PUBLIC_PARAMS);
+  interestName.append(PUBLIC_PARAMS);
   Interest interest(interestName);
   interest.setMustBeFresh(true);
   interest.setCanBePrefix(true);

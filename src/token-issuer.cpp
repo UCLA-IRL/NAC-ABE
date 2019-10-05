@@ -120,6 +120,7 @@ TokenIssuer::onTokenRequest(const Interest& request)
 
   // wrap the token
   Data token;
+  token.setFreshnessPeriod(5_s);
   token.setName(request.getName());
   token.setContent(JsonHelper::dataContentFromJson(root));
   m_keyChain.sign(token, signingByCertificate(m_cert));
