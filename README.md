@@ -1,11 +1,11 @@
-NDN-Attribute-Based-Access-Control
+NAC-ABE: NDN-Attribute-Based-Access-Control
 ==================================
 
 
 Overview
 --------
 
-Named Data Networking Attribute-based Encryption Support Library: ndn-abac
+Named Data Networking Attribute-based Encryption Support Library: NAC-ABE
 
 Quick Start
 -----------
@@ -14,13 +14,13 @@ Quick Start
 
 #### 1. ndn-cxx ####
 
-ndn-abac is implemented over the Named Data Networking.
+NAC-ABE is implemented over the Named Data Networking.
 Here is the link to [ndn-cxx library](https://github.com/named-data/ndn-cxx).
-To install the ndn-abac library, you need to first install ndn-cxx.
+To install the NAC-ABE library, you need to first install ndn-cxx.
 
 #### 2. pbc ####
 
-ndn-abac is using paring-based cryptography support provided by library PBC. To install PBC, you can visit the [website](https://crypto.stanford.edu/pbc/).
+NAC-ABE is using paring-based cryptography support provided by library PBC. To install PBC, you can visit the [website](https://crypto.stanford.edu/pbc/).
 
 Or a simple way:
 
@@ -32,7 +32,7 @@ brew install pbc
 
 #### 3. libbswabe ###
 
-ndn-abac is using attribute-encryption support provided by library [libbswabe](http://hms.isi.jhu.edu/acsc/cpabe/). You should download the libbwable library first and then install the library.
+NAC-ABE is using attribute-encryption support provided by library [libbswabe](http://hms.isi.jhu.edu/acsc/cpabe/). You should download the libbwable library first and then install the library.
 
 ```
 // bash
@@ -43,7 +43,7 @@ make
 make install
 ```
 
-### Install ndn-abac ###
+### Install NAC-ABE ###
 
 Really simple to make it using waf.
 
@@ -51,21 +51,21 @@ Really simple to make it using waf.
 
 ```
 // bash
-// in the root directory of ndn-abac
+// in the root directory of NAC-ABE
 ./waf configure
 ```
 
-#### Compile ndn-abac ####
+#### Compile NAC-ABE ####
 ```
 // bash
-// in the root directory of ndn-abac
+// in the root directory of NAC-ABE
 ./waf
 ```
 
-#### Install ndn-abac ####
+#### Install NAC-ABE ####
 ```
 // bash
-// in the root directory of ndn-abac
+// in the root directory of NAC-ABE
 ./waf install
 ```
 
@@ -73,7 +73,7 @@ Really simple to make it using waf.
 
 ```
 // bash
-// in the root directory of ndn-abac
+// in the root directory of NAC-ABE
 ./waf configure --with-tests
 
 // test abe support (encryption decryption)
