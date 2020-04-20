@@ -50,7 +50,7 @@ BOOST_FIXTURE_TEST_SUITE(TestAttributeAuthority, TestAttributeAuthorityFixture)
 
 BOOST_AUTO_TEST_CASE(Constructor)
 {
-  util::DummyClientFace face(m_io, {true, true});
+  util::DummyClientFace face(io, {true, true});
   AttributeAuthority aa(cert, face, m_keyChain);
   BOOST_CHECK(aa.m_pubParams.m_pub != nullptr);
   BOOST_CHECK(aa.m_masterKey.m_msk != nullptr);
@@ -58,7 +58,7 @@ BOOST_AUTO_TEST_CASE(Constructor)
 
 BOOST_AUTO_TEST_CASE(onPublicParams)
 {
-  util::DummyClientFace face(m_io, {true, true});
+  util::DummyClientFace face(io, {true, true});
   AttributeAuthority aa(cert, face, m_keyChain);
   Name interestName = attrAuthorityPrefix;
   Interest request(interestName.append(PUBLIC_PARAMS));
@@ -98,7 +98,7 @@ BOOST_AUTO_TEST_CASE(onPrvKey)
   std::list<std::string> attrList = {"attr1", "attr2", "attr3", "attr4", "attr5",
                                      "attr6", "attr7", "attr8", "attr9", "attr10"};
 
-  util::DummyClientFace face(m_io, {true, true});
+  util::DummyClientFace face(io, {true, true});
   AttributeAuthority aa(cert, face, m_keyChain);
   aa.m_trustConfig.m_trustAnchors.push_back(consumerCert);
   aa.m_tokens.insert(std::pair<Name, std::list<std::string>>(consumerName, attrList));

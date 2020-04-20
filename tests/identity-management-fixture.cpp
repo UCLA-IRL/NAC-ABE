@@ -1,38 +1,55 @@
 /* -*- Mode:C++; c-file-style:"gnu"; indent-tabs-mode:nil; -*- */
 /*
- * Copyright (c) 2014-2019, Regents of the University of California,
- *                          Arizona Board of Regents,
- *                          Colorado State University,
- *                          University Pierre & Marie Curie, Sorbonne University,
- *                          Washington University in St. Louis,
- *                          Beijing Institute of Technology,
- *                          The University of Memphis.
+ * Copyright (c) 2013-2019 Regents of the University of California.
  *
- * This file, originally written as part of NFD (Named Data Networking Forwarding Daemon),
- * is a part of NAC-ABE.
+ * This file is part of ndn-cxx library (NDN C++ library with eXperimental eXtensions).
  *
- * NAC-ABE is free software: you can redistribute it and/or modify it under the terms
- * of the GNU General Public License as published by the Free Software Foundation, either
- * version 3 of the License, or (at your option) any later version.
+ * ndn-cxx library is free software: you can redistribute it and/or modify it under the
+ * terms of the GNU Lesser General Public License as published by the Free Software
+ * Foundation, either version 3 of the License, or (at your option) any later version.
  *
- * NAC-ABE is distributed in the hope that it will be useful, but WITHOUT ANY
+ * ndn-cxx library is distributed in the hope that it will be useful, but WITHOUT ANY
  * WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A
- * PARTICULAR PURPOSE.  See the GNU General Public License for more details.
+ * PARTICULAR PURPOSE.  See the GNU Lesser General Public License for more details.
  *
- * You should have received copies of the GNU General Public License along with
- * NAC-ABE, e.g., in COPYING.md file.  If not, see <http://www.gnu.org/licenses/>.
+ * You should have received copies of the GNU General Public License and GNU Lesser
+ * General Public License along with ndn-cxx, e.g., in COPYING.md file.  If not, see
+ * <http://www.gnu.org/licenses/>.
  *
- * See AUTHORS.md for complete list of NAC-ABE authors and contributors.
+ * See AUTHORS.md for complete list of ndn-cxx authors and contributors.
  */
 
 #include "identity-management-fixture.hpp"
-
+#include <ndn-cxx/security/v2/additional-description.hpp>
 #include <ndn-cxx/util/io.hpp>
 #include <boost/filesystem.hpp>
 
 namespace ndn {
 namespace nacabe {
 namespace tests {
+
+namespace v2 = security::v2;
+
+IdentityManagementBaseFixture::~IdentityManagementBaseFixture()
+{
+  boost::system::error_code ec;
+  for (const auto& certFile : m_certFiles) {
+    boost::filesystem::remove(certFile, ec); // ignore error
+  }
+}
+
+bool
+IdentityManagementBaseFixture::saveCertToFile(const Data& obj, const std::string& filename)
+{
+  m_certFiles.insert(filename);
+  try {
+    io::save(obj, filename);
+    return true;
+  }
+  catch (const io::Error&) {
+    return false;
+  }
+}
 
 IdentityManagementFixture::IdentityManagementFixture()
   : m_keyChain("pib-memory:", "tpm-memory:")
@@ -48,8 +65,7 @@ IdentityManagementFixture::addIdentity(const Name& identityName, const KeyParams
 }
 
 bool
-IdentityManagementFixture::saveIdentityCertificate(const security::Identity& identity,
-                                                     const std::string& filename)
+IdentityManagementFixture::saveCertificate(const security::Identity& identity, const std::string& filename)
 {
   try {
     auto cert = identity.getDefaultKey().getDefaultCertificate();
@@ -62,19 +78,19 @@ IdentityManagementFixture::saveIdentityCertificate(const security::Identity& ide
 
 security::Identity
 IdentityManagementFixture::addSubCertificate(const Name& subIdentityName,
-                                               const security::Identity& issuer, const KeyParams& params)
+                                             const security::Identity& issuer, const KeyParams& params)
 {
   auto subIdentity = addIdentity(subIdentityName, params);
 
-  security::v2::Certificate request = subIdentity.getDefaultKey().getDefaultCertificate();
+  v2::Certificate request = subIdentity.getDefaultKey().getDefaultCertificate();
 
   request.setName(request.getKeyName().append("parent").appendVersion());
 
   SignatureInfo info;
-  info.setValidityPeriod(security::ValidityPeriod(time::system_clock::now(),
-                                                  time::system_clock::now() + time::days(7300)));
+  auto now = time::system_clock::now();
+  info.setValidityPeriod(security::ValidityPeriod(now, now + 7300_days));
 
-  security::v2::AdditionalDescription description;
+  v2::AdditionalDescription description;
   description.set("type", "sub-certificate");
   info.appendTypeSpecificTlv(description.wireEncode());
 
@@ -84,43 +100,30 @@ IdentityManagementFixture::addSubCertificate(const Name& subIdentityName,
   return subIdentity;
 }
 
-security::v2::Certificate
+v2::Certificate
 IdentityManagementFixture::addCertificate(const security::Key& key, const std::string& issuer)
 {
   Name certificateName = key.getName();
   certificateName
     .append(issuer)
     .appendVersion();
-  security::v2::Certificate certificate;
+  v2::Certificate certificate;
   certificate.setName(certificateName);
 
   // set metainfo
   certificate.setContentType(tlv::ContentType_Key);
-  certificate.setFreshnessPeriod(time::hours(1));
+  certificate.setFreshnessPeriod(1_h);
 
   // set content
   certificate.setContent(key.getPublicKey().data(), key.getPublicKey().size());
 
   // set signature-info
   SignatureInfo info;
-  info.setValidityPeriod(security::ValidityPeriod(time::system_clock::now(),
-                                                  time::system_clock::now() + time::days(10)));
+  auto now = time::system_clock::now();
+  info.setValidityPeriod(security::ValidityPeriod(now, now + 10_days));
 
   m_keyChain.sign(certificate, signingByKey(key).setSignatureInfo(info));
   return certificate;
-}
-
-bool
-IdentityManagementFixture::saveCertToFile(const Data& obj, const std::string& filename)
-{
-  m_certFiles.insert(filename);
-  try {
-    io::save(obj, filename);
-    return true;
-  }
-  catch (const io::Error&) {
-    return false;
-  }
 }
 
 } // namespace tests

@@ -36,8 +36,8 @@ class TestDataOwnerFixture : public IdentityManagementTimeFixture
 {
 public:
   TestDataOwnerFixture()
-    : c1(m_io, m_keyChain, util::DummyClientFace::Options{true, true})
-    , c2(m_io, m_keyChain, util::DummyClientFace::Options{true, true})
+    : c1(io, m_keyChain, util::DummyClientFace::Options{true, true})
+    , c2(io, m_keyChain, util::DummyClientFace::Options{true, true})
   {
     c1.linkTo(c2);
   }

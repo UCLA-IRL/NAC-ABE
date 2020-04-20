@@ -1,42 +1,16 @@
 # -*- Mode: python; py-indent-offset: 4; indent-tabs-mode: nil; coding: utf-8; -*-
-
 top = '..'
 
-from waflib import Logs
-
 def build(bld):
-    if not bld.env['WITH_TESTS']:
+    if not bld.env.WITH_TESTS:
         return
 
-    # precompiled headers (if enabled)
-    bld(features='cxx',
-        name='tests-base',
-        target='tests-base',
-        headers=['boost-test.hpp'],
-        use='NDN_CXX BOOST',
-        includes='.')
-
-    # core modules that can be shared between unit and integrated tests
-    bld(features="cxx",
-        target="boost-tests-base",
-        source=bld.path.ant_glob(['*.cpp'], excl='main.cpp'),
-        use='ndn-abac tests-base BOOST',
-        includes='.. ../src .',
-        defines=['UNIT_TEST_CONFIG_PATH=\"%s/tmp-files/\"' % (bld.bldnode)],
-        install_path=None)
-
-    bld(target='unit-tests-main',
-        name='unit-tests-main',
-        features='cxx',
-        use='tests-base boost-tests-base BOOST',
-        source='main.cpp',
-        defines=['BOOST_TEST_MODULE=Unit Test'])
-
-    unit_tests=bld(
+    tmp_path = 'TMP_TESTS_PATH="%s"' % bld.bldnode.make_node('tmp-tests')
+    bld.program(
         target='../unit-tests',
-        features='cxx cxxprogram',
-        source=bld.path.ant_glob(['unit-tests/*.cpp']),
-        use='nac-abe unit-tests-main',
-        install_path=None,
-        defines=['UNIT_TEST_CONFIG_PATH=\"%s/tmp-files/\"' % (bld.bldnode)],
-        includes='.. ../src .')
+        name='unit-tests',
+        source=bld.path.ant_glob(['*.cpp', 'unit-tests/**/*.cpp']),
+        use='nac-abe BOOST',
+        includes='.',
+        defines=[tmp_path],
+        install_path=None)

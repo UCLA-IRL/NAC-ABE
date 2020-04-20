@@ -41,12 +41,12 @@ class TestIntegratedFixture : public IdentityManagementTimeFixture
 {
 public:
   TestIntegratedFixture()
-    : producerFace(m_io, m_keyChain, util::DummyClientFace::Options{true, true})
-    , aaFace(m_io, m_keyChain, util::DummyClientFace::Options{true, true})
-    , tokenIssuerFace(m_io, m_keyChain, util::DummyClientFace::Options{true, true})
-    , consumerFace1(m_io, m_keyChain, util::DummyClientFace::Options{true, true})
-    , consumerFace2(m_io, m_keyChain, util::DummyClientFace::Options{true, true})
-    , dataOwnerFace(m_io, m_keyChain, util::DummyClientFace::Options{true, true})
+    : producerFace(io, m_keyChain, util::DummyClientFace::Options{true, true})
+    , aaFace(io, m_keyChain, util::DummyClientFace::Options{true, true})
+    , tokenIssuerFace(io, m_keyChain, util::DummyClientFace::Options{true, true})
+    , consumerFace1(io, m_keyChain, util::DummyClientFace::Options{true, true})
+    , consumerFace2(io, m_keyChain, util::DummyClientFace::Options{true, true})
+    , dataOwnerFace(io, m_keyChain, util::DummyClientFace::Options{true, true})
   {
     producerFace.linkTo(aaFace);
     producerFace.linkTo(tokenIssuerFace);

@@ -1,41 +1,50 @@
 /* -*- Mode:C++; c-file-style:"gnu"; indent-tabs-mode:nil; -*- */
 /*
- * Copyright (c) 2014-2019, Regents of the University of California,
- *                          Arizona Board of Regents,
- *                          Colorado State University,
- *                          University Pierre & Marie Curie, Sorbonne University,
- *                          Washington University in St. Louis,
- *                          Beijing Institute of Technology,
- *                          The University of Memphis.
+ * Copyright (c) 2013-2019 Regents of the University of California.
  *
- * This file, originally written as part of NFD (Named Data Networking Forwarding Daemon),
- * is a part of NAC-ABE.
+ * This file is part of ndn-cxx library (NDN C++ library with eXperimental eXtensions).
  *
- * NAC-ABE is free software: you can redistribute it and/or modify it under the terms
- * of the GNU General Public License as published by the Free Software Foundation, either
- * version 3 of the License, or (at your option) any later version.
+ * ndn-cxx library is free software: you can redistribute it and/or modify it under the
+ * terms of the GNU Lesser General Public License as published by the Free Software
+ * Foundation, either version 3 of the License, or (at your option) any later version.
  *
- * NAC-ABE is distributed in the hope that it will be useful, but WITHOUT ANY
+ * ndn-cxx library is distributed in the hope that it will be useful, but WITHOUT ANY
  * WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A
- * PARTICULAR PURPOSE.  See the GNU General Public License for more details.
+ * PARTICULAR PURPOSE.  See the GNU Lesser General Public License for more details.
  *
- * You should have received copies of the GNU General Public License along with
- * NAC-ABE, e.g., in COPYING.md file.  If not, see <http://www.gnu.org/licenses/>.
+ * You should have received copies of the GNU General Public License and GNU Lesser
+ * General Public License along with ndn-cxx, e.g., in COPYING.md file.  If not, see
+ * <http://www.gnu.org/licenses/>.
  *
- * See AUTHORS.md for complete list of NAC-ABE authors and contributors.
+ * See AUTHORS.md for complete list of ndn-cxx authors and contributors.
  */
 
-#ifndef NDNCERT_TESTS_IDENTITY_MANAGEMENT_FIXTURE_HPP
-#define NDNCERT_TESTS_IDENTITY_MANAGEMENT_FIXTURE_HPP
+#ifndef NDN_TESTS_IDENTITY_MANAGEMENT_FIXTURE_HPP
+#define NDN_TESTS_IDENTITY_MANAGEMENT_FIXTURE_HPP
 
-#include "test-common.hpp"
+#include "test-home-fixture.hpp"
+#include "unit-test-time-fixture.hpp"
+#include "boost-test.hpp"
 #include <ndn-cxx/security/v2/key-chain.hpp>
-#include <ndn-cxx/security/v2/additional-description.hpp>
 #include <ndn-cxx/security/signing-helpers.hpp>
+#include <vector>
 
 namespace ndn {
 namespace nacabe {
 namespace tests {
+
+class IdentityManagementBaseFixture : public TestHomeFixture<DefaultPibDir>
+{
+public:
+  ~IdentityManagementBaseFixture();
+
+  bool
+  saveCertToFile(const Data& obj, const std::string& filename);
+
+protected:
+  std::set<Name> m_identities;
+  std::set<std::string> m_certFiles;
+};
 
 /**
  * @brief A test suite level fixture to help with identity management
@@ -43,7 +52,7 @@ namespace tests {
  * Test cases in the suite can use this fixture to create identities.  Identities,
  * certificates, and saved certificates are automatically removed during test teardown.
  */
-class IdentityManagementFixture
+class IdentityManagementFixture : public IdentityManagementBaseFixture
 {
 public:
   IdentityManagementFixture();
@@ -53,7 +62,8 @@ public:
    * @return name of the created self-signed certificate
    */
   security::Identity
-  addIdentity(const Name& identityName, const KeyParams& params = security::v2::KeyChain::getDefaultKeyParams());
+  addIdentity(const Name& identityName,
+              const KeyParams& params = security::v2::KeyChain::getDefaultKeyParams());
 
   /**
    *  @brief Save identity certificate to a file
@@ -62,7 +72,7 @@ public:
    *  @return whether successful
    */
   bool
-  saveIdentityCertificate(const security::Identity& identity, const std::string& filename);
+  saveCertificate(const security::Identity& identity, const std::string& filename);
 
   /**
    * @brief Issue a certificate for \p subIdentityName signed by \p issuer
@@ -83,18 +93,10 @@ public:
   security::v2::Certificate
   addCertificate(const security::Key& key, const std::string& issuer);
 
-  bool
-  saveCertToFile(const Data& obj, const std::string& filename);
-
 protected:
-  std::set<Name> m_identities;
-  std::set<std::string> m_certFiles;
-  security::v2::KeyChain m_keyChain;
+  KeyChain m_keyChain;
 };
 
-/** \brief convenience base class for inheriting from both UnitTestTimeFixture
- *         and IdentityManagementFixture
- */
 class IdentityManagementTimeFixture : public UnitTestTimeFixture
                                     , public IdentityManagementFixture
 {
@@ -104,4 +106,4 @@ class IdentityManagementTimeFixture : public UnitTestTimeFixture
 } // namespace nacabe
 } // namespace ndn
 
-#endif // NDNCERT_TESTS_IDENTITY_MANAGEMENT_FIXTURE_HPP
+#endif // NDN_TESTS_IDENTITY_MANAGEMENT_FIXTURE_HPP

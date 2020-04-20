@@ -35,8 +35,8 @@ class TestConsumerFixture : public IdentityManagementTimeFixture
 {
 public:
   TestConsumerFixture()
-    : c1(m_io, m_keyChain, util::DummyClientFace::Options{true, true})
-    , c2(m_io, m_keyChain, util::DummyClientFace::Options{true, true})
+    : c1(io, m_keyChain, util::DummyClientFace::Options{true, true})
+    , c2(io, m_keyChain, util::DummyClientFace::Options{true, true})
     , attrAuthorityPrefix("/authority")
     , tokenIssuerPrefix("/token/issuer")
   {
