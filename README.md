@@ -41,11 +41,17 @@ make install
 
 Really simple to make it using waf.
 
-#### Auto dependency check
+#### Config
 
 ```bash
 // in the root directory of NAC-ABE
 ./waf configure
+```
+
+or if you want to enable tests.
+
+```bash
+./waf configure --with-tests
 ```
 
 #### Compile
@@ -64,10 +70,9 @@ Really simple to make it using waf.
 
 ### Run Tests
 
-```bash
-// in the root directory of NAC-ABE
-./waf configure --with-tests
+To run tests, you must have `--with-tests` when you config the project.
 
+```bash
 // run all the tests (including integrate test)
 ./build/unit-tests
 ```
