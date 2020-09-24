@@ -18,10 +18,11 @@
  * See AUTHORS.md for complete list of NAC-ABE authors and contributors.
  */
 
+#include <ndn-cxx/util/dummy-client-face.hpp>
+
+#include "algo/abe-support.hpp"
 #include "producer.hpp"
 #include "test-common.hpp"
-#include "algo/abe-support.hpp"
-#include <ndn-cxx/util/dummy-client-face.hpp>
 
 namespace ndn {
 namespace nacabe {
@@ -33,13 +34,12 @@ const uint8_t PLAIN_TEXT[1024] = {1};
 
 NDN_LOG_INIT(Test.Producer);
 
-class TestProducerFixture : public IdentityManagementTimeFixture
-{
+class TestProducerFixture : public IdentityManagementTimeFixture {
 public:
   TestProducerFixture()
-    : c1(io, m_keyChain, util::DummyClientFace::Options{true, true})
-    , c2(io, m_keyChain, util::DummyClientFace::Options{true, true})
-    , attrAuthorityPrefix("/authority")
+      : c1(io, m_keyChain, util::DummyClientFace::Options{true, true})
+      , c2(io, m_keyChain, util::DummyClientFace::Options{true, true})
+      , attrAuthorityPrefix("/authority")
   {
     c1.linkTo(c2);
     auto id = addIdentity("/producer");
@@ -60,24 +60,24 @@ BOOST_AUTO_TEST_CASE(Constructor)
 {
   algo::PublicParams m_pubParams;
   c2.setInterestFilter(InterestFilter(attrAuthorityPrefix),
-                       [&] (const ndn::InterestFilter&, const ndn::Interest& interest) {
-                        algo::MasterKey m_masterKey;
-                        algo::ABESupport::setup(m_pubParams, m_masterKey);
-                        Data result;
-                        Name dataName = interest.getName();
-                        dataName.appendTimestamp();
-                        result.setName(dataName);
-                        result.setFreshnessPeriod(10_s);
-                        const auto& contentBuf = m_pubParams.toBuffer();
-                        result.setContent(makeBinaryBlock(ndn::tlv::Content,
-                                                          contentBuf.data(), contentBuf.size()));
-                        m_keyChain.sign(result, signingByCertificate(cert));
+                       [&](const ndn::InterestFilter&, const ndn::Interest& interest) {
+                         algo::MasterKey m_masterKey;
+                         algo::ABESupport::setup(m_pubParams, m_masterKey);
+                         Data result;
+                         Name dataName = interest.getName();
+                         dataName.appendTimestamp();
+                         result.setName(dataName);
+                         result.setFreshnessPeriod(10_s);
+                         const auto& contentBuf = m_pubParams.toBuffer();
+                         result.setContent(makeBinaryBlock(ndn::tlv::Content,
+                                                           contentBuf.data(), contentBuf.size()));
+                         m_keyChain.sign(result, signingByCertificate(cert));
 
-                        NDN_LOG_TRACE("Reply public params request.");
-                        NDN_LOG_TRACE("Pub params size: " << contentBuf.size());
+                         NDN_LOG_TRACE("Reply public params request.");
+                         NDN_LOG_TRACE("Pub params size: " << contentBuf.size());
 
-                        c2.put(result);
-                     });
+                         c2.put(result);
+                       });
 
   Producer producer(cert, c1, m_keyChain, attrAuthorityPrefix);
   advanceClocks(time::milliseconds(10), 100);
@@ -101,33 +101,35 @@ BOOST_AUTO_TEST_CASE(onPolicyInterest)
   setPolicyInterestName.append(dataPrefix);
   setPolicyInterestName.append(Name("policy"));
 
-  NDN_LOG_DEBUG("set policy Interest name:"<<setPolicyInterestName);
+  NDN_LOG_DEBUG("set policy Interest name:" << setPolicyInterestName);
   Interest setPolicyInterest = Interest(setPolicyInterestName);
+  setPolicyInterest.setCanBePrefix(true);
 
-  NDN_LOG_DEBUG(setPolicyInterest.getName().getSubName(2,1));
+  NDN_LOG_DEBUG(setPolicyInterest.getName().getSubName(2, 1));
 
   int count = 0;
-  auto onSend = [&] (const Data& response, std::string isSuccess) {
+  auto onSend = [&](const Data& response, std::string isSuccess) {
     BOOST_CHECK(security::verifySignature(response, cert));
 
     BOOST_CHECK(readString(response.getContent()) == isSuccess);
-    NDN_LOG_DEBUG("content is:"<<readString(response.getContent())<<", isSuccess:"<<isSuccess);
+    NDN_LOG_DEBUG("content is:" << readString(response.getContent()) << ", isSuccess:" << isSuccess);
   };
 
-  NDN_LOG_DEBUG("before receive, interest name:"<<setPolicyInterest.getName());
+  NDN_LOG_DEBUG("before receive, interest name:" << setPolicyInterest.getName());
   //dynamic_cast<util::DummyClientFace*>(&c1)->receive(setPolicyInterest);
-  c2.expressInterest(setPolicyInterest,
-                     [&](const Interest&, const Data& response){
-                      BOOST_CHECK(security::verifySignature(response, cert));
-                      BOOST_CHECK(readString(response.getContent()) == "success");
-                     },
-                     [=](const Interest&, const lp::Nack&){},
-                     [=](const Interest&){});
+  c2.expressInterest(
+      setPolicyInterest,
+      [&](const Interest&, const Data& response) {
+        BOOST_CHECK(security::verifySignature(response, cert));
+        BOOST_CHECK(readString(response.getContent()) == "success");
+      },
+      [=](const Interest&, const lp::Nack&) {},
+      [=](const Interest&) {});
 
-  NDN_LOG_DEBUG("set policy Interest:"<<setPolicyInterest.getName());
+  NDN_LOG_DEBUG("set policy Interest:" << setPolicyInterest.getName());
   ///producer/SET_POLICY/dataPrefix/policy
-  NDN_LOG_DEBUG("data prefix:"<<setPolicyInterest.getName().getSubName(2,1));
-  NDN_LOG_DEBUG(setPolicyInterest.getName().getSubName(3,1));
+  NDN_LOG_DEBUG("data prefix:" << setPolicyInterest.getName().getSubName(2, 1));
+  NDN_LOG_DEBUG(setPolicyInterest.getName().getSubName(3, 1));
   //_LOG_DEBUG("policy:"<<setPolicyInterest.getName().at(3).toUri());
 
   advanceClocks(time::milliseconds(20), 60);
@@ -139,13 +141,14 @@ BOOST_AUTO_TEST_CASE(onPolicyInterest)
 
   advanceClocks(time::milliseconds(20), 60);
 
-  c2.expressInterest(setPolicyInterest,
-                     [&](const Interest&, const Data& response){
-                      BOOST_CHECK(security::verifySignature(response, cert));
-                      BOOST_CHECK(readString(response.getContent()) == "exist");
-                     },
-                     [=](const Interest&, const lp::Nack&){},
-                     [=](const Interest&){});
+  c2.expressInterest(
+      setPolicyInterest,
+      [&](const Interest&, const Data& response) {
+        BOOST_CHECK(security::verifySignature(response, cert));
+        BOOST_CHECK(readString(response.getContent()) == "exist");
+      },
+      [=](const Interest&, const lp::Nack&) {},
+      [=](const Interest&) {});
 
   advanceClocks(time::milliseconds(20), 60);
 
@@ -180,6 +183,6 @@ BOOST_AUTO_TEST_CASE(encryptContent)
 
 BOOST_AUTO_TEST_SUITE_END()
 
-} // namespace tests
-} // namespace nacabe
-} // namespace ndn
+}  // namespace tests
+}  // namespace nacabe
+}  // namespace ndn
