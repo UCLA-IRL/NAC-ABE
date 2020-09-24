@@ -1,4 +1,4 @@
-# NAC-ABE: NDN-Attribute-Based-Access-Control
+# NAC-ABE: Named-based Access Control with Attribute-based Encryption
 
 ## Overview
 
