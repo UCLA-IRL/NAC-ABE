@@ -62,6 +62,7 @@ BOOST_AUTO_TEST_CASE(onPublicParams)
   AttributeAuthority aa(cert, face, m_keyChain);
   Name interestName = attrAuthorityPrefix;
   Interest request(interestName.append(PUBLIC_PARAMS));
+  request.setCanBePrefix(true);
   auto requiredBuffer = aa.m_pubParams.toBuffer();
 
   advanceClocks(time::milliseconds(20), 60);
@@ -106,6 +107,7 @@ BOOST_AUTO_TEST_CASE(onPrvKey)
   Name interestName = attrAuthorityPrefix;
   interestName.append("DKEY").append(consumerName.wireEncode());
   Interest interest(interestName);
+  interest.setCanBePrefix(true);
   m_keyChain.sign(interest, security::signingByCertificate(consumerCert));
 
   advanceClocks(time::milliseconds(20), 60);
