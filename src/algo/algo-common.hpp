@@ -25,6 +25,9 @@
 #include <ndn-cxx/encoding/block-helpers.hpp>
 #include <ndn-cxx/encoding/estimator.hpp>
 
+#include <openabe/openabe.h>
+#include <openabe/zsymcrypto.h>
+
 #include <pbc.h>
 #include <glib.h>
 #include <bswabe.h>

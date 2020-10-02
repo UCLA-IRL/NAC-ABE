@@ -45,7 +45,7 @@ def configure(conf):
 	               args='--cflags --libs')
 
     conf.env.LIBPATH_PBC = ['/usr/local/lib']
-    conf.env.INCLUDES_PBC = ['/usr/local/include']
+    conf.env.INCLUDES_PBC = ['/usr/local/include/pbc']
     conf.check_cxx(lib = 'pbc', use = 'PBC', args='--cflags --libs')
 
     conf.env.LIBPATH_GMP = ['/usr/local/lib']
@@ -55,6 +55,10 @@ def configure(conf):
     conf.env.STLIBPATH_BSWABE = ['/usr/local/lib']
     conf.env.INCLUDES_BSWABE  = ['/usr/local/include']
     conf.check_cxx(lib = 'bswabe', use = 'BSWABE')
+
+    conf.env.STLIBPATH_OPENABE = ['/usr/local/lib']
+    conf.env.INCLUDES_OPENABE  = ['/usr/local/include']
+    conf.check_cxx(lib = 'openabe', use = 'OPENABE')
 
     conf.define_cond('HAVE_TESTS', conf.env.WITH_TESTS)
     conf.define('SYSCONFDIR', conf.env.SYSCONFDIR)
@@ -66,7 +70,7 @@ def build(bld):
               source = bld.path.ant_glob(['src/**/*.cpp']),
               vnum = VERSION,
               cnum = VERSION,
-              use = 'NDN_CXX BOOST GMP GLIB BSWABE OPENSSL PBC',
+              use = 'NDN_CXX BOOST GMP GLIB BSWABE OPENSSL PBC OPENABE',
               includes='src',
               export_includes='src')
 

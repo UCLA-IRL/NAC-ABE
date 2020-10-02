@@ -37,7 +37,7 @@ public:
   fromBuffer(const Buffer& buffer);
 
 public:
-  GByteArray* m_pub;
+  std::string m_pub;
 };
 
 } // namespace algo

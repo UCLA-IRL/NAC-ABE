@@ -47,8 +47,8 @@ BOOST_AUTO_TEST_CASE(Setup)
 
   algo::ABESupport::setup(pubParams, masterKey);
 
-  BOOST_CHECK(pubParams.m_pub != nullptr);
-  BOOST_CHECK(masterKey.m_msk != nullptr);
+  BOOST_CHECK(pubParams.m_pub != "");
+  BOOST_CHECK(masterKey.m_msk != "");
 }
 
 BOOST_AUTO_TEST_CASE(GenPrivateKey)
@@ -58,10 +58,10 @@ BOOST_AUTO_TEST_CASE(GenPrivateKey)
 
   algo::ABESupport::setup(pubParams, masterKey);
 
-  std::vector<std::string> attrList = {"attr1", "attr2", "attr3", "attr4"};
+  std::vector<std::string> attrList = {"(attr1 or attr2) and attr3"};
   algo::PrivateKey prvKey = algo::ABESupport::prvKeyGen(pubParams, masterKey, attrList);
 
-  BOOST_CHECK(prvKey.m_prv != nullptr);
+  BOOST_CHECK(prvKey.m_prv != "");
 }
 
 BOOST_AUTO_TEST_CASE(Encryption)
@@ -70,10 +70,10 @@ BOOST_AUTO_TEST_CASE(Encryption)
   algo::MasterKey masterKey;
 
   algo::ABESupport::setup(pubParams, masterKey);
-  algo::CipherText cipherText = algo::ABESupport::encrypt(pubParams, "attr1 attr2 1of2",
+  algo::CipherText cipherText = algo::ABESupport::encrypt(pubParams, "attr1",
                                                           Buffer(PLAIN_TEXT, sizeof(PLAIN_TEXT)));
 
-  BOOST_CHECK(cipherText.m_cph != nullptr);
+  BOOST_CHECK(cipherText.m_aesKey.size() != 0);
   BOOST_CHECK(cipherText.m_content.size() > sizeof(PLAIN_TEXT));
 }
 
@@ -86,11 +86,11 @@ BOOST_AUTO_TEST_CASE(Decryption)
   algo::ABESupport::setup(pubParams, masterKey);
 
   // generate prv key
-  std::vector<std::string> attrList = {"attr1", "attr2", "attr3", "attr4"};
+  std::vector<std::string> attrList = {"(attr1 or attr2) and attr3"};
   algo::PrivateKey prvKey = algo::ABESupport::prvKeyGen(pubParams, masterKey, attrList);
 
   // encrypt
-  algo::CipherText cipherText = algo::ABESupport::encrypt(pubParams, "attr1 attr2 1of2",
+  algo::CipherText cipherText = algo::ABESupport::encrypt(pubParams, "|attr1|attr3",
                                                           Buffer(PLAIN_TEXT, sizeof(PLAIN_TEXT)));
 
   // decrypt

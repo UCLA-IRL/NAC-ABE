@@ -22,6 +22,9 @@
 #include "../ndn-crypto/error.hpp"
 #include <ndn-cxx/util/logger.hpp>
 
+using namespace oabe;
+using namespace oabe::crypto;
+
 namespace ndn {
 namespace nacabe {
 namespace algo {
@@ -31,39 +34,35 @@ NDN_LOG_INIT(nacabe.ABESupport);
 void
 ABESupport::setup(PublicParams& pubParams, MasterKey& masterKey)
 {
-  bswabe_pub_t* pub;
-  bswabe_msk_t* msk;
-  bswabe_setup(&pub, &msk);
-
-  pubParams.m_pub = bswabe_pub_serialize(pub);
-  masterKey.m_msk = bswabe_msk_serialize(msk);
+  InitializeOpenABE();
+  OpenABECryptoContext kpabe("KP-ABE");
+  kpabe.generateParams();
+  std::string mpk, msk;
+  kpabe.exportPublicParams(mpk);
+  kpabe.exportSecretParams(msk);
+  pubParams.m_pub = mpk;
+  masterKey.m_msk = msk;
+  ShutdownOpenABE();
 }
 
 PrivateKey
 ABESupport::prvKeyGen(PublicParams& pubParams, MasterKey& masterKey,
                       const std::vector<std::string>& attrList)
 {
-  // change list<string> to char**
-  char** attrs = new char*[attrList.size() + 1];
-  for (size_t i = 0; i < attrList.size(); i++) {
-    char *cstr = new char[attrList[i].length() + 1];
-    std::strcpy(cstr, attrList[i].c_str());
-    cstr[attrList[i].length()] = 0;
-    attrs[i] = cstr;
-  }
-  attrs[attrList.size()] = 0;
+  InitializeOpenABE();
+  OpenABECryptoContext kpabe("KP-ABE");
 
-  bswabe_pub_t* pub = bswabe_pub_unserialize(pubParams.m_pub, 0);
-  bswabe_msk_t* msk = bswabe_msk_unserialize(pub, masterKey.m_msk, 0);
-  bswabe_prv_t* prv = bswabe_keygen(pub, msk, attrs);
+  kpabe.importPublicParams(pubParams.m_pub);
+  kpabe.importSecretParams(masterKey.m_msk);
+
+  std::string privKey;
+  kpabe.keygen(attrList[0], "abe-priv-key");
+  kpabe.exportUserKey("abe-priv-key", privKey);
+  kpabe.deleteKey("abe-priv-key");
+  ShutdownOpenABE();
 
   PrivateKey privateKey;
-  privateKey.m_prv = bswabe_prv_serialize(prv);
-
-  for (size_t i = 0; i < attrList.size(); i++) {
-    delete [] attrs[i];
-  }
-  delete [] attrs;
+  privateKey.m_prv = privKey;
   return privateKey;
 }
 
@@ -71,25 +70,42 @@ CipherText
 ABESupport::encrypt(const PublicParams& pubParams,
                     const std::string& policy, Buffer plainText)
 {
-  bswabe_pub_t* pub = bswabe_pub_unserialize(pubParams.m_pub, 0);
+  // step 0: set up ABE Context
+  InitializeOpenABE();
+  OpenABECryptoContext kpabe("KP-ABE");
+  kpabe.importPublicParams(pubParams.m_pub);
 
-  char *policyCharArray = new char[policy.length() + 1];
-  strcpy(policyCharArray, policy.c_str());
+  // step 1: generate a AES symmetric key
+  OpenABESymKey symKey;
+  symKey.generateSymmetricKey(DEFAULT_SYM_KEY_BYTES);
+  std::string symmetricKey = symKey.toString();
 
-  element_t m;
-  bswabe_cph_t* cph = bswabe_enc(pub, m, policyCharArray);
+  // step 2: use publicParams and policy to encrypt this symmetric key
+  std::string encryptedSymmetricKey;
+  kpabe.encrypt(policy, symmetricKey, encryptedSymmetricKey);
+
+  // step 3: use the AES symmetric key to encrypt the plain text
+  OpenABESymKeyEnc aes(symmetricKey);
+  std::string ciphertext = aes.encrypt(
+    (uint8_t*) plainText.data(),
+    (uint32_t) plainText.size());
+  
+  // step 4: put encryptedSymmetricKey and ciphertext in CipherText object
+  //           and return the CipherText Object
   CipherText result;
-  result.m_cph = bswabe_cph_serialize(cph);
-  bswabe_cph_free(cph);
-  delete [] policyCharArray;
+  Buffer aesKeySegment((uint8_t*) encryptedSymmetricKey.c_str(),
+                       (uint32_t) encryptedSymmetricKey.size() + 1);
 
-  GByteArray content{plainText.data(), static_cast<guint>(plainText.size())};
-  // GByteArray* content = new GByteArray{buf, length};
-  GByteArray* encryptedContent = aes_128_encrypt(&content, m);
-  element_clear(m);
+  Buffer cipherContentSegment((uint8_t*) ciphertext.c_str(),
+                              (uint32_t) ciphertext.size() + 1);
 
-  result.m_content = Buffer(encryptedContent->data, encryptedContent->len);
+  result.m_aesKey = aesKeySegment;
+  result.m_content = cipherContentSegment;
   result.m_plainTextSize = plainText.size();
+
+  // step 5: shut down ABE Context
+  ShutdownOpenABE();
+
   return result;
 }
 
@@ -97,113 +113,36 @@ Buffer
 ABESupport::decrypt(const PublicParams& pubParams,
                     const PrivateKey& prvKey, CipherText cipherText)
 {
-  bswabe_pub_t* pub = bswabe_pub_unserialize(pubParams.m_pub, 0);
-  bswabe_prv_t* prv = bswabe_prv_unserialize(pub, prvKey.m_prv, 0);
-  bswabe_cph_t* cph = bswabe_cph_unserialize(pub, cipherText.m_cph, 0);
-  element_t m;
+  // step 0: set up ABE Context
+  InitializeOpenABE();
+  OpenABECryptoContext kpabe("KP-ABE");
+  kpabe.importPublicParams(pubParams.m_pub);
+  
+  // step 0.9: import prvKey into OpenABE
+  kpabe.enableKeyManager("user1");
+  kpabe.importUserKey("key1", prvKey.m_prv);
 
-  if (!bswabe_dec(pub, prv, cph, m)) {
-    NDN_LOG_ERROR("Decryption error!" + std::string(bswabe_error()));
-    BOOST_THROW_EXCEPTION(NacAlgoError("Decryption error!" + std::string(bswabe_error())));
+  // step 1: decrypt cipherText.aesKey, which is the encrypted symmetric key
+  std::string encryptedSymmetricKey(reinterpret_cast<char*>(cipherText.m_aesKey.data()));
+  std::string symmetricKey;
+  bool result = kpabe.decrypt(encryptedSymmetricKey, symmetricKey);
+  if (!result) {
+    BOOST_THROW_EXCEPTION(NacAlgoError("Decryption error!"));
   }
+  
+  // step 2: use the decrypted symmetricKey to AES decrypt cipherText.m_content
+  OpenABESymKeyEnc aes(symmetricKey);
+  std::string cipherContentStr(reinterpret_cast<char*>(cipherText.m_content.data()));
+  std::string recoveredContent = aes.decrypt(cipherContentStr);
 
-  GByteArray content{cipherText.m_content.data(), static_cast<guint>(cipherText.m_content.size())};
-  GByteArray* result = aes_128_decrypt(&content, m, cipherText.m_plainTextSize);
-  return Buffer(result->data, result->len);
-}
+  // step 3: set up a Buffer for the decrypted content, and return the Buffer
+  Buffer ret((uint8_t*) recoveredContent.c_str(),
+                (uint32_t) recoveredContent.size());
 
-void
-ABESupport::init_aes(element_t k, int enc, AES_KEY* key, unsigned char* iv)
-{
-  int key_len;
-  unsigned char* key_buf;
+  // step 4: finalize
+  ShutdownOpenABE();
 
-  key_len = element_length_in_bytes(k) < 17 ? 17 : element_length_in_bytes(k);
-  key_buf = (unsigned char*) malloc(key_len);
-  element_to_bytes(key_buf, k);
-
-  if(enc)
-    AES_set_encrypt_key(key_buf + 1, 128, key);
-  else
-    AES_set_decrypt_key(key_buf + 1, 128, key);
-  free(key_buf);
-
-  memset(iv, 0, 16);
-}
-
-void
-ABESupport::prependToArray(GByteArray* pt, const guint8 *data, guint dataSize)
-{
-  std::vector<guint8> v(pt->data, pt->data + pt->len);
-  auto it = v.begin();
-  v.insert(it, data, data + dataSize);
-  pt->data = &v[0];
-  pt->len += dataSize;
-}
-
-void
-ABESupport::removeFrontFromArray(GByteArray* pt, uint32_t dataSize)
-{
-  std::vector<guint8> v(pt->data, pt->data + pt->len);
-  auto it = v.begin();
-  v.erase(it, it + dataSize);
-  pt->data = &v[0];
-  pt->len -= dataSize;
-}
-
-GByteArray*
-ABESupport::aes_128_encrypt(GByteArray* pt, element_t k)
-{
-  AES_KEY key;
-  unsigned char iv[16];
-  GByteArray* ct;
-  guint8 len[4];
-  guint8 zero;
-
-  init_aes(k, 1, &key, iv);
-
-  /* stuff in real length (big endian) before padding */
-  len[0] = (pt->len & 0xff000000)>>24;
-  len[1] = (pt->len & 0xff0000)>>16;
-  len[2] = (pt->len & 0xff00)>>8;
-  len[3] = (pt->len & 0xff)>>0;
-  prependToArray(pt, len, 4);
-
-  /* pad out to multiple of 128 bit (16 byte) blocks */
-  zero = 0;
-  while( pt->len % 16 ) {
-    prependToArray(pt, &zero, 1);
-  }
-
-  ct = g_byte_array_new();
-  g_byte_array_set_size(ct, pt->len);
-
-  AES_cbc_encrypt(pt->data, ct->data, pt->len, &key, iv, AES_ENCRYPT);
-
-  return ct;
-}
-
-GByteArray*
-ABESupport::aes_128_decrypt(GByteArray* ct, element_t k, uint32_t outputSize)
-{
-  AES_KEY key;
-  unsigned char iv[16];
-  GByteArray* pt;
-
-  init_aes(k, 0, &key, iv);
-
-  pt = g_byte_array_new();
-  g_byte_array_set_size(pt, ct->len);
-
-  AES_cbc_encrypt(ct->data, pt->data, ct->len, &key, iv, AES_DECRYPT);
-
-  g_byte_array_remove_index(pt, 0);
-  g_byte_array_remove_index(pt, 0);
-  g_byte_array_remove_index(pt, 0);
-  g_byte_array_remove_index(pt, 0);
-
-  removeFrontFromArray(pt, pt->len - outputSize);
-  return pt;
+  return ret;
 }
 
 } // namespace algo

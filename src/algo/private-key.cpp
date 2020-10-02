@@ -27,20 +27,16 @@ namespace algo {
 Buffer
 PrivateKey::toBuffer()
 {
-  // From Glib:
-  // struct GByteArray {
-  //   guint8 *data;
-  //   guint len;
-  // }
-  return Buffer(m_prv->data, m_prv->len);
+  const char *begin = m_prv.c_str();
+  const char *end = begin + m_prv.size() + 1;
+  return Buffer(begin, end);
 }
 
 void
 PrivateKey::fromBuffer(const Buffer& buffer)
 {
   Buffer tempBuf(buffer.data(), buffer.size());
-  m_prv = g_byte_array_new();
-  g_byte_array_append(m_prv, tempBuf.data(), static_cast<guint>(tempBuf.size()));
+  m_prv = std::string((char*)tempBuf.data());
 }
 
 } // namespace algo

@@ -139,9 +139,11 @@ Consumer::decryptContent(const Data& data,
   Block encryptedContent = data.getContent();
   encryptedContent.parse();
   auto encryptedContentTLV = encryptedContent.get(TLV_EncryptedContent);
+  auto encryptedAESKeyTLV = encryptedContent.get(TLV_EncryptedAesKey);
   NDN_LOG_INFO("encrypted Content size is " << encryptedContentTLV.value_size());
   auto cipherText = std::make_shared<algo::CipherText>();
   cipherText->m_content = Buffer(encryptedContentTLV.value(), encryptedContentTLV.value_size());
+  cipherText->m_aesKey = Buffer(encryptedAESKeyTLV.value(), encryptedAESKeyTLV.value_size());
   Name ckName(encryptedContent.get(tlv::Name));
   NDN_LOG_INFO("CK Name is " << ckName);
 
@@ -162,15 +164,13 @@ Consumer::onCkeyData(const Data& data, std::shared_ptr<algo::CipherText> cipherT
   NDN_LOG_INFO(m_cert.getIdentity() << " Get CKEY data " << data.getName());
   Block ckContent = data.getContent();
   ckContent.parse();
-  auto encAesKey = ckContent.get(TLV_EncryptedAesKey);
-
-  cipherText->m_cph = g_byte_array_new();
-  g_byte_array_append(cipherText->m_cph, encAesKey.value(), static_cast<guint>(encAesKey.value_size()));
+  std::string encryptedSymmetricKey(reinterpret_cast<char*>(cipherText->m_aesKey.data()));
+  std::string ciphertext(reinterpret_cast<char*>(cipherText->m_content.data()));
   cipherText->m_plainTextSize = readNonNegativeInteger(ckContent.get(TLV_PlainTextSize));
 
   NDN_LOG_INFO("content size : " << cipherText->m_content.size());
   NDN_LOG_INFO("plaintext size : " << cipherText->m_plainTextSize);
-  NDN_LOG_INFO("encrypted aes key size : " << cipherText->m_cph->len);
+  NDN_LOG_INFO("encrypted aes key size : " << cipherText->m_aesKey.size());
 
   Buffer result;
   try{
