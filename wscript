@@ -44,8 +44,8 @@ def configure(conf):
     conf.check_cfg(package='glib-2.0', uselib_store='GLIB', atleast_version='2.25.0',
 	               args='--cflags --libs')
 
-    conf.env.LIBPATH_PBC = ['/usr/local/Cellar/pbc/0.5.14/lib']
-    conf.env.INCLUDES_PBC = ['/usr/local/Cellar/pbc/0.5.14/include/pbc']
+    conf.env.LIBPATH_PBC = ['/usr/local/lib']
+    conf.env.INCLUDES_PBC = ['/usr/local/include']
     conf.check_cxx(lib = 'pbc', use = 'PBC', args='--cflags --libs')
 
     conf.env.LIBPATH_GMP = ['/usr/local/lib']
@@ -66,7 +66,7 @@ def build(bld):
               source = bld.path.ant_glob(['src/**/*.cpp']),
               vnum = VERSION,
               cnum = VERSION,
-              use = 'NDN_CXX BOOST GMP GLIB PBC BSWABE OPENSSL',
+              use = 'NDN_CXX BOOST GMP GLIB BSWABE OPENSSL PBC',
               includes='src',
               export_includes='src')
 
