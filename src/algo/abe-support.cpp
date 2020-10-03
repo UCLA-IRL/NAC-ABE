@@ -35,11 +35,11 @@ void
 ABESupport::setup(PublicParams& pubParams, MasterKey& masterKey)
 {
   InitializeOpenABE();
-  OpenABECryptoContext kpabe("KP-ABE");
-  kpabe.generateParams();
+  OpenABECryptoContext cpabe("CP-ABE");
+  cpabe.generateParams();
   std::string mpk, msk;
-  kpabe.exportPublicParams(mpk);
-  kpabe.exportSecretParams(msk);
+  cpabe.exportPublicParams(mpk);
+  cpabe.exportSecretParams(msk);
   pubParams.m_pub = mpk;
   masterKey.m_msk = msk;
   ShutdownOpenABE();
@@ -52,13 +52,19 @@ ABESupport::prvKeyGen(PublicParams& pubParams, MasterKey& masterKey,
   InitializeOpenABE();
   std::string privKey;
   try {
-    OpenABECryptoContext kpabe("KP-ABE");
-    kpabe.importPublicParams(pubParams.m_pub);
-    kpabe.importSecretParams(masterKey.m_msk);
+    OpenABECryptoContext cpabe("CP-ABE");
+    cpabe.importPublicParams(pubParams.m_pub);
+    cpabe.importSecretParams(masterKey.m_msk);
 
-    kpabe.keygen(attrList[0], "abe-priv-key");
-    kpabe.exportUserKey("abe-priv-key", privKey);
-    kpabe.deleteKey("abe-priv-key");
+    std::string policyString = "|";
+    for (auto it = attrList.begin(); it != attrList.end(); it++) {
+      policyString = policyString + *it + "|";
+    }
+    policyString.pop_back();
+
+    cpabe.keygen(policyString, "abe-priv-key");
+    cpabe.exportUserKey("abe-priv-key", privKey);
+    cpabe.deleteKey("abe-priv-key");
     ShutdownOpenABE();
   } catch (oabe::ZCryptoBoxException& ex) {
     ShutdownOpenABE();
@@ -77,8 +83,8 @@ ABESupport::encrypt(const PublicParams& pubParams,
   // step 0: set up ABE Context
   InitializeOpenABE();
   try {
-    OpenABECryptoContext kpabe("KP-ABE");
-    kpabe.importPublicParams(pubParams.m_pub);
+    OpenABECryptoContext cpabe("CP-ABE");
+    cpabe.importPublicParams(pubParams.m_pub);
   
     // step 1: generate a AES symmetric key
     OpenABESymKey symKey;
@@ -87,7 +93,7 @@ ABESupport::encrypt(const PublicParams& pubParams,
 
     // step 2: use publicParams and policy to encrypt this symmetric key
     std::string encryptedSymmetricKey;
-    kpabe.encrypt(policy, symmetricKey, encryptedSymmetricKey);
+    cpabe.encrypt(policy, symmetricKey, encryptedSymmetricKey);
 
     // step 3: use the AES symmetric key to encrypt the plain text
     OpenABESymKeyEnc aes(symmetricKey);
@@ -127,17 +133,17 @@ ABESupport::decrypt(const PublicParams& pubParams,
   InitializeOpenABE();
 
   try {
-     OpenABECryptoContext kpabe("KP-ABE");
-    kpabe.importPublicParams(pubParams.m_pub);
+    OpenABECryptoContext cpabe("CP-ABE");
+    cpabe.importPublicParams(pubParams.m_pub);
   
     // step 1: import prvKey into OpenABE
-    kpabe.enableKeyManager("user1");
-    kpabe.importUserKey("key1", prvKey.m_prv);
+    cpabe.enableKeyManager("user1");
+    cpabe.importUserKey("key1", prvKey.m_prv);
 
     // step 2: decrypt cipherText.aesKey, which is the encrypted symmetric key
     std::string encryptedSymmetricKey(reinterpret_cast<char*>(cipherText.m_aesKey.data()));
     std::string symmetricKey;
-    bool result = kpabe.decrypt(encryptedSymmetricKey, symmetricKey);
+    bool result = cpabe.decrypt(encryptedSymmetricKey, symmetricKey);
     if (!result) {
       BOOST_THROW_EXCEPTION(NacAlgoError("Decryption error!"));
     }

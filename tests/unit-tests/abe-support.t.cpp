@@ -58,7 +58,7 @@ BOOST_AUTO_TEST_CASE(GenPrivateKey)
 
   algo::ABESupport::setup(pubParams, masterKey);
 
-  std::vector<std::string> attrList = {"(attr1 or attr2) and attr3"};
+  std::vector<std::string> attrList = {"attr1", "attr2"};
   algo::PrivateKey prvKey = algo::ABESupport::prvKeyGen(pubParams, masterKey, attrList);
 
   BOOST_CHECK(prvKey.m_prv != "");
@@ -70,7 +70,7 @@ BOOST_AUTO_TEST_CASE(Encryption)
   algo::MasterKey masterKey;
 
   algo::ABESupport::setup(pubParams, masterKey);
-  algo::CipherText cipherText = algo::ABESupport::encrypt(pubParams, "attr1",
+  algo::CipherText cipherText = algo::ABESupport::encrypt(pubParams, "attr1 and attr2",
                                                           Buffer(PLAIN_TEXT, sizeof(PLAIN_TEXT)));
 
   BOOST_CHECK(cipherText.m_aesKey.size() != 0);
@@ -86,11 +86,11 @@ BOOST_AUTO_TEST_CASE(Decryption)
   algo::ABESupport::setup(pubParams, masterKey);
 
   // generate prv key
-  std::vector<std::string> attrList = {"(attr1 or attr2) and attr3"};
+  std::vector<std::string> attrList = {"attr1", "attr3"};
   algo::PrivateKey prvKey = algo::ABESupport::prvKeyGen(pubParams, masterKey, attrList);
 
   // encrypt
-  algo::CipherText cipherText = algo::ABESupport::encrypt(pubParams, "|attr1|attr3",
+  algo::CipherText cipherText = algo::ABESupport::encrypt(pubParams, "(attr1 or attr2) and attr3",
                                                           Buffer(PLAIN_TEXT, sizeof(PLAIN_TEXT)));
 
   // decrypt
@@ -103,7 +103,7 @@ BOOST_AUTO_TEST_CASE(Decryption)
   uint8_t randomBytes1[32];
   random::generateSecureBytes(randomBytes1, sizeof(randomBytes1));
 
-  algo::CipherText cipherTextRandomBytes1 = algo::ABESupport::encrypt(pubParams, "|attr1|attr3",
+  algo::CipherText cipherTextRandomBytes1 = algo::ABESupport::encrypt(pubParams, "(attr1 or attr2) and attr3",
                                                           Buffer(randomBytes1, sizeof(randomBytes1)));
                                   
   Buffer decryptedRandomBytes1 = algo::ABESupport::decrypt(pubParams, prvKey, cipherTextRandomBytes1);      
@@ -114,7 +114,7 @@ BOOST_AUTO_TEST_CASE(Decryption)
   uint8_t randomBytes2[64];
   random::generateSecureBytes(randomBytes2, sizeof(randomBytes2));
 
-  algo::CipherText cipherTextRandomBytes2 = algo::ABESupport::encrypt(pubParams, "|attr1|attr3",
+  algo::CipherText cipherTextRandomBytes2 = algo::ABESupport::encrypt(pubParams, "(attr1 or attr2) and attr3",
                                                           Buffer(randomBytes2, sizeof(randomBytes2)));
                                   
   Buffer decryptedRandomBytes2 = algo::ABESupport::decrypt(pubParams, prvKey, cipherTextRandomBytes2);      
@@ -125,7 +125,7 @@ BOOST_AUTO_TEST_CASE(Decryption)
   uint8_t randomBytes3[1024];
   random::generateSecureBytes(randomBytes3, sizeof(randomBytes3));
 
-  algo::CipherText cipherTextRandomBytes3 = algo::ABESupport::encrypt(pubParams, "|attr1|attr3",
+  algo::CipherText cipherTextRandomBytes3 = algo::ABESupport::encrypt(pubParams, "(attr1 or attr2) and attr3",
                                                           Buffer(randomBytes3, sizeof(randomBytes3)));
                                   
   Buffer decryptedRandomBytes3 = algo::ABESupport::decrypt(pubParams, prvKey, cipherTextRandomBytes3);      
@@ -134,7 +134,7 @@ BOOST_AUTO_TEST_CASE(Decryption)
 
   // the following case tests decryption using wrong key; expects decryption failure
   // generate prv key
-  std::vector<std::string> wrongKeyAttrList = {"(attr4 or attr6) and attr7"};
+  std::vector<std::string> wrongKeyAttrList = {"attr4", "attr5", "attr6"};
   algo::PrivateKey wrongPrvKey = algo::ABESupport::prvKeyGen(pubParams, masterKey, wrongKeyAttrList);
   bool decryptedSuccess = false;
   try {
