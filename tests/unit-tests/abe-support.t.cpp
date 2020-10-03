@@ -98,6 +98,52 @@ BOOST_AUTO_TEST_CASE(Decryption)
 
   BOOST_CHECK_EQUAL_COLLECTIONS(result.begin(), result.end(),
                                 PLAIN_TEXT, PLAIN_TEXT + sizeof(PLAIN_TEXT));
+
+  // 32 bytes random plaintext encryption and decryption
+  uint8_t randomBytes1[32];
+  random::generateSecureBytes(randomBytes1, sizeof(randomBytes1));
+
+  algo::CipherText cipherTextRandomBytes1 = algo::ABESupport::encrypt(pubParams, "|attr1|attr3",
+                                                          Buffer(randomBytes1, sizeof(randomBytes1)));
+                                  
+  Buffer decryptedRandomBytes1 = algo::ABESupport::decrypt(pubParams, prvKey, cipherTextRandomBytes1);      
+  BOOST_CHECK_EQUAL_COLLECTIONS(decryptedRandomBytes1.begin(), decryptedRandomBytes1.end(),
+                                randomBytes1, randomBytes1 + sizeof(randomBytes1));
+
+  // 64 bytes random plaintext encryption and decryption
+  uint8_t randomBytes2[64];
+  random::generateSecureBytes(randomBytes2, sizeof(randomBytes2));
+
+  algo::CipherText cipherTextRandomBytes2 = algo::ABESupport::encrypt(pubParams, "|attr1|attr3",
+                                                          Buffer(randomBytes2, sizeof(randomBytes2)));
+                                  
+  Buffer decryptedRandomBytes2 = algo::ABESupport::decrypt(pubParams, prvKey, cipherTextRandomBytes2);      
+  BOOST_CHECK_EQUAL_COLLECTIONS(decryptedRandomBytes2.begin(), decryptedRandomBytes2.end(),
+                                randomBytes2, randomBytes2 + sizeof(randomBytes2));
+
+  // 1024 bytes random plaintext encryption and decryption
+  uint8_t randomBytes3[1024];
+  random::generateSecureBytes(randomBytes3, sizeof(randomBytes3));
+
+  algo::CipherText cipherTextRandomBytes3 = algo::ABESupport::encrypt(pubParams, "|attr1|attr3",
+                                                          Buffer(randomBytes3, sizeof(randomBytes3)));
+                                  
+  Buffer decryptedRandomBytes3 = algo::ABESupport::decrypt(pubParams, prvKey, cipherTextRandomBytes3);      
+  BOOST_CHECK_EQUAL_COLLECTIONS(decryptedRandomBytes3.begin(), decryptedRandomBytes3.end(),
+                                randomBytes3, randomBytes3 + sizeof(randomBytes3));
+
+  // the following case tests decryption using wrong key; expects decryption failure
+  // generate prv key
+  std::vector<std::string> wrongKeyAttrList = {"(attr4 or attr6) and attr7"};
+  algo::PrivateKey wrongPrvKey = algo::ABESupport::prvKeyGen(pubParams, masterKey, wrongKeyAttrList);
+  bool decryptedSuccess = false;
+  try {
+      Buffer decryptedRandomBytes3 = algo::ABESupport::decrypt(pubParams, wrongPrvKey, cipherTextRandomBytes3); 
+      decryptedSuccess = true;
+  } catch (const std::runtime_error& e) {
+
+  }
+  BOOST_CHECK(!decryptedSuccess);
 }
 
 BOOST_AUTO_TEST_SUITE_END()

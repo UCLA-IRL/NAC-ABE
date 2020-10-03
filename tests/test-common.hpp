@@ -41,6 +41,8 @@
 #include <ndn-cxx/util/time-unit-test-clock.hpp>
 #include <ndn-cxx/util/string-helper.hpp>
 #include <ndn-cxx/util/logger.hpp>
+#include <ndn-cxx/util/random.hpp>
+
 
 namespace ndn {
 namespace nacabe {
