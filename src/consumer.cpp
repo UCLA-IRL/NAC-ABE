@@ -43,6 +43,7 @@ Consumer::Consumer(const security::v2::Certificate& identityCert,
   , m_attrAuthorityPrefix(attrAuthorityPrefix)
   , m_repeatAttempts(repeatAttempts)
 {
+  std::cout << "CONSUMER CONSTRUCTOR" << std::endl;
   fetchPublicParams();
 }
 
@@ -139,11 +140,11 @@ Consumer::decryptContent(const Data& data,
   Block encryptedContent = data.getContent();
   encryptedContent.parse();
   auto encryptedContentTLV = encryptedContent.get(TLV_EncryptedContent);
-  auto encryptedAESKeyTLV = encryptedContent.get(TLV_EncryptedAesKey);
+
   NDN_LOG_INFO("encrypted Content size is " << encryptedContentTLV.value_size());
   auto cipherText = std::make_shared<algo::CipherText>();
   cipherText->m_content = Buffer(encryptedContentTLV.value(), encryptedContentTLV.value_size());
-  cipherText->m_aesKey = Buffer(encryptedAESKeyTLV.value(), encryptedAESKeyTLV.value_size());
+
   Name ckName(encryptedContent.get(tlv::Name));
   NDN_LOG_INFO("CK Name is " << ckName);
 
@@ -164,8 +165,13 @@ Consumer::onCkeyData(const Data& data, std::shared_ptr<algo::CipherText> cipherT
   NDN_LOG_INFO(m_cert.getIdentity() << " Get CKEY data " << data.getName());
   Block ckContent = data.getContent();
   ckContent.parse();
-  std::string encryptedSymmetricKey(reinterpret_cast<char*>(cipherText->m_aesKey.data()));
-  std::string ciphertext(reinterpret_cast<char*>(cipherText->m_content.data()));
+
+  auto encryptedAESKeyTLV = ckContent.get(TLV_EncryptedAesKey);
+  cipherText->m_aesKey = Buffer(encryptedAESKeyTLV.value(), encryptedAESKeyTLV.value_size());
+
+  //std::string encryptedSymmetricKey(reinterpret_cast<char*>(cipherText->m_aesKey.data()));
+
+
   cipherText->m_plainTextSize = readNonNegativeInteger(ckContent.get(TLV_PlainTextSize));
 
   NDN_LOG_INFO("content size : " << cipherText->m_content.size());
@@ -209,6 +215,7 @@ Consumer::handleTimeout(const Interest& interest, int nRetrials,
 void
 Consumer::onAttributePubParams(const Interest& request, const Data& pubParamData)
 {
+  std::cout << "CONSUMER_CPP in onAttributePubParams()..." << std::endl;
   NDN_LOG_INFO(m_cert.getIdentity()<<" Get public parameters");
   Name attrAuthorityKey = pubParamData.getSignature().getKeyLocator().getName();
   for (auto anchor : m_trustConfig.m_trustAnchors) {
@@ -231,7 +238,8 @@ Consumer::fetchPublicParams()
   interest.setMustBeFresh(true);
   interest.setCanBePrefix(true);
 
-  NDN_LOG_INFO(m_cert.getIdentity()<< " Request public parameters:"<<interest.getName());
+  NDN_LOG_INFO(m_cert.getIdentity() << " Request public parameters:"<<interest.getName());
+  std::cout << "CONSUMER_CPP in fetchPublicParams()..." << interestName << std::endl;
   m_face.expressInterest(interest, std::bind(&Consumer::onAttributePubParams, this, _1, _2),
                          nullptr, nullptr);
 }
