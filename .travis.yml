@@ -17,7 +17,7 @@ before_install:
   - git clone https://github.com/named-data/NFD.git && cd NFD
   - git checkout NFD-0.7.0
   - ./waf configure --without-libpcap --without-websocket && ./waf && sudo ./waf install && cd ..
-  - git clone https://github.com/yufengzh/openabe.git && cd openabe
+  - git clone https://github.com/zeutro/openabe.git && cd openabe
   - sudo -E ./deps/install_pkgs.sh
   - . ./env
   - make && make test && sudo -E make install && cd ..
