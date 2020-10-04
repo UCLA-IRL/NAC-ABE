@@ -1,0 +1,40 @@
+name: C/C++ CI
+
+on:
+  push:
+    branches: [ ci ]
+  pull_request:
+    branches: [ master ]
+
+jobs:
+  build:
+
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v2
+
+    - name: preinstall
+      run: sudo apt-get install libboost1.65-all-dev libssl-dev
+           git clone https://github.com/named-data/ndn-cxx.git && cd ndn-cxx
+           git checkout ndn-cxx-0.7.0
+           ./waf configure && ./waf && sudo ./waf install && cd ..
+           git clone https://github.com/named-data/NFD.git && cd NFD
+           git checkout NFD-0.7.0
+           ./waf configure --without-libpcap --without-websocket && ./waf && sudo ./waf install && cd ..
+           wget https://github.com/yufengzh/NAC-ABE/releases/download/v1.0/libopenabe-1.0.0-linux.tar.gz
+           tar -xf libopenabe-1.0.0-linux.tar.gz && cd libopenabe-1.0.0-linux
+           sudo -E ./deps/install_pkgs.sh
+           . ./env
+           make && make test && sudo -E make install && cd ..
+           ldconfig
+           ndnsec-key-gen test
+           sudo nfd start -c /usr/local/etc/ndn/nfd.conf.sample &
+           
+    - name: install
+      run: ./waf configure --with-tests
+           ./waf
+           sudo ./waf install
+ 
+    - name: test
+      run: ./build/unit-tests
