@@ -28,8 +28,4 @@
 #include <openabe/openabe.h>
 #include <openabe/zsymcrypto.h>
 
-#include <pbc.h>
-#include <glib.h>
-#include <bswabe.h>
-
 #endif // NAC_ABE_ALGO_COMMON_HPP
