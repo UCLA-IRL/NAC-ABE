@@ -70,11 +70,12 @@ BOOST_AUTO_TEST_CASE(Constructor)
                         const auto& contentBuf = m_pubParams.toBuffer();
                         result.setContent(makeBinaryBlock(ndn::tlv::Content,
                                                           contentBuf.data(), contentBuf.size()));
+                        result.setFreshnessPeriod(5_s);
                         m_keyChain.sign(result, signingByCertificate(cert));
 
                         NDN_LOG_TRACE("Reply public params request.");
                         NDN_LOG_TRACE("Pub params size: " << contentBuf.size());
-
+                        std::cout << "CONSUMER_TEST SENT PUB_PARAMS ON BEHALF OF AA" << std::endl;
                         c2.put(result);
                      });
 
@@ -83,7 +84,7 @@ BOOST_AUTO_TEST_CASE(Constructor)
   Consumer consumer(cert, c1, m_keyChain, attrAuthorityPrefix);
   advanceClocks(time::milliseconds(20), 60);
 
-  BOOST_CHECK(consumer.m_pubParamsCache.m_pub != nullptr);
+  BOOST_CHECK(consumer.m_pubParamsCache.m_pub != "");
   //***** need to compare pointer content *****
   //BOOST_CHECK(consumer.m_pubParamsCache.m_pub == m_pubParams.m_pub);
 }

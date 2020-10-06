@@ -9,7 +9,7 @@ GIT_TAG_PREFIX = "nac-abe"
 
 def options(opt):
     opt.load(['compiler_cxx', 'gnu_dirs'])
-    opt.load(['boost', 'default-compiler-flags', 'openssl', 'glib2', 'sanitizers'],
+    opt.load(['boost', 'default-compiler-flags', 'openssl', 'sanitizers'],
              tooldir=['.waf-tools'])
 
     optgrp = opt.add_option_group("NAC-ABE options")
@@ -18,7 +18,7 @@ def options(opt):
 
 def configure(conf):
     conf.load(['compiler_cxx', 'gnu_dirs',
-               'boost', 'default-compiler-flags', 'openssl', 'glib2'])
+               'boost', 'default-compiler-flags', 'openssl'])
 
     conf.env.WITH_TESTS = conf.options.with_tests
 
@@ -44,17 +44,9 @@ def configure(conf):
     conf.check_cfg(package='glib-2.0', uselib_store='GLIB', atleast_version='2.25.0',
 	               args='--cflags --libs')
 
-    conf.env.LIBPATH_PBC = ['/usr/local/Cellar/pbc/0.5.14/lib']
-    conf.env.INCLUDES_PBC = ['/usr/local/Cellar/pbc/0.5.14/include/pbc']
-    conf.check_cxx(lib = 'pbc', use = 'PBC', args='--cflags --libs')
-
-    conf.env.LIBPATH_GMP = ['/usr/local/lib']
-    conf.env.INCLUDES_GMP  = ['/usr/local/include']
-    conf.check_cxx(lib = 'gmp', use = 'GMP', args='--cflags --libs')
-
-    conf.env.STLIBPATH_BSWABE = ['/usr/local/lib']
-    conf.env.INCLUDES_BSWABE  = ['/usr/local/include']
-    conf.check_cxx(lib = 'bswabe', use = 'BSWABE')
+    conf.env.STLIBPATH_OPENABE = ['/usr/local/lib']
+    conf.env.INCLUDES_OPENABE  = ['/usr/local/include']
+    conf.check_cxx(lib = 'openabe', use = 'OPENABE')
 
     conf.define_cond('HAVE_TESTS', conf.env.WITH_TESTS)
     conf.define('SYSCONFDIR', conf.env.SYSCONFDIR)
@@ -66,7 +58,7 @@ def build(bld):
               source = bld.path.ant_glob(['src/**/*.cpp']),
               vnum = VERSION,
               cnum = VERSION,
-              use = 'NDN_CXX BOOST GMP GLIB PBC BSWABE OPENSSL',
+              use = 'NDN_CXX BOOST OPENSSL OPENABE',
               includes='src',
               export_includes='src')
 

@@ -123,21 +123,21 @@ BOOST_AUTO_TEST_CASE(IntegratedTest)
   Consumer consumer1 = Consumer(consumerCert1, consumerFace1, m_keyChain, aaCert.getIdentity());
   aa.m_trustConfig.m_trustAnchors.push_back(consumerCert1);
   advanceClocks(time::milliseconds(20), 60);
-  BOOST_CHECK(consumer1.m_pubParamsCache.m_pub != nullptr);
+  BOOST_CHECK(consumer1.m_pubParamsCache.m_pub != "");
 
   // set up consumer
   NDN_LOG_INFO("Create Consumer 2. Consumer 2 prefix:"<<consumerCert2.getIdentity());
   Consumer consumer2 = Consumer(consumerCert2, consumerFace2, m_keyChain, aaCert.getIdentity());
   aa.m_trustConfig.m_trustAnchors.push_back(consumerCert2);
   advanceClocks(time::milliseconds(20), 60);
-  BOOST_CHECK(consumer2.m_pubParamsCache.m_pub != nullptr);
+  BOOST_CHECK(consumer2.m_pubParamsCache.m_pub != "");
 
   // set up producer
   NDN_LOG_INFO("Create Producer. Producer prefix:"<<producerCert.getIdentity());
   Producer producer = Producer(producerCert, producerFace, m_keyChain, aaCert.getIdentity());
   advanceClocks(time::milliseconds(20), 60);
 
-  BOOST_CHECK(producer.m_pubParamsCache.m_pub != nullptr);
+  BOOST_CHECK(producer.m_pubParamsCache.m_pub != "");
   BOOST_CHECK_EQUAL(producer.m_interestFilterIds.size(), 1);
 
   // set up data owner
@@ -150,7 +150,7 @@ BOOST_AUTO_TEST_CASE(IntegratedTest)
   NDN_LOG_INFO("\n=================== start work flow ==================\n");
 
   Name dataName = "/dataName";
-  std::string policy = "attr1 attr2 1of2 attr3 2of2";
+  std::string policy = "(attr1 or attr2) and attr3";
 
   bool isPolicySet = false;
   dataOwner.commandProducerPolicy(producerCert.getIdentity(), dataName, policy,

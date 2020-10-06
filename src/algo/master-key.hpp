@@ -30,7 +30,7 @@ namespace algo {
 class MasterKey
 {
 public:
-  GByteArray* m_msk;
+  std::string m_msk;
 };
 
 } // namespace algo

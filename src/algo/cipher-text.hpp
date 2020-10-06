@@ -38,7 +38,7 @@ public:
   makeCKContent();
 
 public:
-  GByteArray* m_cph; // encrypted AES key
+  Buffer m_aesKey; // encrypted AES key
   Buffer m_content; // encrypted content
   uint32_t m_plainTextSize; // plain text length
 

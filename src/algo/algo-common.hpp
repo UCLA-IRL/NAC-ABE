@@ -25,8 +25,7 @@
 #include <ndn-cxx/encoding/block-helpers.hpp>
 #include <ndn-cxx/encoding/estimator.hpp>
 
-#include <pbc.h>
-#include <glib.h>
-#include <bswabe.h>
+#include <openabe/openabe.h>
+#include <openabe/zsymcrypto.h>
 
 #endif // NAC_ABE_ALGO_COMMON_HPP

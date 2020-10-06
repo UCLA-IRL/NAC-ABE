@@ -77,7 +77,7 @@ Producer::produce(const Name& dataPrefix, const std::string& accessPolicy,
                   const uint8_t* content, size_t contentLen)
 {
   // do encryption
-  if (m_pubParamsCache.m_pub == nullptr) {
+  if (m_pubParamsCache.m_pub == "") {
     NDN_LOG_INFO("public parameters doesn't exist" );
     return std::make_tuple(nullptr, nullptr);
   }

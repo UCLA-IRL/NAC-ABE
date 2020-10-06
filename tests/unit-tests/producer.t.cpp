@@ -82,7 +82,7 @@ BOOST_AUTO_TEST_CASE(Constructor)
   Producer producer(cert, c1, m_keyChain, attrAuthorityPrefix);
   advanceClocks(time::milliseconds(10), 100);
 
-  BOOST_CHECK(producer.m_pubParamsCache.m_pub != nullptr);
+  BOOST_CHECK(producer.m_pubParamsCache.m_pub != "");
   BOOST_CHECK_EQUAL(producer.m_interestFilterIds.size(), 1);
 
   //***** need to compare pointer content *****
@@ -166,8 +166,8 @@ BOOST_AUTO_TEST_CASE(encryptContent)
   advanceClocks(time::milliseconds(20), 60);
   algo::ABESupport::setup(pubParams, masterKey);
 
-  BOOST_CHECK(pubParams.m_pub != nullptr);
-  BOOST_CHECK(masterKey.m_msk != nullptr);
+  BOOST_CHECK(pubParams.m_pub != "");
+  BOOST_CHECK(masterKey.m_msk != "");
 
   producer.m_pubParamsCache = pubParams;
   // generate prv key
@@ -176,7 +176,7 @@ BOOST_AUTO_TEST_CASE(encryptContent)
   algo::PrivateKey prvKey = algo::ABESupport::prvKeyGen(pubParams, masterKey, attrList);
 
   std::shared_ptr<Data> data, ckData;
-  std::tie(data, ckData) = producer.produce(Name("/dataset1/example/data1"), "attr1 attr2 1of2", PLAIN_TEXT, sizeof(PLAIN_TEXT));
+  std::tie(data, ckData) = producer.produce(Name("/dataset1/example/data1"), "attr1 or attr2", PLAIN_TEXT, sizeof(PLAIN_TEXT));
   BOOST_CHECK(data != nullptr);
   BOOST_CHECK(ckData != nullptr);
 }

@@ -39,10 +39,9 @@ Block
 CipherText::makeCKContent()
 {
   NDN_LOG_INFO("plaintext size : " << m_plainTextSize);
-  NDN_LOG_INFO("encrypted aes key size : " << m_cph->len);
+  NDN_LOG_INFO("encrypted aes key size : " << m_aesKey.size());
   auto ckBlock = makeEmptyBlock(tlv::Content);
-  Buffer aesKeyBuf(m_cph->data, m_cph->len);
-  ckBlock.push_back(makeBinaryBlock(TLV_EncryptedAesKey, aesKeyBuf.data(), aesKeyBuf.size()));
+  ckBlock.push_back(makeBinaryBlock(TLV_EncryptedAesKey, m_aesKey.data(), m_aesKey.size()));
   ckBlock.push_back(makeNonNegativeIntegerBlock(TLV_PlainTextSize, m_plainTextSize));
   ckBlock.encode();
   return ckBlock;

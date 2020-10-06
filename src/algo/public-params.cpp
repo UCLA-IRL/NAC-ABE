@@ -27,19 +27,16 @@ namespace algo {
 Buffer
 PublicParams::toBuffer()
 {
-  // struct GByteArray {
-  //   guint8 *data;
-  //   guint len;
-  // }
-  return Buffer(m_pub->data, m_pub->data + m_pub->len);
+  const char *begin = m_pub.c_str();
+  const char *end = begin + m_pub.size() + 1;
+  return Buffer(begin, end);
 }
 
 void
 PublicParams::fromBuffer(const Buffer& buffer)
 {
   Buffer tempBuf(buffer.data(), buffer.size());
-  m_pub = g_byte_array_new();
-  g_byte_array_append(m_pub, tempBuf.data(), static_cast<guint>(tempBuf.size()));
+  m_pub = std::string((char*)tempBuf.data());
 }
 
 } // namespace algo

@@ -52,8 +52,8 @@ BOOST_AUTO_TEST_CASE(Constructor)
 {
   util::DummyClientFace face(io, {true, true});
   AttributeAuthority aa(cert, face, m_keyChain);
-  BOOST_CHECK(aa.m_pubParams.m_pub != nullptr);
-  BOOST_CHECK(aa.m_masterKey.m_msk != nullptr);
+  BOOST_CHECK(aa.m_pubParams.m_pub != "");
+  BOOST_CHECK(aa.m_masterKey.m_msk != "");
 }
 
 BOOST_AUTO_TEST_CASE(onPublicParams)
