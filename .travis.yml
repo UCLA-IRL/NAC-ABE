@@ -1,6 +1,5 @@
 sudo: true
 merge_mode: replace   # for custom builds
-language: cpp
 matrix:
   include:
     - os: linux
@@ -8,26 +7,37 @@ matrix:
       name: bionic linux, python3.6
 
 before_install:
-  - echo $LANG
-  - echo $LC_ALL
-  - if [ "$TRAVIS_OS_NAME" = "linux" ]; then sudo apt-get install libboost1.65-all-dev libssl-dev  ; fi
-  - git clone https://github.com/named-data/ndn-cxx.git && cd ndn-cxx
+  - sudo apt-get update
+  - sudo apt-get install -y gcc g++ pkg-config python3-minimal libboost-all-dev libssl-dev libsqlite3-dev cmake build-essential bison byacc flex libgmp3-dev libfl-dev
+  - wget --no-check-certificate https://crypto.stanford.edu/pbc/files/pbc-0.5.14.tar.gz
+  - tar xzvf ./pbc-0.5.14.tar.gz pbc-0.5.14/
+  - cd pbc-0.5.14/
+  - ./configure
+  - make && sudo make install
+  - cd ..
+  - wget https://github.com/yufengzh/NAC-ABE/releases/download/v1.0/libopenabe-1.0.0-linux.tar.gz
+  - tar xzvf libopenabe-1.0.0-linux.tar.gz
+  - cd libopenabe-1.0.0-linux/
+  - . ./env
+  - make && sudo make install
+  - sudo ldconfig
+  - cd ..
+  - wget http://hms.isi.jhu.edu/acsc/cpabe/libbswabe-0.9.tar.gz
+  - tar xzvf libbswabe-0.9.tar.gz
+  - cd libbswabe-0.9/
+  - ./configure
+  - make
+  - sudo make install
+  - cd ..
+  - git clone https://github.com/named-data/ndn-cxx
+  - cd ndn-cxx/
   - git checkout ndn-cxx-0.7.0
   - ./waf configure && ./waf && sudo ./waf install && cd ..
-  - git clone https://github.com/named-data/NFD.git && cd NFD
-  - git checkout NFD-0.7.0
-  - ./waf configure --without-libpcap --without-websocket && ./waf && sudo ./waf install && cd ..
-  - git clone https://github.com/zeutro/openabe.git && cd openabe
-  - sudo -E ./deps/install_pkgs.sh
-  - . ./env
-  - make && make test && sudo -E make install && cd ..
-
-  - if [ "$TRAVIS_OS_NAME" = "linux" ]; then sudo ldconfig ; fi
-  - ndnsec-key-gen test
-  - sudo nfd start -c /usr/local/etc/ndn/nfd.conf.sample &
 install:
   - ./waf configure --with-tests
   - ./waf
   - sudo ./waf install
+  - sudo ldconfig
 script:
-  - ./build/unit-tests
+  - cd ./build
+  - ./unit-tests
