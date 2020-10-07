@@ -4,7 +4,7 @@
 
 Named Data Networking Attribute-based Encryption Support Library: **NAC-ABE**
 
-[![Build Status](https://travis-ci.org/yufengzh/NAC-ABE.svg?branch=master)](https://travis-ci.org/yufengzh/NAC-ABE)
+[![Build Status](https://travis-ci.org/Zhiyi-Zhang/NAC-ABE.svg?branch=master)](https://travis-ci.org/Zhiyi-Zhang/NAC-ABE)
 
 ## Quick Start
 
