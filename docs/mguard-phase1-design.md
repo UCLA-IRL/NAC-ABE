@@ -2,9 +2,7 @@
 
 **Author**: Zhiyi
 
-**Date**:Dec 22, 2020
-
-**Version**: 1
+**Date**:Jan 17 2021 (previous edit: Dec 22, 2020)
 
 ## 1. Example Scenario
 
