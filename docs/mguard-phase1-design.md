@@ -85,7 +85,7 @@ DATA-WINDOW:
 
 ### 2.1. Attribute and Policy
 
-First, we can directly use stream name as attribute.
+First, we can directly use stream name as bottom layer attributes.
 Therefore, we have attributes:
 
 *	`battery--org.md2k.phonesensor—phone`
@@ -94,11 +94,36 @@ Therefore, we have attributes:
 * `accelerometer--org.md2k.phonesensor--phone`
 * `gyroscope--org.md2k.phonesensor—phone`
 
+Stepping up a level, we can have attributes that cover a type of streams.
+For example, the following attribute can cover all streams that are related to semantic location
+
+* `semantic_location_streams`
+
+Further stepping up a level, an attribute `all_streams` can represent the holistic access right.
+
+* `all_streams`
+
+Therefore, we have a diagram formed as follows.
+
+```ascii-art
+all_streams
+   |
+   +----------------------------+
+   |                            |
+semantic_location_streams      ...
+   |
+   +-----------------------+
+   |                       |
+work_location         home_location
+```
+
+When encrypting a piece of data of a stream (e.g., `work_location`), the stream attribute and all ancestor attributes (e.g., `work_location`, `semantic_location_streams`, `all_streams`) should be used in the Key-policy ABE encryption.
+
 Depending on the policy of A, B, and C, naturally, we have the following policies:
 
-* A: All of above attributes connected by `or`
-* B: `org.md2k.data_analysis.gps_episodes_and_semantic_location`
-* C: All of above attributes connected by `or` except `location--org.md2k.phonesensor—phone`
+* A: `all_streams`
+* B: `semantic_location_streams`
+* C: High level attributes that cover all streams except `location--org.md2k.phonesensor—phone`
 
 ### 2.2. Parsing Policy
 
@@ -149,6 +174,10 @@ DATA-WINDOW:
 ### 2.3. Future Consideration
 
 #### 2.3.1 New attributes after the setup of the system
+
+* How to integrate NAC-ABE with pub/sub?
+
+  Potential solution: directly use the attribute set as the topic so that naturally the attribute set becomes the encryption key for that topic.
 
 * How to generate new attributes?
 
