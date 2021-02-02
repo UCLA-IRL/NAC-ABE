@@ -2,7 +2,7 @@
 
 **Author**: Zhiyi
 
-**Date**:Jan 17 2021 (previous edit: Dec 22, 2020)
+**Date**: Feb 2, 2021 (previous edit: Jan 17 2021, Dec 22, 2020)
 
 ## 1. Example Scenario
 
@@ -158,15 +158,16 @@ DATA-WINDOW:
 
 1. Check `deny` field and remove corresponding ones
 
-   * Here the `deny` field is `StreamName: location--org*`, so the parser will translate this regular expression into a list of attributes with prefix `location--org`.
+   * Since `location--org*` matches all semantic location streams, the parser will add all semantic location streams into the deny list.
 
 2. Check `allow` field and add corresponding ones
 
-   * Here the `allow` field is `*`, which matches all the attributes.
+   * Here the `allow` field is `*`, which matches all the attributes. The parser will add all attributes into the allow list.
 
 3. Remove the `deny` attributes from the `allow` attributes.
 
-   * Will remove attributes with prefix `location--org` from the result attributes from Step 2.
+   * Will remove deny list attributes from the allow list.
+   * If among the attributes, a set attributes can reassemble a sub-tree in the attribute tree, this set of attributes can be replaced with their parent node. In this example, the attributes can be replaced with all the layer 2 attributes except `semantic_location_streams`.
    * Then connects all the attributes with `or`
 
 ### 2.3. Future Consideration
