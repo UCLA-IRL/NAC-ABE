@@ -1,43 +1,36 @@
 # NAC-ABE: Named-based Access Control with Attribute-based Encryption
 
-## Overview
+## 1. Overview
 
 Named Data Networking Attribute-based Encryption Support Library: **NAC-ABE**
 
 [![Build Status](https://travis-ci.org/Zhiyi-Zhang/NAC-ABE.svg?branch=master)](https://travis-ci.org/Zhiyi-Zhang/NAC-ABE)
 
-## Quick Start
+## 2. Quick Start
 
-### Dependency
+### 2.1 Dependency
 
-#### 1. ndn-cxx
+#### 2.1.1 ndn-cxx
 
 NAC-ABE is implemented over the Named Data Networking.
-Here is the link to [ndn-cxx library](https://github.com/named-data/ndn-cxx).
-To install the NAC-ABE library, you need to first install ndn-cxx.
+To install the NAC-ABE library, you need to first install [ndn-cxx library](https://github.com/named-data/ndn-cxx).
 
-For Ubuntu users, 
-#### 2. openabe
+#### 2.1.2 openabe
 
-NAC-ABE is using cryptography support provided by library openabe. To install openable, you can visit the [website](https://github.com/zeutro/openabe).
+NAC-ABE is using cryptography support provided by library openabe. 
+To install openable, you can visit the [website](https://github.com/zeutro/openabe).
 
-For Ubuntu users, you can also build and install the openabe by using the following commands:
-
-```bash
-wget https://github.com/yufengzh/NAC-ABE/releases/download/v1.0/libopenabe-1.0.0-linux.tar.gz
-tar xzvf libopenabe-1.0.0-linux.tar.gz
-cd libopenabe-1.0.0-linux/
-. ./env
-make && sudo make install
-sudo ldconfig
-cd ..
-```
-
-### Install NAC-ABE
+### 2.2 Install NAC-ABE
 
 Really simple to make it using waf.
 
-#### Config
+#### 2.2.1 Download
+
+```bash
+git clone https://github.com/UCLA-IRL/NAC-ABE.git
+```
+
+#### 2.2.2 Config
 
 ```bash
 # in the root directory of NAC-ABE
@@ -50,21 +43,21 @@ or if you want to enable tests.
 ./waf configure --with-tests
 ```
 
-#### Compile
+#### 2.2.3 Compile
 
 ```bash
 # in the root directory of NAC-ABE
 ./waf
 ```
 
-#### Install (sudo might be needed)
+#### 2.2.4 Install (sudo might be needed)
 
 ```bash
 # in the root directory of NAC-ABE
 ./waf install
 ```
 
-### Run Tests
+### 2.3 Run Tests
 
 To run tests, you must have `--with-tests` when you config the project.
 
@@ -74,7 +67,7 @@ To run tests, you must have `--with-tests` when you config the project.
 ./build/unit-tests
 ```
 
-## Citation
+## 3 Citation
 
 The publication of this work is [NAC: Automating Access Control via Named Data](https://arxiv.org/abs/1902.09714) on IEEE MILCOM 2018.
 
@@ -89,7 +82,7 @@ The publication of this work is [NAC: Automating Access Control via Named Data](
 }
 ```
 
-## Contact
+## 4 Contact
 
 If you have any problems or want to do bug report. Please contact us.
 
