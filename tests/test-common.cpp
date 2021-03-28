@@ -43,25 +43,6 @@ makeInterest(const Name& name, uint32_t nonce)
   }
   return interest;
 }
-
-lp::Nack
-makeNack(const Name& name, uint32_t nonce, lp::NackReason reason)
-{
-  Interest interest(name);
-  interest.setNonce(nonce);
-  lp::Nack nack(std::move(interest));
-  nack.setReason(reason);
-  return nack;
-}
-
-ConstBufferPtr
-digestFromFile(const boost::filesystem::path& filename)
-{
-  boost::filesystem::ifstream iff(filename, std::ios::in | std::ios::binary);
-  util::Sha256 digest(iff);
-  return digest.computeDigest();
-}
-
 } // namespace tests
 } // namespace nacabe
 } // namespace ndn

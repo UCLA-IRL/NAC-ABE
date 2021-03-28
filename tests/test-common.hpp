@@ -56,50 +56,6 @@ namespace tests {
 shared_ptr<Interest>
 makeInterest(const Name& name, uint32_t nonce = 0);
 
-/** \brief create a Data with fake signature
- *  \note Data may be modified afterwards without losing the fake signature.
- *        If a real signature is desired, sign again with KeyChain.
- */
-shared_ptr<Data>
-makeData(const Name& name);
-
-/** \brief create a Nack
- *  \param name Interest name
- *  \param nonce Interest nonce
- *  \param reason Nack reason
- */
-lp::Nack
-makeNack(const Name& name, uint32_t nonce, lp::NackReason reason);
-
-/** \brief replace a name component
- *  \param[inout] name name
- *  \param index name component index
- *  \param a arguments to name::Component constructor
- */
-template<typename...A>
-void
-setNameComponent(Name& name, ssize_t index, const A& ...a)
-{
-  Name name2 = name.getPrefix(index);
-  name2.append(name::Component(a...));
-  name2.append(name.getSubName(name2.size()));
-  name = name2;
-}
-
-template<typename Packet, typename...A>
-void
-setNameComponent(Packet& packet, ssize_t index, const A& ...a)
-{
-  Name name = packet.getName();
-  setNameComponent(name, index, a...);
-  packet.setName(name);
-}
-
-/** \brief convert file to digest
- */
-ndn::ConstBufferPtr
-digestFromFile(const boost::filesystem::path& filename);
-
 } // namespace tests
 } // namespace nacabe
 } // namespace ndn
