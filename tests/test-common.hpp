@@ -63,27 +63,6 @@ makeInterest(const Name& name, uint32_t nonce = 0);
 shared_ptr<Data>
 makeData(const Name& name);
 
-/** \brief add a fake signature to Data
- */
-Data&
-signData(Data& data);
-
-/** \brief add a fake signature to Data
- */
-inline shared_ptr<Data>
-signData(shared_ptr<Data> data)
-{
-  signData(*data);
-  return data;
-}
-
-/** \brief create a Link object with fake signature
- *  \note Link may be modified afterwards without losing the fake signature.
- *        If a real signature is desired, sign again with KeyChain.
- */
-shared_ptr<Link>
-makeLink(const Name& name, std::initializer_list<std::pair<uint32_t, Name>> delegations);
-
 /** \brief create a Nack
  *  \param name Interest name
  *  \param nonce Interest nonce

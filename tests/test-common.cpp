@@ -44,32 +44,6 @@ makeInterest(const Name& name, uint32_t nonce)
   return interest;
 }
 
-shared_ptr<Data>
-makeData(const Name& name)
-{
-  auto data = make_shared<Data>(name);
-  return signData(data);
-}
-
-Data&
-signData(Data& data)
-{
-  ndn::SignatureSha256WithRsa fakeSignature;
-  fakeSignature.setValue(ndn::encoding::makeEmptyBlock(tlv::SignatureValue));
-  data.setSignature(fakeSignature);
-  data.wireEncode();
-
-  return data;
-}
-
-shared_ptr<Link>
-makeLink(const Name& name, std::initializer_list<Delegation> delegations)
-{
-  auto link = make_shared<Link>(name, delegations);
-  signData(link);
-  return link;
-}
-
 lp::Nack
 makeNack(const Name& name, uint32_t nonce, lp::NackReason reason)
 {
