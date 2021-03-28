@@ -25,7 +25,7 @@
 #include "test-home-fixture.hpp"
 #include "unit-test-time-fixture.hpp"
 #include "boost-test.hpp"
-#include <ndn-cxx/security/v2/key-chain.hpp>
+#include <ndn-cxx/security/key-chain.hpp>
 #include <ndn-cxx/security/signing-helpers.hpp>
 #include <vector>
 

@@ -61,7 +61,7 @@ void
 Producer::onAttributePubParams(const Data& pubParamData)
 {
   NDN_LOG_INFO("Get public parameters");
-  Name attrAuthorityKey = pubParamData.getSignature().getKeyLocator().getName();
+  Name attrAuthorityKey = pubParamData.getSignatureInfo().getKeyLocator().getName();
   for (auto anchor : m_trustConfig.m_trustAnchors) {
     if (anchor.getKeyName() == attrAuthorityKey) {
       BOOST_ASSERT(security::verifySignature(pubParamData, anchor));

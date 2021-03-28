@@ -94,7 +94,7 @@ AttributeAuthorityToken::onDecryptionKeyRequest(const Interest& interest)
   }
 
   // verify token
-  Name tokenIssuerKey = token.getSignature().getKeyLocator().getName();
+  Name tokenIssuerKey = token.getSignatureInfo().getKeyLocator().getName();
   for (auto anchor : m_trustConfig.m_trustAnchors) {
     if (anchor.getKeyName() == tokenIssuerKey) {
       if (!security::verifySignature(token, anchor)) {

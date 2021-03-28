@@ -25,7 +25,7 @@
 
 #include <ndn-cxx/security/signing-helpers.hpp>
 #include <ndn-cxx/security/verification-helpers.hpp>
-#include <ndn-cxx/security/v2/certificate.hpp>
+#include <ndn-cxx/security/certificate.hpp>
 
 namespace ndn {
 namespace nacabe {
@@ -217,7 +217,7 @@ Consumer::onAttributePubParams(const Interest& request, const Data& pubParamData
 {
   std::cout << "CONSUMER_CPP in onAttributePubParams()..." << std::endl;
   NDN_LOG_INFO(m_cert.getIdentity()<<" Get public parameters");
-  Name attrAuthorityKey = pubParamData.getSignature().getKeyLocator().getName();
+  Name attrAuthorityKey = pubParamData.getSignatureInfo().getKeyLocator().getName();
   for (auto anchor : m_trustConfig.m_trustAnchors) {
     if (anchor.getKeyName() == attrAuthorityKey) {
       BOOST_ASSERT(security::verifySignature(pubParamData, anchor));

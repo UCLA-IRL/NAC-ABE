@@ -22,7 +22,7 @@
 #ifndef NDN_TESTS_TEST_HOME_FIXTURE_HPP
 #define NDN_TESTS_TEST_HOME_FIXTURE_HPP
 
-#include <ndn-cxx/security/v2/key-chain.hpp>
+#include <ndn-cxx/security/key-chain.hpp>
 #include <cstdlib>
 #include <fstream>
 #include <initializer_list>
