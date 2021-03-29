@@ -43,23 +43,6 @@
 #include <ndn-cxx/util/logger.hpp>
 #include <ndn-cxx/util/random.hpp>
 
-
-namespace ndn {
-namespace nacabe {
-namespace tests {
-
-/** \brief create an Interest
- *  \param name Interest name
- *  \param nonce if non-zero, set Nonce to this value
- *               (useful for creating Nack with same Nonce)
- */
-shared_ptr<Interest>
-makeInterest(const Name& name, uint32_t nonce = 0);
-
-} // namespace tests
-} // namespace nacabe
-} // namespace ndn
-
 #include "identity-management-fixture.hpp"
 
 #endif // CHRONOSHARE_TESTS_TEST_COMMON_HPP

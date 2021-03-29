@@ -42,9 +42,7 @@ BOOST_AUTO_TEST_CASE(Setup)
 {
   algo::PublicParams pubParams;
   algo::MasterKey masterKey;
-
   algo::ABESupport::getInstance().init(pubParams, masterKey);
-
   BOOST_CHECK(pubParams.m_pub != "");
   BOOST_CHECK(masterKey.m_msk != "");
 }
@@ -53,26 +51,10 @@ BOOST_AUTO_TEST_CASE(GenPrivateKey)
 {
   algo::PublicParams pubParams;
   algo::MasterKey masterKey;
-
   algo::ABESupport::getInstance().init(pubParams, masterKey);
-
   std::vector<std::string> attrList = { "attr1", "attr2" };
   algo::PrivateKey prvKey = algo::ABESupport::getInstance().prvKeyGen(pubParams, masterKey, attrList);
-
   BOOST_CHECK(prvKey.m_prv != "");
-}
-
-BOOST_AUTO_TEST_CASE(Encryption)
-{
-  algo::PublicParams pubParams;
-  algo::MasterKey masterKey;
-
-  algo::ABESupport::getInstance().init(pubParams, masterKey);
-  algo::CipherText cipherText = algo::ABESupport::getInstance().encrypt(pubParams, "attr1 and attr2",
-                                                                        Buffer(PLAIN_TEXT, sizeof(PLAIN_TEXT)));
-
-  BOOST_CHECK(cipherText.m_aesKey.size() != 0);
-  BOOST_CHECK(cipherText.m_content.size() > sizeof(PLAIN_TEXT));
 }
 
 BOOST_AUTO_TEST_CASE(EncryptionDecryption)
