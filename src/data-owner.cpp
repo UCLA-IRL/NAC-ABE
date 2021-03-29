@@ -26,7 +26,6 @@
 namespace ndn {
 namespace nacabe {
 
-const Name DataOwner::SET_POLICY = "/SET_POLICY";
 NDN_LOG_INIT(nacabe.dataOwner);
 
 DataOwner::DataOwner(const security::v2::Certificate& identityCert, Face& face,
@@ -63,13 +62,12 @@ DataOwner::commandProducerPolicy(const Name& prefix, const Name& dataPrefix, con
   NDN_LOG_INFO("Set data " << dataPrefix<<" in Producer "<<prefix<<" with policy "<<policy);
   Name policyName = prefix;
   policyName.append(SET_POLICY);
-  policyName.append(dataPrefix);
+  policyName.append(dataPrefix.wireEncode());
   policyName.append(policy);
-  //add sig
-
   shared_ptr<Interest> interest = make_shared<Interest>(policyName);
   interest->setCanBePrefix(false);
   interest->setMustBeFresh(true);
+  m_keyChain.sign(*interest, signingByCertificate(m_cert));
 
   // prepare callback functions
   auto validationCallback =

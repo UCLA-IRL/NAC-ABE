@@ -32,17 +32,18 @@ namespace nacabe {
 NDN_LOG_INIT(nacabe.consumer);
 
 // public
-Consumer::Consumer(const security::v2::Certificate& identityCert,
-                   Face& face, security::v2::KeyChain& keyChain,
-                   const Name& attrAuthorityPrefix,
+Consumer::Consumer(Face& face, security::v2::KeyChain& keyChain,
+                   const security::v2::Certificate& identityCert,
+                   const security::v2::Certificate& attrAuthorityCertificate,
                    uint8_t repeatAttempts)
   : m_cert(identityCert)
   , m_face(face)
   , m_keyChain(keyChain)
-  , m_attrAuthorityPrefix(attrAuthorityPrefix)
+  , m_attrAuthorityPrefix(attrAuthorityCertificate.getIdentity())
   , m_repeatAttempts(repeatAttempts)
 {
   std::cout << "CONSUMER CONSTRUCTOR" << std::endl;
+  m_trustConfig.addOrUpdateCertificate(attrAuthorityCertificate);
   fetchPublicParams();
 }
 
@@ -174,11 +175,14 @@ Consumer::onAttributePubParams(const Interest& request, const Data& pubParamData
   std::cout << "CONSUMER_CPP in onAttributePubParams()..." << std::endl;
   NDN_LOG_INFO(m_cert.getIdentity()<<" Get public parameters");
   Name attrAuthorityKey = pubParamData.getSignatureInfo().getKeyLocator().getName();
-  for (auto anchor : m_trustConfig.m_trustAnchors) {
-    if (anchor.getKeyName() == attrAuthorityKey) {
-      BOOST_ASSERT(security::verifySignature(pubParamData, anchor));
-      break;
+  auto optionalAAKey = m_trustConfig.findCertificate(attrAuthorityKey.getPrefix(-2));
+  if (optionalAAKey) {
+    if (!security::verifySignature(pubParamData, *optionalAAKey)) {
+      NDN_THROW(std::runtime_error("Fetched public parameters cannot be authenticated: bad signature"));
     }
+  }
+  else {
+    NDN_THROW(std::runtime_error("Fetched public parameters cannot be authenticated: no certificate"));
   }
   auto block = pubParamData.getContent();
   m_pubParamsCache.fromBuffer(Buffer(block.value(), block.value_size()));
@@ -196,8 +200,7 @@ Consumer::fetchPublicParams()
 
   NDN_LOG_INFO(m_cert.getIdentity() << " Request public parameters:"<<interest.getName());
   std::cout << "CONSUMER_CPP in fetchPublicParams()..." << interestName << std::endl;
-  m_face.expressInterest(interest, std::bind(&Consumer::onAttributePubParams, this, _1, _2),
-                         nullptr, nullptr);
+  m_face.expressInterest(interest, std::bind(&Consumer::onAttributePubParams, this, _1, _2), nullptr, nullptr);
 }
 
 } // namespace nacabe

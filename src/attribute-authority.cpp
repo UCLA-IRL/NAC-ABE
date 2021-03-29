@@ -74,6 +74,19 @@ AttributeAuthority::~AttributeAuthority()
 }
 
 void
+AttributeAuthority::addNewPolicy(const security::v2::Certificate& decryptorCert, const std::list<std::string>& attributes)
+{
+  m_trustConfig.addOrUpdateCertificate(decryptorCert);
+  m_tokens.insert(std::make_pair(decryptorCert.getIdentity(), attributes));
+}
+
+void
+AttributeAuthority::addNewPolicy(const Name& decryptorIdentityName, const std::list<std::string>& attributes)
+{
+  m_tokens.insert(std::make_pair(decryptorIdentityName, attributes));
+}
+
+void
 AttributeAuthority::onDecryptionKeyRequest(const Interest& request)
 {
   // naming: /AA-prefix/DKEY/<identity name block>/<signature>
@@ -84,16 +97,17 @@ AttributeAuthority::onDecryptionKeyRequest(const Interest& request)
   // verify request and generate token
   JsonSection root;
   security::v2::Certificate consumerCert;
-  for (auto anchor : m_trustConfig.m_trustAnchors) {
-    if (anchor.getIdentity() == identityName) {
-      NDN_LOG_INFO("Find corresponding identity and its certificate");
-      if (!security::verifySignature(request, anchor)) {
-        NDN_LOG_INFO("Interest is with bad signature");
-        return;
-      }
-      consumerCert = anchor;
-      break;
+  auto optionalCert = m_trustConfig.findCertificate(identityName);
+  if (optionalCert) {
+    NDN_LOG_INFO("Find consumer(decryptor) certificate.");
+    if (!security::verifySignature(request, *optionalCert)) {
+      NDN_LOG_INFO("DKEY Request Interest cannot be authenticated: bad signature");
+      return;
     }
+  }
+  else {
+    NDN_LOG_INFO("DKEY Request Interest cannot be authenticated: no certificate");
+    return;
   }
   std::vector<std::string> attrs;
   for (auto attrName : m_tokens[identityName]) {

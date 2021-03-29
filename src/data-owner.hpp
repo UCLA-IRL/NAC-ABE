@@ -45,9 +45,6 @@ public:
   commandProducerPolicy(const Name& producerPrefix, const Name& dataPrefix, const std::string& policy,
                         const SuccessCallback& SuccessCb, const ErrorCallback& errorCb);
 
-public:
-  const static Name SET_POLICY;
-
 private:
   security::v2::Certificate m_cert;
   Face& m_face;

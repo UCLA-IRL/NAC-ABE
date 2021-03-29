@@ -32,41 +32,50 @@ namespace nacabe {
 class Producer
 {
 public:
-  class Error : public std::runtime_error
-  {
-  public:
-    using std::runtime_error::runtime_error;
-  };
-
   using ErrorCallback = function<void (const std::string&)>;
   using SuccessCallback = function<void (const Data&, const Data&)>;
 
 public:
-  /**
-   * @brief Constructor
-   *
-   * @param identityCert the certificate for data signing
-   * @param face the face for publishing data and sending interests
-   * @param repeatAttempts the max retry times when timeout or nack
-   */
-  Producer(const security::v2::Certificate& identityCert, Face& face,
-           security::v2::KeyChain& keyChain, const Name& attrAuthorityPrefix,
+  Producer(Face& face,
+           security::v2::KeyChain& keyChain,
+           const security::v2::Certificate& identityCert,
+           const security::v2::Certificate& attrAuthorityCertificate,
+           const security::v2::Certificate& dataOwnerCertificate,
+           uint8_t repeatAttempts = 3);
+
+  Producer(Face& face,
+           security::v2::KeyChain& keyChain,
+           const security::v2::Certificate& identityCert,
+           const security::v2::Certificate& attrAuthorityCertificate,
            uint8_t repeatAttempts = 3);
 
   ~Producer();
 
   /**
-   * @brief Producing data packet
+   * @brief Produce encrypted Data and corresponding encrypted CK Data
    *
-   * @param accessPolicy
-   * @param content
-   * @param contentLen
-   * @param errorCallBack
+   * Used when data owner is not used.
+   *
+   * @param dataPrefix the prefix of data, not including producer's prefix
+   * @param accessPolicy the encryption policy, e.g., (ucla or mit) and professor
+   * @param content the payload
+   * @param contentLen the payload length
+   * @return encrypted data, encrypted CK data
    */
   std::tuple<std::shared_ptr<Data>, std::shared_ptr<Data>>
   produce(const Name& dataPrefix, const std::string& accessPolicy,
           const uint8_t* content, size_t contentLen);
 
+  /**
+   * @brief Produce encrypted Data and corresponding encrypted CK Data
+   *
+   * Used when the data owner is used and data owner has command the policy for the @p dataPrefix
+   *
+   * @param dataPrefix the prefix of data, not including producer's prefix
+   * @param content the payload
+   * @param contentLen the payload length
+   * @return encrypted data, encrypted CK data
+   */
   std::tuple<std::shared_ptr<Data>, std::shared_ptr<Data>>
   produce(const Name& dataPrefix, const uint8_t* content, size_t contentLen);
 
@@ -80,18 +89,16 @@ private:
   void
   fetchPublicParams();
 
-public:
-  const static Name SET_POLICY;
-
 PUBLIC_WITH_TESTS_ELSE_PRIVATE:
   security::v2::Certificate m_cert;
   Face& m_face;
   security::v2::KeyChain& m_keyChain;
   Name m_attrAuthorityPrefix;
+  Name m_dataOwnerPrefix;
   uint8_t m_repeatAttempts;
 
   std::map<Name/* data prefix */, std::string/* policy */> m_policyCache;
-  std::list<InterestFilterHandle> m_interestFilterIds;
+  RegisteredPrefixHandle m_registeredPrefixHandle;
   algo::PublicParams m_pubParamsCache;
   TrustConfig m_trustConfig;
 };

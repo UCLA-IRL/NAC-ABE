@@ -29,25 +29,21 @@ namespace nacabe {
 class TrustConfig
 {
 public:
-  class Error : public std::runtime_error
-  {
-  public:
-    using std::runtime_error::runtime_error;
-  };
-
-public:
   void
   load(const std::string& fileName);
 
+  void
+  addOrUpdateCertificate(const security::v2::Certificate& certificate);
+
+  optional<security::v2::Certificate>
+  findCertificate(const Name& identityName) const;
+
 private:
   void
-  parse();
+  parse(const JsonSection& jsonConfig);
 
 public:
-  std::list<security::v2::Certificate> m_trustAnchors;
-
-PUBLIC_WITH_TESTS_ELSE_PRIVATE:
-  JsonSection m_config;
+  std::map<Name, security::v2::Certificate> m_knownIdentities;
 };
 
 } // namespace nacabe

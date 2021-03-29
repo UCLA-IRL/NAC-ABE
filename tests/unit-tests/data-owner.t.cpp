@@ -61,14 +61,14 @@ BOOST_AUTO_TEST_CASE(setPolicy)
   Name dataPrefix = Name("/dataset1/example");
   std::string policy = "attr1 and attr2 or attr3";
   Name interestName = producerPrefix;
-  interestName.append(dataPrefix)
-              .append(DataOwner::SET_POLICY)
+  interestName.append(dataPrefix.wireEncode())
+              .append(SET_POLICY)
               .append(policy);
 
   c2.setInterestFilter(Name("/producer"),
                        [&] (const ndn::InterestFilter&, const ndn::Interest& interest) {
                          BOOST_CHECK_EQUAL(interest.getName().get(0).toUri(), "/producer1");
-                         BOOST_CHECK_EQUAL(interest.getName().get(1).toUri(), DataOwner::SET_POLICY.toUri());
+                         BOOST_CHECK_EQUAL(interest.getName().get(1).toUri(), SET_POLICY);
                          BOOST_CHECK_EQUAL(interest.getName().get(2).toUri(), "/data");
                          BOOST_CHECK_EQUAL(interest.getName().get(3).toUri(), policy);
                          BOOST_CHECK_EQUAL(interest.getName().get(4).toUri(), "addSig");
@@ -88,10 +88,10 @@ BOOST_AUTO_TEST_CASE(setPolicy)
                                    BOOST_CHECK(false);
                                  });
 
-  c2.setInterestFilter(Name("/producer2").append(Producer::SET_POLICY),
+  c2.setInterestFilter(Name("/producer2").append(SET_POLICY),
                        [&] (const ndn::InterestFilter&, const ndn::Interest& interest) {
                          BOOST_CHECK_EQUAL(interest.getName().get(0).toUri(), "/producer2");
-                         BOOST_CHECK_EQUAL(interest.getName().get(1).toUri(), DataOwner::SET_POLICY.toUri());
+                         BOOST_CHECK_EQUAL(interest.getName().get(1).toUri(), SET_POLICY);
                          BOOST_CHECK_EQUAL(interest.getName().get(2).toUri(), "/data");
                          BOOST_CHECK_EQUAL(interest.getName().get(3).toUri(), policy);
                          BOOST_CHECK_EQUAL(interest.getName().get(4).toUri(), "addSig");

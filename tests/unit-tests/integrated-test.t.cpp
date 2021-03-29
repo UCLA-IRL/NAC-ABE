@@ -105,45 +105,38 @@ BOOST_AUTO_TEST_CASE(IntegratedTest)
   // define attr list for consumer rights
   std::list<std::string> attrList = {"attr1", "attr3"};
   NDN_LOG_INFO("Add comsumer 1 "<<consumerCert1.getIdentity()<<" with attributes: attr1, attr3");
-  aa.m_tokens.insert(std::pair<Name, std::list<std::string>>(consumerCert1.getIdentity(),
-                                                                      attrList));
+  aa.addNewPolicy(consumerCert1, attrList);
   BOOST_CHECK_EQUAL(aa.m_tokens.size(), 1);
 
 
   std::list<std::string> attrList1 = {"attr1"};
   NDN_LOG_INFO("Add comsumer 2 "<<consumerCert2.getIdentity()<<" with attributes: attr1");
-  aa.m_tokens.insert(std::pair<Name, std::list<std::string>>(consumerCert2.getIdentity(),
-                                                                      attrList1));
+  aa.addNewPolicy(consumerCert2, attrList1);
   BOOST_CHECK_EQUAL(aa.m_tokens.size(), 2);
 
   // set up consumer
   NDN_LOG_INFO("Create Consumer 1. Consumer 1 prefix:"<<consumerCert1.getIdentity());
-  Consumer consumer1 = Consumer(consumerCert1, consumerFace1, m_keyChain, aaCert.getIdentity());
-  aa.m_trustConfig.m_trustAnchors.push_back(consumerCert1);
+  Consumer consumer1 = Consumer(consumerFace1, m_keyChain, consumerCert1, aaCert);
   advanceClocks(time::milliseconds(20), 60);
   BOOST_CHECK(consumer1.m_pubParamsCache.m_pub != "");
 
   // set up consumer
   NDN_LOG_INFO("Create Consumer 2. Consumer 2 prefix:"<<consumerCert2.getIdentity());
-  Consumer consumer2 = Consumer(consumerCert2, consumerFace2, m_keyChain, aaCert.getIdentity());
-  aa.m_trustConfig.m_trustAnchors.push_back(consumerCert2);
+  Consumer consumer2 = Consumer(consumerFace2, m_keyChain, consumerCert2, aaCert);
   advanceClocks(time::milliseconds(20), 60);
   BOOST_CHECK(consumer2.m_pubParamsCache.m_pub != "");
 
   // set up producer
   NDN_LOG_INFO("Create Producer. Producer prefix:"<<producerCert.getIdentity());
-  Producer producer = Producer(producerCert, producerFace, m_keyChain, aaCert.getIdentity());
+  Producer producer = Producer(producerFace, m_keyChain, producerCert, aaCert, dataOwnerCert);
   advanceClocks(time::milliseconds(20), 60);
 
   BOOST_CHECK(producer.m_pubParamsCache.m_pub != "");
-  BOOST_CHECK_EQUAL(producer.m_interestFilterIds.size(), 1);
 
   // set up data owner
   NDN_LOG_INFO("Create Data Owner. Data Owner prefix:"<<dataOwnerCert.getIdentity());
   DataOwner dataOwner = DataOwner(dataOwnerCert, dataOwnerFace, m_keyChain);
   advanceClocks(time::milliseconds(20), 60);
-
-  //==============================================
 
   NDN_LOG_INFO("\n=================== start work flow ==================\n");
 

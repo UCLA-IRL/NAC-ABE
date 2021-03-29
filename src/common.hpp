@@ -100,8 +100,9 @@ const uint32_t TLV_PlainTextSize = 603;
 const uint32_t TLV_AesKeyId = 604;
 const uint32_t TLV_InitialVector = 605;
 
-static const Name PUBLIC_PARAMS = "/PUBPARAMS";
-static const Name DECRYPT_KEY = "/DKEY";
+static const std::string PUBLIC_PARAMS = "PUBPARAMS";
+static const std::string DECRYPT_KEY = "DKEY";
+static const std::string SET_POLICY = "SET_POLICY";
 
 } // namespace nacabe
 } // namespace ndn

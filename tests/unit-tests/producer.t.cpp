@@ -42,16 +42,18 @@ public:
       , attrAuthorityPrefix("/authority")
   {
     c1.linkTo(c2);
-    auto id = addIdentity("/producer");
-    auto key = id.getDefaultKey();
-    cert = key.getDefaultCertificate();
+    producerCert = addIdentity("/producer").getDefaultKey().getDefaultCertificate();
+    authorityCert = addIdentity("/authority").getDefaultKey().getDefaultCertificate();
+    ownerCert = addIdentity("/owner").getDefaultKey().getDefaultCertificate();
   }
 
 public:
   util::DummyClientFace c1;
   util::DummyClientFace c2;
   Name attrAuthorityPrefix;
-  security::v2::Certificate cert;
+  security::v2::Certificate producerCert;
+  security::v2::Certificate authorityCert;
+  security::v2::Certificate ownerCert;
 };
 
 BOOST_FIXTURE_TEST_SUITE(TestProducer, TestProducerFixture)
@@ -71,7 +73,7 @@ BOOST_AUTO_TEST_CASE(Constructor)
                          const auto& contentBuf = m_pubParams.toBuffer();
                          result.setContent(makeBinaryBlock(ndn::tlv::Content,
                                                            contentBuf.data(), contentBuf.size()));
-                         m_keyChain.sign(result, signingByCertificate(cert));
+                         m_keyChain.sign(result, signingByCertificate(authorityCert));
 
                          NDN_LOG_TRACE("Reply public params request.");
                          NDN_LOG_TRACE("Pub params size: " << contentBuf.size());
@@ -79,37 +81,33 @@ BOOST_AUTO_TEST_CASE(Constructor)
                          c2.put(result);
                        });
 
-  Producer producer(cert, c1, m_keyChain, attrAuthorityPrefix);
+  Producer producer(c1, m_keyChain, producerCert, authorityCert);
   advanceClocks(time::milliseconds(10), 100);
 
   BOOST_CHECK(producer.m_pubParamsCache.m_pub != "");
-  BOOST_CHECK_EQUAL(producer.m_interestFilterIds.size(), 1);
-
-  //***** need to compare pointer content *****
-  //BOOST_CHECK(producer.m_pubParamsCache.m_pub == m_pubParams.m_pub);
 }
 
 BOOST_AUTO_TEST_CASE(onPolicyInterest)
 {
   NDN_LOG_DEBUG("on policy interest unit test");
-  Producer producer(cert, c1, m_keyChain, attrAuthorityPrefix);
+  Producer producer(c1, m_keyChain, producerCert, authorityCert, ownerCert);
   advanceClocks(time::milliseconds(20), 60);
 
   Name dataPrefix("dataPrefix");
-  Name setPolicyInterestName = cert.getIdentity();
-  setPolicyInterestName.append(Producer::SET_POLICY);
-  setPolicyInterestName.append(dataPrefix);
+  Name setPolicyInterestName = producerCert.getIdentity();
+  setPolicyInterestName.append(SET_POLICY);
+  setPolicyInterestName.append(dataPrefix.wireEncode());
   setPolicyInterestName.append(Name("policy"));
 
   NDN_LOG_DEBUG("set policy Interest name:" << setPolicyInterestName);
   Interest setPolicyInterest = Interest(setPolicyInterestName);
   setPolicyInterest.setCanBePrefix(true);
-
-  NDN_LOG_DEBUG(setPolicyInterest.getName().getSubName(2, 1));
+  setPolicyInterest.setMustBeFresh(true);
+  m_keyChain.sign(setPolicyInterest, signingByCertificate(ownerCert));
 
   int count = 0;
   auto onSend = [&](const Data& response, std::string isSuccess) {
-    BOOST_CHECK(security::verifySignature(response, cert));
+    BOOST_CHECK(security::verifySignature(response, producerCert));
 
     BOOST_CHECK(readString(response.getContent()) == isSuccess);
     NDN_LOG_DEBUG("content is:" << readString(response.getContent()) << ", isSuccess:" << isSuccess);
@@ -120,7 +118,7 @@ BOOST_AUTO_TEST_CASE(onPolicyInterest)
   c2.expressInterest(
       setPolicyInterest,
       [&](const Interest&, const Data& response) {
-        BOOST_CHECK(security::verifySignature(response, cert));
+        BOOST_CHECK(security::verifySignature(response, producerCert));
         BOOST_CHECK(readString(response.getContent()) == "success");
       },
       [=](const Interest&, const lp::Nack&) {},
@@ -144,7 +142,7 @@ BOOST_AUTO_TEST_CASE(onPolicyInterest)
   c2.expressInterest(
       setPolicyInterest,
       [&](const Interest&, const Data& response) {
-        BOOST_CHECK(security::verifySignature(response, cert));
+        BOOST_CHECK(security::verifySignature(response, producerCert));
         BOOST_CHECK(readString(response.getContent()) == "exist");
       },
       [=](const Interest&, const lp::Nack&) {},
@@ -162,7 +160,7 @@ BOOST_AUTO_TEST_CASE(encryptContent)
 {
   algo::PublicParams pubParams;
   algo::MasterKey masterKey;
-  Producer producer(cert, c1, m_keyChain, attrAuthorityPrefix);
+  Producer producer(c1, m_keyChain, producerCert, authorityCert);
   advanceClocks(time::milliseconds(20), 60);
   algo::ABESupport::getInstance().init(pubParams, masterKey);
 

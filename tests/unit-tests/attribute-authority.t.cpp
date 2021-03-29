@@ -101,8 +101,7 @@ BOOST_AUTO_TEST_CASE(onPrvKey)
 
   util::DummyClientFace face(io, {true, true});
   AttributeAuthority aa(cert, face, m_keyChain);
-  aa.m_trustConfig.m_trustAnchors.push_back(consumerCert);
-  aa.m_tokens.insert(std::pair<Name, std::list<std::string>>(consumerName, attrList));
+  aa.addNewPolicy(consumerCert, attrList);
 
   Name interestName = attrAuthorityPrefix;
   interestName.append("DKEY").append(consumerName.wireEncode());

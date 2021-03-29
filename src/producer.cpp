@@ -30,43 +30,73 @@ namespace nacabe {
 
 NDN_LOG_INIT(nacabe.producer);
 
-const Name Producer::SET_POLICY = "/SET_POLICY";
-
 //public
-Producer::Producer(const security::v2::Certificate& identityCert, Face& face,
-                   security::v2::KeyChain& keyChain, const Name& attrAuthorityPrefix,
+Producer::Producer(Face& face,
+                   security::v2::KeyChain& keyChain,
+                   const security::v2::Certificate& identityCert,
+                   const security::v2::Certificate& attrAuthorityCertificate,
+                   const security::v2::Certificate& dataOwnerCertificate,
                    uint8_t repeatAttempts)
   : m_cert(identityCert)
   , m_face(face)
   , m_keyChain(keyChain)
-  , m_attrAuthorityPrefix(attrAuthorityPrefix)
+  , m_attrAuthorityPrefix(attrAuthorityCertificate.getIdentity())
+  , m_dataOwnerPrefix(dataOwnerCertificate.getIdentity())
   , m_repeatAttempts(repeatAttempts)
 {
   // prefix registration
-  auto filterId = m_face.setInterestFilter(Name(m_cert.getIdentity()).append(SET_POLICY),
-                                           bind(&Producer::onPolicyInterest, this, _2));
+  m_registeredPrefixHandle = m_face.setInterestFilter(Name(m_cert.getIdentity()).append(SET_POLICY),
+                                           bind(&Producer::onPolicyInterest, this, _2),
+                                           [](const Name&, const std::string&) {
+    NDN_THROW(std::runtime_error("Cannot register the prefix to the local NFD"));
+  });
   NDN_LOG_DEBUG("set prefix:" << m_cert.getIdentity());
-  m_interestFilterIds.push_back(filterId);
+
+  m_trustConfig.addOrUpdateCertificate(attrAuthorityCertificate);
+  m_trustConfig.addOrUpdateCertificate(dataOwnerCertificate);
+  fetchPublicParams();
+}
+
+Producer::Producer(Face& face,
+                   security::v2::KeyChain& keyChain,
+                   const security::v2::Certificate& identityCert,
+                   const security::v2::Certificate& attrAuthorityCertificate,
+                   uint8_t repeatAttempts)
+  : m_cert(identityCert)
+    , m_face(face)
+    , m_keyChain(keyChain)
+    , m_attrAuthorityPrefix(attrAuthorityCertificate.getIdentity())
+    , m_repeatAttempts(repeatAttempts)
+{
+  // prefix registration
+  m_registeredPrefixHandle = m_face.setInterestFilter(Name(m_cert.getIdentity()).append(SET_POLICY),
+                                                      bind(&Producer::onPolicyInterest, this, _2),
+                                                      [](const Name&, const std::string&) {
+                                                        NDN_THROW(std::runtime_error("Cannot register the prefix to the local NFD"));
+                                                      });
+  NDN_LOG_DEBUG("set prefix:" << m_cert.getIdentity());
+
+  m_trustConfig.addOrUpdateCertificate(attrAuthorityCertificate);
   fetchPublicParams();
 }
 
 Producer::~Producer()
 {
-  for (auto prefixId : m_interestFilterIds) {
-    prefixId.cancel();
-  }
+  m_registeredPrefixHandle.unregister();
 }
 
 void
 Producer::onAttributePubParams(const Data& pubParamData)
 {
   NDN_LOG_INFO("Get public parameters");
-  Name attrAuthorityKey = pubParamData.getSignatureInfo().getKeyLocator().getName();
-  for (auto anchor : m_trustConfig.m_trustAnchors) {
-    if (anchor.getKeyName() == attrAuthorityKey) {
-      BOOST_ASSERT(security::verifySignature(pubParamData, anchor));
-      break;
+  auto optionalAAKey = m_trustConfig.findCertificate(m_attrAuthorityPrefix);
+  if (optionalAAKey) {
+    if (!security::verifySignature(pubParamData, *optionalAAKey)) {
+      NDN_THROW(std::runtime_error("Fetched public parameters cannot be authenticated: bad signature"));
     }
+  }
+  else {
+    NDN_THROW(std::runtime_error("Fetched public parameters cannot be authenticated: no certificate"));
   }
   auto block = pubParamData.getContent();
   m_pubParamsCache.fromBuffer(Buffer(block.value(), block.value_size()));
@@ -136,16 +166,23 @@ Producer::produce(const Name& dataPrefix, const uint8_t* content, size_t content
 void
 Producer::onPolicyInterest(const Interest& interest)
 {
-  //*** need verify signature ****
   NDN_LOG_DEBUG("on policy Interest:"<<interest.getName());
-  NDN_LOG_INFO("on policy Interest:"<<interest.getName());
-  Name dataPrefix = interest.getName().getSubName(2,1);
-  // Name policy = interest.getName().getSubName(3,1);
-  // _LOG_DEBUG(dataPrefix<<", "<<policy);
-
-  std::pair<std::map<Name,std::string>::iterator,bool> ret;
+  Name dataPrefix = Name(interest.getName().at(m_cert.getIdentity().size() + 1));
+  NDN_LOG_DEBUG("policy applies to data prefix" << dataPrefix);
+  auto optionalDataOwnerKey = m_trustConfig.findCertificate(m_dataOwnerPrefix);
+  if (optionalDataOwnerKey) {
+    if (!security::verifySignature(interest, *optionalDataOwnerKey)) {
+      NDN_LOG_INFO("policy interest cannot be authenticated: bad signature");
+      return;
+    }
+  }
+  else {
+    NDN_LOG_INFO("policy interest cannot be authenticated: no certificate");
+    return;
+  }
+  std::pair<std::map<Name,std::string>::iterator, bool> ret;
   ret = m_policyCache.insert(std::pair<Name, std::string>(Name(dataPrefix),
-                                                          encoding::readString(interest.getName().at(3))));
+                                                          encoding::readString(interest.getName().at(m_cert.getIdentity().size() + 2))));
 
   Data reply;
   reply.setName(interest.getName());

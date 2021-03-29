@@ -36,6 +36,12 @@ public:
 
   ~AttributeAuthority();
 
+  void
+  addNewPolicy(const security::v2::Certificate& decryptorCert, const std::list<std::string>& attributes);
+
+  void
+  addNewPolicy(const Name& decryptorIdentityName, const std::list<std::string>& attributes);
+
 PUBLIC_WITH_TESTS_ELSE_PRIVATE:
   void
   onDecryptionKeyRequest(const Interest& interest);

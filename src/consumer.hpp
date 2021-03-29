@@ -32,20 +32,15 @@ namespace nacabe {
 class Consumer
 {
 public:
-  class Error : public std::runtime_error
-  {
-  public:
-    using std::runtime_error::runtime_error;
-  };
-
   using OnDataCallback = function<void (const Interest&, const Data&)>;
   using ErrorCallback = function<void (const std::string&)>;
   using ConsumptionCallback = function<void (const Buffer&)>;
 
 public:
-  Consumer(const security::v2::Certificate& identityCert,
-           Face& face, security::v2::KeyChain& keyChain,
-           const Name& attrAuthorityPrefix,
+  Consumer(Face& face,
+           security::v2::KeyChain& keyChain,
+           const security::v2::Certificate& identityCert,
+           const security::v2::Certificate& attrAuthorityCertificate,
            uint8_t repeatAttempts = 3);
 
   void

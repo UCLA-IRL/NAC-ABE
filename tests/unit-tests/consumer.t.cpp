@@ -40,16 +40,16 @@ public:
     , attrAuthorityPrefix("/authority")
   {
     c1.linkTo(c2);
-    auto id = addIdentity("/consumer");
-    auto key = id.getDefaultKey();
-    cert = key.getDefaultCertificate();
+    consumerCert = addIdentity("/consumer").getDefaultKey().getDefaultCertificate();
+    authorityCert = addIdentity("/authority").getDefaultKey().getDefaultCertificate();
   }
 
 public:
   util::DummyClientFace c1;
   util::DummyClientFace c2;
   Name attrAuthorityPrefix;
-  security::v2::Certificate cert;
+  security::v2::Certificate consumerCert;
+  security::v2::Certificate authorityCert;
 };
 
 BOOST_FIXTURE_TEST_SUITE(TestConsumer, TestConsumerFixture)
@@ -57,7 +57,7 @@ BOOST_FIXTURE_TEST_SUITE(TestConsumer, TestConsumerFixture)
 BOOST_AUTO_TEST_CASE(Constructor)
 {
   algo::PublicParams m_pubParams;
-  c2.setInterestFilter((attrAuthorityPrefix),
+  c2.setInterestFilter(attrAuthorityPrefix,
                      [&] (const ndn::InterestFilter&, const ndn::Interest& interest) {
                         algo::MasterKey m_masterKey;
                         algo::ABESupport::getInstance().init(m_pubParams, m_masterKey);
@@ -66,10 +66,9 @@ BOOST_AUTO_TEST_CASE(Constructor)
                         dataName.appendTimestamp();
                         result.setName(dataName);
                         const auto& contentBuf = m_pubParams.toBuffer();
-                        result.setContent(makeBinaryBlock(ndn::tlv::Content,
-                                                          contentBuf.data(), contentBuf.size()));
+                        result.setContent(makeBinaryBlock(ndn::tlv::Content, contentBuf.data(), contentBuf.size()));
                         result.setFreshnessPeriod(5_s);
-                        m_keyChain.sign(result, signingByCertificate(cert));
+                        m_keyChain.sign(result, signingByCertificate(authorityCert));
 
                         NDN_LOG_TRACE("Reply public params request.");
                         NDN_LOG_TRACE("Pub params size: " << contentBuf.size());
@@ -79,20 +78,11 @@ BOOST_AUTO_TEST_CASE(Constructor)
 
   advanceClocks(time::milliseconds(20), 60);
 
-  Consumer consumer(cert, c1, m_keyChain, attrAuthorityPrefix);
+  Consumer consumer(c1, m_keyChain, consumerCert, authorityCert);
   advanceClocks(time::milliseconds(20), 60);
 
   BOOST_CHECK(consumer.m_pubParamsCache.m_pub != "");
-  //***** need to compare pointer content *****
-  //BOOST_CHECK(consumer.m_pubParamsCache.m_pub == m_pubParams.m_pub);
 }
-
-
-BOOST_AUTO_TEST_CASE(comsumeData)
-{
-  // Maybe we can put this to integrated test?
-}
-
 
 BOOST_AUTO_TEST_SUITE_END()
 

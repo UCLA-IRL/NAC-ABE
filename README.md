@@ -6,6 +6,20 @@ Named Data Networking Attribute-based Encryption Support Library: **NAC-ABE**
 
 [![Build Status](https://travis-ci.org/Zhiyi-Zhang/NAC-ABE.svg?branch=master)](https://travis-ci.org/Zhiyi-Zhang/NAC-ABE)
 
+The publication of this work is [NAC: Automating Access Control via Named Data](https://arxiv.org/abs/1902.09714) on IEEE MILCOM 2018.
+To cite the work, you can use the following Bibtex entry.
+
+```latex
+@inproceedings{zhang2018nac,
+  title={NAC: Automating access control via Named Data},
+  author={Zhang, Zhiyi and Yu, Yingdi and Ramani, Sanjeev Kaushik and Afanasyev, Alex and Zhang, Lixia},
+  booktitle={MILCOM 2018-2018 IEEE Military Communications Conference (MILCOM)},
+  pages={626--633},
+  year={2018},
+  organization={IEEE}
+}
+```
+
 ## 2. Quick Start
 
 ### 2.1 Dependency
@@ -76,20 +90,22 @@ To run tests, you must have `--with-tests` when you config the project.
 ./build/unit-tests
 ```
 
-## 3 Citation
+## 3 Documentation
 
-The publication of this work is [NAC: Automating Access Control via Named Data](https://arxiv.org/abs/1902.09714) on IEEE MILCOM 2018.
+The library mainly provide supports for four roles in an NDN based ABE scenario.
 
-```latex
-@inproceedings{zhang2018nac,
-  title={NAC: Automating access control via Named Data},
-  author={Zhang, Zhiyi and Yu, Yingdi and Ramani, Sanjeev Kaushik and Afanasyev, Alex and Zhang, Lixia},
-  booktitle={MILCOM 2018-2018 IEEE Military Communications Conference (MILCOM)},
-  pages={626--633},
-  year={2018},
-  organization={IEEE}
-}
-```
+* **Attribute Authority**. The party who owns the system master key. It publishes the public parameters to the system and generate decryption keys for decryptors.
+* **Data owner**. The party who decides how encryptors should encrypt their data. 
+* **Encryptor**. The party who get decryption keys from the attribute authority and consume encrypted data.
+* **Decryptor**. The party who follows data owner's decision and produce encrypted data.
+
+These four parties are implemented in four classes in the library: `AttributeAuthority`, `DataOwner`, `producer`, and `consumer`.
+
+> For now, only Ciphertext Policy Attribute-based Encryption (CP-ABE) is supported. 
+> A future work is to support KP-ABE as well so that the application can decide the favor based on its requirements.
+
+### 3.1 Attribute Authority
+
 
 ## 4 Contact
 
