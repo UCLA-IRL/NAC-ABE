@@ -36,29 +36,10 @@ DataOwner::DataOwner(const security::v2::Certificate& identityCert, Face& face,
 {
 }
 
-/**
- * send command:
- *  /producer-prefix/data-prefix/POLICY/<policy string>/[sig]
- * data-prefix contains the producer prefix and data prefix
- */
 void
 DataOwner::commandProducerPolicy(const Name& prefix, const Name& dataPrefix, const std::string& policy,
                                  const SuccessCallback& SuccessCb, const ErrorCallback& errorCb)
 {
-  Data kek;
-  Name kekName = prefix;
-  kekName.append("NAC").append(dataPrefix).append("KEK").append(policy);
-  kek.setName(kekName);
-  m_keyChain.sign(kek, signingByCertificate(m_cert));
-
-  std::cout << kek;
-  std::cout << "kek Data length: " << kek.wireEncode().size() << std::endl;
-  std::cout << "kek Name length: " << kek.getName().wireEncode().size() << std::endl;
-  std::cout << "=================================\n";
-
-
-  // shared_ptr<Interest> interest = make_shared<Interest>(dataName);
-  // sendInterest(*Interest);
   NDN_LOG_INFO("Set data " << dataPrefix<<" in Producer "<<prefix<<" with policy "<<policy);
   Name policyName = prefix;
   policyName.append(SET_POLICY);

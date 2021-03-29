@@ -43,9 +43,24 @@ public:
            const security::v2::Certificate& attrAuthorityCertificate,
            uint8_t repeatAttempts = 3);
 
+  /**
+   * @brief Obtain attributes (DKEY) from the attribute authority.
+   *
+   * Interest: /<attribute authority prefix>/DKEY/<decryptor name block>, signed
+   */
   void
   obtainAttributes();
 
+  /**
+   * @brief Consume an encrypted data packet
+   *
+   * The function will first fetch the encrypted data packet, then fetch the CK data packet.
+   * After decrypting CK with cached DKEY, the CK will be used to decrypt the data packet.
+   *
+   * @param dataName The packet name.
+   * @param consumptionCb The success callback.
+   * @param errorCallback The failure callback.
+   */
   void
   consume(const Name& dataName,
           const ConsumptionCallback& consumptionCb,

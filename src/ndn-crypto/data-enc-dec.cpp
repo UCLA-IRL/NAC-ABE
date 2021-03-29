@@ -27,28 +27,24 @@ namespace nacabe {
 
 Block
 encryptDataContentWithCK(const uint8_t* payload, size_t payloadLen,
-                         const uint8_t* key, size_t keyLen)
+                         const uint8_t* rsaKey, size_t rsaKeyLen)
 {
   // first create AES key and encrypt the payload
   AesKeyParams param;
   auto aesKey = Aes::generateKey(param);
   auto iv = Aes::generateIV();
-  auto encryptedPayload = Aes::encrypt(aesKey.data(), aesKey.size(),
-                                               payload, payloadLen, iv);
+  auto encryptedPayload = Aes::encrypt(aesKey.data(), aesKey.size(), payload, payloadLen, iv);
 
   // second use RSA key to encrypt the AES key
-  auto encryptedAesKey = Rsa::encrypt(key, keyLen, aesKey.data(), aesKey.size());
+  auto encryptedAesKey = Rsa::encrypt(rsaKey, rsaKeyLen, aesKey.data(), aesKey.size());
 
   // create the content block
   auto content = makeEmptyBlock(tlv::Content);
   content.push_back(makeBinaryBlock(TLV_EncryptedContent,
                                     encryptedPayload.data(), encryptedPayload.size()));
-
   content.push_back(makeBinaryBlock(TLV_EncryptedAesKey,
                                     encryptedAesKey.data(), encryptedAesKey.size()));
-
-  content.push_back(makeBinaryBlock(TLV_InitialVector,
-                                    iv.data(), iv.size()));
+  content.push_back(makeBinaryBlock(TLV_InitialVector, iv.data(), iv.size()));
   content.encode();
   return content;
 }

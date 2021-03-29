@@ -34,6 +34,7 @@ class Producer
 public:
   using ErrorCallback = function<void (const std::string&)>;
   using SuccessCallback = function<void (const Data&, const Data&)>;
+  using PolicyTuple = std::tuple<Name, std::string>;
 
 public:
   Producer(Face& face,
@@ -56,14 +57,15 @@ public:
    *
    * Used when data owner is not used.
    *
-   * @param dataPrefix the prefix of data, not including producer's prefix
-   * @param accessPolicy the encryption policy, e.g., (ucla or mit) and professor
-   * @param content the payload
-   * @param contentLen the payload length
-   * @return encrypted data, encrypted CK data
+   * @param dataName The name of data, not including producer's prefix
+   * @param dataSuffix The suffix of data.
+   * @param accessPolicy The encryption policy, e.g., (ucla or mit) and professor
+   * @param content The payload
+   * @param contentLen The payload length
+   * @return The encrypted data and the encrypted CK data
    */
   std::tuple<std::shared_ptr<Data>, std::shared_ptr<Data>>
-  produce(const Name& dataPrefix, const std::string& accessPolicy,
+  produce(const Name& dataName, const std::string& accessPolicy,
           const uint8_t* content, size_t contentLen);
 
   /**
@@ -71,15 +73,15 @@ public:
    *
    * Used when the data owner is used and data owner has command the policy for the @p dataPrefix
    *
-   * @param dataPrefix the prefix of data, not including producer's prefix
-   * @param content the payload
-   * @param contentLen the payload length
-   * @return encrypted data, encrypted CK data
+   * @param dataName The name of data, not including producer's prefix
+   * @param content The payload
+   * @param contentLen The payload length
+   * @return The encrypted data and the encrypted CK data
    */
   std::tuple<std::shared_ptr<Data>, std::shared_ptr<Data>>
-  produce(const Name& dataPrefix, const uint8_t* content, size_t contentLen);
+  produce(const Name& dataName, const uint8_t* content, size_t contentLen);
 
-private:
+PUBLIC_WITH_TESTS_ELSE_PRIVATE:
   void
   onAttributePubParams(const Data& pubParamData);
 
@@ -89,6 +91,12 @@ private:
   void
   fetchPublicParams();
 
+  void
+  addNewPolicy(const Name& dataPrefix, const std::string& policy);
+
+  std::string
+  findMatchedPolicy(const Name& dataName);
+
 PUBLIC_WITH_TESTS_ELSE_PRIVATE:
   security::v2::Certificate m_cert;
   Face& m_face;
@@ -97,7 +105,7 @@ PUBLIC_WITH_TESTS_ELSE_PRIVATE:
   Name m_dataOwnerPrefix;
   uint8_t m_repeatAttempts;
 
-  std::map<Name/* data prefix */, std::string/* policy */> m_policyCache;
+  std::vector<PolicyTuple> m_policies;
   RegisteredPrefixHandle m_registeredPrefixHandle;
   algo::PublicParams m_pubParamsCache;
   TrustConfig m_trustConfig;

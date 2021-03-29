@@ -36,9 +36,24 @@ public:
 
   ~AttributeAuthority();
 
+  /**
+   * @brief Add a new policy <decryptor name, decryptor attributes> into the state.
+   *
+   * Note that we only support RSA decryptor certificate for the purpose of key encryption.
+   *
+   * @param decryptorCert The decryptor's certificate, will be added into known identities as well.
+   * @param attributes The attributes owned by the decryptor.
+   */
   void
   addNewPolicy(const security::v2::Certificate& decryptorCert, const std::list<std::string>& attributes);
 
+  /**
+   * @brief Add a new policy <decryptor name, decryptor attributes> into the state.
+   * @param decryptorIdentityName The decryptor's name.
+   *                              This assumes its certificate has already been stored in the known identities.
+   *                              Otherwise it will throw an error when the decryptor asks for the key.
+   * @param attributes The attributes owned by the decryptor.
+   */
   void
   addNewPolicy(const Name& decryptorIdentityName, const std::list<std::string>& attributes);
 

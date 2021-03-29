@@ -103,7 +103,7 @@ Producer::onAttributePubParams(const Data& pubParamData)
 }
 
 std::tuple<std::shared_ptr<Data>, std::shared_ptr<Data>>
-Producer::produce(const Name& dataPrefix, const std::string& accessPolicy,
+Producer::produce(const Name& dataName, const std::string& accessPolicy,
                   const uint8_t* content, size_t contentLen)
 {
   // do encryption
@@ -112,15 +112,15 @@ Producer::produce(const Name& dataPrefix, const std::string& accessPolicy,
     return std::make_tuple(nullptr, nullptr);
   }
   else {
-    NDN_LOG_INFO("encrypt data:"<<dataPrefix);
+    NDN_LOG_INFO("encrypt data:" << dataName);
     auto cipherText = algo::ABESupport::getInstance().encrypt(m_pubParamsCache, accessPolicy, Buffer(content, contentLen));
 
     Name ckName = security::v2::extractIdentityFromCertName(m_cert.getName());
     ckName.append("CK").append(std::to_string(random::generateSecureWord32()));
 
-    Name dataName = m_cert.getIdentity();
-    dataName.append(dataPrefix);
-    auto data = std::make_shared<Data>(dataName);
+    Name contentDataName = m_cert.getIdentity();
+    contentDataName.append(dataName);
+    auto data = std::make_shared<Data>(contentDataName);
     auto dataBlock = makeEmptyBlock(tlv::Content);
     dataBlock.push_back(cipherText.makeDataContent());
     dataBlock.push_back(ckName.wireEncode());
@@ -151,23 +151,55 @@ Producer::produce(const Name& dataPrefix, const std::string& accessPolicy,
 }
 
 std::tuple<std::shared_ptr<Data>, std::shared_ptr<Data>>
-Producer::produce(const Name& dataPrefix, const uint8_t* content, size_t contentLen)
+Producer::produce(const Name& dataName, const uint8_t* content, size_t contentLen)
 {
   // Encrypt data based on data prefix.
-  auto it = m_policyCache.find(dataPrefix);
-  if (it == m_policyCache.end()) {
-    NDN_LOG_INFO("policy doesn't exist");
+  auto policy = findMatchedPolicy(dataName);
+  if (policy == "") {
     return std::make_tuple(nullptr, nullptr);
   }
-  return produce(dataPrefix, it->second, content, contentLen);
+  return produce(dataName, policy, content, contentLen);
 }
 
-//private:
+void
+Producer::addNewPolicy(const Name& dataPrefix, const std::string& policy)
+{
+  NDN_LOG_INFO("insert data prefix " << dataPrefix << " with policy " << policy);
+  for (auto& item : m_policies) {
+    if (std::get<0>(item) == dataPrefix) {
+      std::get<1>(item) = policy;
+      return;
+    }
+  }
+  m_policies.push_back(std::make_tuple(dataPrefix, policy));
+}
+
+std::string
+Producer::findMatchedPolicy(const Name& dataName)
+{
+  size_t index = 0;
+  size_t maxMatchedComponents = 0;
+  for (size_t i = 0; i < m_policies.size(); i++) {
+    const auto& prefix = std::get<0>(m_policies[i]);
+    if (prefix.isPrefixOf(dataName) && prefix.size() > maxMatchedComponents) {
+      index = i;
+      maxMatchedComponents = prefix.size();
+    }
+  }
+  if (maxMatchedComponents == 0) {
+    return "";
+  }
+  else {
+    return std::get<1>(m_policies[index]);
+  }
+}
+
 void
 Producer::onPolicyInterest(const Interest& interest)
 {
   NDN_LOG_DEBUG("on policy Interest:"<<interest.getName());
-  Name dataPrefix = Name(interest.getName().at(m_cert.getIdentity().size() + 1));
+  auto dataPrefixBlock = interest.getName().at(m_cert.getIdentity().size() + 1);
+  auto dataPrefix = Name(dataPrefixBlock.blockFromValue());
   NDN_LOG_DEBUG("policy applies to data prefix" << dataPrefix);
   auto optionalDataOwnerKey = m_trustConfig.findCertificate(m_dataOwnerPrefix);
   if (optionalDataOwnerKey) {
@@ -180,23 +212,10 @@ Producer::onPolicyInterest(const Interest& interest)
     NDN_LOG_INFO("policy interest cannot be authenticated: no certificate");
     return;
   }
-  std::pair<std::map<Name,std::string>::iterator, bool> ret;
-  ret = m_policyCache.insert(std::pair<Name, std::string>(Name(dataPrefix),
-                                                          encoding::readString(interest.getName().at(m_cert.getIdentity().size() + 2))));
-
+  addNewPolicy(dataPrefix, encoding::readString(interest.getName().at(m_cert.getIdentity().size() + 2)));
   Data reply;
   reply.setName(interest.getName());
-  if (ret.second==false) {
-    NDN_LOG_DEBUG("dataPrefix already exist");
-
-    NDN_LOG_INFO("insert data prefix "<<dataPrefix<<" policy failed");
-    reply.setContent(makeStringBlock(tlv::Content, "exist"));
-  }
-  else {
-    NDN_LOG_DEBUG("insert success");
-    NDN_LOG_INFO("insert data prefix "<<dataPrefix<<" with policy "<<encoding::readString(interest.getName().at(3)) );
-    reply.setContent(makeStringBlock(tlv::Content, "success"));
-  }
+  reply.setContent(makeStringBlock(tlv::Content, "success"));
   reply.setFreshnessPeriod(5_s);
   NDN_LOG_DEBUG("before sign");
   m_keyChain.sign(reply, signingByCertificate(m_cert));

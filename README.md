@@ -29,7 +29,7 @@ To cite the work, you can use the following Bibtex entry.
 NAC-ABE is implemented over the Named Data Networking.
 To install the NAC-ABE library, you need to first install [ndn-cxx library](https://github.com/named-data/ndn-cxx).
 
-To work with the version 0.0.1, please checkout to NDN-CXX 0.7.0 and install.
+To work with the version 0.1.0, please checkout to NDN-CXX 0.7.0 and install.
 
 To work with the master version, please checkout to NDN-CXX 0.7.1 and install.
 
@@ -104,9 +104,115 @@ These four parties are implemented in four classes in the library: `AttributeAut
 > For now, only Ciphertext Policy Attribute-based Encryption (CP-ABE) is supported. 
 > A future work is to support KP-ABE as well so that the application can decide the favor based on its requirements.
 
+From the perspective of the data flow:
+* Content is encrypted by the content KEY (CK), which is symmetric AES key.
+* CK is encrypted by the attribute policy (EKEY)
+* CK can only be decrypted when the attributes (DKEY) can satisfy the EKEY
+* Decryptor obtains an DKEY from attribute authorities
+* Encryptor knows which EKEY to use from the data owner
+
 ### 3.1 Attribute Authority
 
+#### Instantiate a new attribute authority
 
-## 4 Contact
+```c++
+// obtain or create a certificate for attribute authority
+AttributeAuthority aa = AttributeAuthority(aaCert, face, keychain);
+```
 
-If you have any problems or want to do bug report. Please submit a GitHub issue.
+#### Add policy
+
+Add a new decryptor and its corresponding attribute list into authority:
+
+```c++
+// obtain the decryptor's certificate
+std::list<std::string> attrList = {"ucla", "professor"};
+aa.addNewPolicy(decryptorCertificate, attrList);
+```
+
+After starting an attribute authority and added policies for decryptors, 
+the attribute authority will listen to the prefix `/<attribute authority prefix>/DKEY` to answer possible attribute request from decryptors.
+When a request arrives, the attribute authority will first use a known decryptor cetificate to verify the request, then locates the attribtue lists of this decryptor.
+After that, the attribute authority will create a new AES key to encrypt the attributes, then use the decryptor's RSA public key from the certificate to encrypt the AES key.
+The encrypted attributes will be returned back to the decryptor.
+
+### 3.2 Data Owner
+
+#### Instantiate a new data owner
+
+```c++
+// obtain or create a certificate for data owner
+DataOwner dataOwner = DataOwner(dataOwnerCert, face, keychain);
+```
+
+#### Command a data producer
+
+Command a data producer to apply certain policy when producing certain Data packets.
+
+```c++
+dataOwner.commandProducerPolicy(Name("/producer"), Name("/healthdata"), "ucla and professor", successCallback, failCallback);
+```
+
+To command a data producer, the data owner will use its own private key to sign the command Interest.
+The command Interest is of format: `/<producer prefix>/SET_POLICY/<data prefix block>/<policy string>`.
+
+### 3.3 Encryptor (Data Producer)
+
+#### Instantiate a new encryptor
+
+```c++
+Producer producer = Producer(face, keychain, producerCert, aaCert, dataOwnerCert);
+```
+
+After starting a encryptor, the encryptor will automatically fetch the public parameters from the attribute authority.
+
+After starting a encryptor, the encryptor will listen to the prefix `/<producer prefix>/SET_POLICY` for the data owner to command the policy.
+When a command Interest arrives, the encryptor will verify the command Interest with the data owner's certificate.
+
+#### Produce a new data
+
+```c++
+std::shared_ptr<Data> contentData, ckData;
+std::tie(contentData, ckData) = producer.produce(dataName, PLAIN_TEXT, sizeof(PLAIN_TEXT));
+```
+
+This function will automatically find the policy that is previously obtained from the command issued by the data owner.
+
+The encryptor can also produce a new data using a new policy:
+
+```c++
+std::shared_ptr<Data> contentData, ckData;
+std::tie(contentData, ckData) = producer.produce(dataName, "ucla and professor", sizeof(PLAIN_TEXT));
+```
+
+### 3.4 Decryptor (Data Consumer)
+
+#### Instantiate a new decryptor
+
+```c++
+Consumer consumer = Consumer(face, keyChain, consumerCert, aaCert);
+```
+
+After starting a decryptor, the decryptor will automatically fetch the public parameters from the attribute authority.
+
+#### Obtain the decryption key (DKEY), i.e., attributes
+
+```c++
+consumer.obtainAttributes();
+```
+
+This function will fetch the DKEY from the attribute authority.
+
+#### Consume data
+
+```c++
+consumer.consume(dataName, successCallback, failCallback);
+```
+
+This function will fetch the content Data packet by the name, fetch the corresponding encrypted CK Data packet.
+Then it uses its decryption key (DKEY) to decrypt the CK, then use the CK to decrypt the content Data packet.
+
+## 4 Issue Report
+
+If you have any problems or want to do bug report. 
+Please submit a GitHub issue.

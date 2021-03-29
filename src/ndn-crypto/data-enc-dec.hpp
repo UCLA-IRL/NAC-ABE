@@ -28,12 +28,10 @@ namespace ndn {
 namespace nacabe {
 
 Block
-encryptDataContentWithCK(const uint8_t* payload, size_t payloadLen,
-                         const uint8_t* key, size_t keyLen);
+encryptDataContentWithCK(const uint8_t* payload, size_t payloadLen, const uint8_t* rsaKey, size_t rsaKeyLen);
 
 Buffer
-decryptDataContent(const Block& dataBlock,
-                   const uint8_t* key, size_t keyLen);
+decryptDataContent(const Block& dataBlock, const uint8_t* key, size_t keyLen);
 
 Buffer
 decryptDataContent(const Block& dataBlock, const security::Tpm& tpm, const Name& certName);

@@ -50,6 +50,7 @@ Consumer::Consumer(Face& face, security::v2::KeyChain& keyChain,
 void
 Consumer::obtainAttributes()
 {
+  // /<attribute authority prefix>/DKEY/<decryptor name block>
   NDN_LOG_INFO(m_cert.getIdentity() << "Fetch private key");
   Name interestName = m_attrAuthorityPrefix;
   interestName.append("DKEY");

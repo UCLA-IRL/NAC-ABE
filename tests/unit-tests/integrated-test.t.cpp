@@ -52,29 +52,12 @@ public:
     producerFace.linkTo(consumerFace2);
     producerFace.linkTo(dataOwnerFace);
 
-    security::Identity aaId = addIdentity("/aaPrefix");
-    security::Key aaKey = aaId.getDefaultKey();
-    aaCert = aaKey.getDefaultCertificate();
-
-    security::Identity tokenIssuerId = addIdentity("/tokenIssuerPrefix");
-    security::Key tokenIssuerKey = tokenIssuerId.getDefaultKey();
-    tokenIssuerCert = tokenIssuerKey.getDefaultCertificate();
-
-    security::Identity consumerId1 = addIdentity("/consumerPrefix1");
-    security::Key consumerKey1 = m_keyChain.createKey(consumerId1, RsaKeyParams());
-    consumerCert1 = consumerKey1.getDefaultCertificate();
-
-    security::Identity consumerId2 = addIdentity("/consumerPrefix2");
-    security::Key consumerKey2 = m_keyChain.createKey(consumerId2, RsaKeyParams());
-    consumerCert2 = consumerKey2.getDefaultCertificate();
-
-    security::Identity producerId = addIdentity("/producerPrefix");
-    security::Key producerKey = producerId.getDefaultKey();
-    producerCert = producerKey.getDefaultCertificate();
-
-    security::Identity dataOwnerId = addIdentity("/dataOwnerPrefix");
-    security::Key dataOwnerKey = dataOwnerId.getDefaultKey();
-    dataOwnerCert = dataOwnerKey.getDefaultCertificate();
+    aaCert = addIdentity("/aaPrefix").getDefaultKey().getDefaultCertificate();
+    tokenIssuerCert = addIdentity("/tokenIssuerPrefix").getDefaultKey().getDefaultCertificate();
+    consumerCert1 = addIdentity("/consumerPrefix1", RsaKeyParams()).getDefaultKey().getDefaultCertificate();
+    consumerCert2 = addIdentity("/consumerPrefix2", RsaKeyParams()).getDefaultKey().getDefaultCertificate();
+    producerCert = addIdentity("/producerPrefix").getDefaultKey().getDefaultCertificate();
+    dataOwnerCert = addIdentity("/dataOwnerPrefix").getDefaultKey().getDefaultCertificate();
   }
 
 public:
@@ -108,7 +91,6 @@ BOOST_AUTO_TEST_CASE(IntegratedTest)
   aa.addNewPolicy(consumerCert1, attrList);
   BOOST_CHECK_EQUAL(aa.m_tokens.size(), 1);
 
-
   std::list<std::string> attrList1 = {"attr1"};
   NDN_LOG_INFO("Add comsumer 2 "<<consumerCert2.getIdentity()<<" with attributes: attr1");
   aa.addNewPolicy(consumerCert2, attrList1);
@@ -130,7 +112,6 @@ BOOST_AUTO_TEST_CASE(IntegratedTest)
   NDN_LOG_INFO("Create Producer. Producer prefix:"<<producerCert.getIdentity());
   Producer producer = Producer(producerFace, m_keyChain, producerCert, aaCert, dataOwnerCert);
   advanceClocks(time::milliseconds(20), 60);
-
   BOOST_CHECK(producer.m_pubParamsCache.m_pub != "");
 
   // set up data owner
@@ -146,12 +127,11 @@ BOOST_AUTO_TEST_CASE(IntegratedTest)
   bool isPolicySet = false;
   dataOwner.commandProducerPolicy(producerCert.getIdentity(), dataName, policy,
                                    [&] (const Data& response) {
-                                    NDN_LOG_DEBUG("on policy set data callback");
+                                     NDN_LOG_DEBUG("on policy set data callback");
                                      isPolicySet = true;
                                      BOOST_CHECK_EQUAL(readString(response.getContent()), "success");
-                                     auto it = producer.m_policyCache.find(dataName);
-                                     BOOST_CHECK(it != producer.m_policyCache.end());
-                                     BOOST_CHECK(it->second == policy);
+                                     auto policyFound = producer.findMatchedPolicy(dataName);
+                                     BOOST_CHECK(policyFound == policy);
                                    },
                                    [=] (const std::string& err) {
                                      BOOST_CHECK(false);
@@ -162,12 +142,11 @@ BOOST_AUTO_TEST_CASE(IntegratedTest)
   BOOST_CHECK(isPolicySet);
 
   std::shared_ptr<Data> contentData, ckData;
-  auto it = producer.m_policyCache.find(dataName);
-  BOOST_CHECK(it != producer.m_policyCache.end());
-  BOOST_CHECK(it->second == policy);
-  std::tie(contentData, ckData) = producer.produce(dataName, it->second, PLAIN_TEXT, sizeof(PLAIN_TEXT));
+  auto policyFound = producer.findMatchedPolicy(dataName);
+  std::tie(contentData, ckData) = producer.produce(dataName, policyFound, PLAIN_TEXT, sizeof(PLAIN_TEXT));
   BOOST_CHECK(contentData != nullptr);
   BOOST_CHECK(ckData != nullptr);
+  NDN_LOG_DEBUG("content data name: " << contentData->getName());
 
   producerFace.setInterestFilter(producerCert.getIdentity(),
     [&] (const ndn::InterestFilter&, const ndn::Interest& interest) {
@@ -189,11 +168,11 @@ BOOST_AUTO_TEST_CASE(IntegratedTest)
       isConsumeCbCalled = true;
       BOOST_CHECK_EQUAL_COLLECTIONS(result.begin(), result.end(),
                                     PLAIN_TEXT, PLAIN_TEXT + sizeof(PLAIN_TEXT));
-
       std::string str;
-      for(int i =0;i<sizeof(PLAIN_TEXT);++i)
+      for(int i =0; i < sizeof(PLAIN_TEXT); ++i) {
         str.push_back(result[i]);
-      NDN_LOG_INFO("result:"<<str);
+      }
+      NDN_LOG_INFO("result:" << str);
     },
     [&] (const std::string& err) {
       BOOST_CHECK(false);

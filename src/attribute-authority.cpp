@@ -90,13 +90,11 @@ void
 AttributeAuthority::onDecryptionKeyRequest(const Interest& request)
 {
   // naming: /AA-prefix/DKEY/<identity name block>/<signature>
-
   NDN_LOG_INFO("get DKEY request:"<<request.getName());
   Name identityName(request.getName().at(m_cert.getIdentity().size() + 1).blockFromValue());
 
   // verify request and generate token
   JsonSection root;
-  security::v2::Certificate consumerCert;
   auto optionalCert = m_trustConfig.findCertificate(identityName);
   if (optionalCert) {
     NDN_LOG_INFO("Find consumer(decryptor) certificate.");
@@ -123,8 +121,8 @@ AttributeAuthority::onDecryptionKeyRequest(const Interest& request)
   result.setName(request.getName());
   result.setFreshnessPeriod(5_s);
   result.setContent(encryptDataContentWithCK(prvBuffer.data(), prvBuffer.size(),
-                                             consumerCert.getPublicKey().data(),
-                                             consumerCert.getPublicKey().size()));
+                                             optionalCert->getPublicKey().data(),
+                                             optionalCert->getPublicKey().size()));
   m_keyChain.sign(result, signingByCertificate(m_cert));
   m_face.put(result);
 }

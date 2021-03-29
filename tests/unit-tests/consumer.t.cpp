@@ -40,7 +40,7 @@ public:
     , attrAuthorityPrefix("/authority")
   {
     c1.linkTo(c2);
-    consumerCert = addIdentity("/consumer").getDefaultKey().getDefaultCertificate();
+    consumerCert = addIdentity("/consumer", RsaKeyParams()).getDefaultKey().getDefaultCertificate();
     authorityCert = addIdentity("/authority").getDefaultKey().getDefaultCertificate();
   }
 

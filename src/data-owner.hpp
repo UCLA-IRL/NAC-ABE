@@ -37,9 +37,16 @@ public:
             security::v2::KeyChain& keyChain);
 
   /**
-   * send command:
-   *  /producer-prefix/data-prefix/SET_POLICY/<policy string>/[sig]
-   * data-prefix contains the producer prefix and data prefix
+   * @brief Notice a producer the encryption policy for data produced under a specific data prefix.
+   *
+   * Command Interest: /<producer prefix>/SET_POLICY/<data prefix block>/<policy string>, signed.
+   * The data prefix do not contain producer's prefix.
+   *
+   * @param producerPrefix Producer's prefix.
+   * @param dataPrefix Data prefix. Do not contain producer's prefix.
+   * @param policy The policy for the data produced under the @p producerPrefix and @p dataPrefix
+   * @param SuccessCb The success callback.
+   * @param errorCb The failure callback.
    */
   void
   commandProducerPolicy(const Name& producerPrefix, const Name& dataPrefix, const std::string& policy,

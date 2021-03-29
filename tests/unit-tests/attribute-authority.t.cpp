@@ -34,16 +34,16 @@ class TestAttributeAuthorityFixture : public IdentityManagementTimeFixture
 {
 public:
   TestAttributeAuthorityFixture()
-    : attrAuthorityPrefix("/access-controller")
+    : attrAuthorityPrefix("/authority")
   {
-    auto id = addIdentity(attrAuthorityPrefix);
-    auto key = id.getDefaultKey();
-    cert = key.getDefaultCertificate();
+    consumerCert = addIdentity("/consumer", RsaKeyParams()).getDefaultKey().getDefaultCertificate();
+    authorityCert = addIdentity("/authority").getDefaultKey().getDefaultCertificate();
   }
 
 public:
   Name attrAuthorityPrefix;
-  security::v2::Certificate cert;
+  security::v2::Certificate consumerCert;
+  security::v2::Certificate authorityCert;
 };
 
 BOOST_FIXTURE_TEST_SUITE(TestAttributeAuthority, TestAttributeAuthorityFixture)
@@ -51,7 +51,7 @@ BOOST_FIXTURE_TEST_SUITE(TestAttributeAuthority, TestAttributeAuthorityFixture)
 BOOST_AUTO_TEST_CASE(Constructor)
 {
   util::DummyClientFace face(io, {true, true});
-  AttributeAuthority aa(cert, face, m_keyChain);
+  AttributeAuthority aa(authorityCert, face, m_keyChain);
   BOOST_CHECK(aa.m_pubParams.m_pub != "");
   BOOST_CHECK(aa.m_masterKey.m_msk != "");
 }
@@ -59,7 +59,7 @@ BOOST_AUTO_TEST_CASE(Constructor)
 BOOST_AUTO_TEST_CASE(onPublicParams)
 {
   util::DummyClientFace face(io, {true, true});
-  AttributeAuthority aa(cert, face, m_keyChain);
+  AttributeAuthority aa(authorityCert, face, m_keyChain);
   Name interestName = attrAuthorityPrefix;
   Interest request(interestName.append(PUBLIC_PARAMS));
   request.setCanBePrefix(true);
@@ -70,7 +70,7 @@ BOOST_AUTO_TEST_CASE(onPublicParams)
   int count = 0;
   face.onSendData.connect([&] (const Data& response) {
       count++;
-      BOOST_CHECK(security::verifySignature(response, cert));
+      BOOST_CHECK(security::verifySignature(response, authorityCert));
 
       auto block = response.getContent();
       Buffer contentBuffer(block.value(), block.value_size());
@@ -91,16 +91,11 @@ BOOST_AUTO_TEST_CASE(onPublicParams)
 BOOST_AUTO_TEST_CASE(onPrvKey)
 {
   Name consumerName("/consumer");
-  RsaKeyParams params;
-  auto consumerId = addIdentity(consumerName, params);
-  auto consumerKey = consumerId.getDefaultKey();
-  auto consumerCert = consumerKey.getDefaultCertificate();
-
   std::list<std::string> attrList = {"attr1", "attr2", "attr3", "attr4", "attr5",
                                      "attr6", "attr7", "attr8", "attr9", "attr10"};
 
   util::DummyClientFace face(io, {true, true});
-  AttributeAuthority aa(cert, face, m_keyChain);
+  AttributeAuthority aa(authorityCert, face, m_keyChain);
   aa.addNewPolicy(consumerCert, attrList);
 
   Name interestName = attrAuthorityPrefix;
@@ -114,7 +109,7 @@ BOOST_AUTO_TEST_CASE(onPrvKey)
   int count = 0;
   face.onSendData.connect([&] (const Data& response) {
       count++;
-      BOOST_CHECK(security::verifySignature(response, cert));
+      BOOST_CHECK(security::verifySignature(response, authorityCert));
 
       std::cout << response;
       std::cout << "dkey Data length: " << response.wireEncode().size() << std::endl;

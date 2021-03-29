@@ -132,10 +132,9 @@ BOOST_AUTO_TEST_CASE(onPolicyInterest)
 
   advanceClocks(time::milliseconds(20), 60);
 
-  auto it = producer.m_policyCache.find(dataPrefix);
-  BOOST_CHECK_EQUAL(producer.m_policyCache.size(), 1);
-  BOOST_CHECK(it != producer.m_policyCache.end());
-  BOOST_CHECK_EQUAL(it->second, "policy");
+  auto policyFound = producer.findMatchedPolicy(dataPrefix);
+  BOOST_CHECK_EQUAL(producer.m_policies.size(), 1);
+  BOOST_CHECK_EQUAL(policyFound, "policy");
 
   advanceClocks(time::milliseconds(20), 60);
 
@@ -143,17 +142,16 @@ BOOST_AUTO_TEST_CASE(onPolicyInterest)
       setPolicyInterest,
       [&](const Interest&, const Data& response) {
         BOOST_CHECK(security::verifySignature(response, producerCert));
-        BOOST_CHECK(readString(response.getContent()) == "exist");
+        BOOST_CHECK_EQUAL(readString(response.getContent()), "success");
       },
       [=](const Interest&, const lp::Nack&) {},
       [=](const Interest&) {});
 
   advanceClocks(time::milliseconds(20), 60);
 
-  it = producer.m_policyCache.find(dataPrefix);
-  BOOST_CHECK_EQUAL(producer.m_policyCache.size(), 1);
-  BOOST_CHECK(it != producer.m_policyCache.end());
-  BOOST_CHECK_EQUAL(it->second, "policy");
+  policyFound = producer.findMatchedPolicy(dataPrefix);
+  BOOST_CHECK_EQUAL(producer.m_policies.size(), 1);
+  BOOST_CHECK_EQUAL(policyFound, "policy");
 }
 
 BOOST_AUTO_TEST_CASE(encryptContent)
