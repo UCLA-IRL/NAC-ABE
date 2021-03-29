@@ -84,8 +84,4 @@ The publication of this work is [NAC: Automating Access Control via Named Data](
 
 ## 4 Contact
 
-If you have any problems or want to do bug report. Please contact us.
-
-* Yufeng Zhang (yufeng@ucla.edu)
-* Zhiyi Zhang (zhiyi@cs.ucla.edu).
-* Yukai Tu (ytu@cs.ucla.edu)
+If you have any problems or want to do bug report. Please submit a GitHub issue.
