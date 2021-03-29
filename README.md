@@ -1,10 +1,10 @@
 # NAC-ABE: Named-based Access Control with Attribute-based Encryption
 
+[![Build Status](https://travis-ci.org/Zhiyi-Zhang/NAC-ABE.svg?branch=master)](https://travis-ci.org/Zhiyi-Zhang/NAC-ABE)
+
 ## 1. Overview
 
 Named Data Networking Attribute-based Encryption Support Library: **NAC-ABE**
-
-[![Build Status](https://travis-ci.org/Zhiyi-Zhang/NAC-ABE.svg?branch=master)](https://travis-ci.org/Zhiyi-Zhang/NAC-ABE)
 
 The publication of this work is [NAC: Automating Access Control via Named Data](https://arxiv.org/abs/1902.09714) on IEEE MILCOM 2018.
 To cite the work, you can use the following Bibtex entry.
