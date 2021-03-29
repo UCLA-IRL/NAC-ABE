@@ -15,10 +15,19 @@ Named Data Networking Attribute-based Encryption Support Library: **NAC-ABE**
 NAC-ABE is implemented over the Named Data Networking.
 To install the NAC-ABE library, you need to first install [ndn-cxx library](https://github.com/named-data/ndn-cxx).
 
+To work with the version 0.0.1, please checkout to NDN-CXX 0.7.0 and install.
+
+To work with the master version, please checkout to NDN-CXX 0.7.1 and install.
+
+
 #### 2.1.2 openabe
 
 NAC-ABE is using cryptography support provided by library openabe. 
 To install openable, you can visit the [website](https://github.com/zeutro/openabe).
+
+> (As noticed in Mar 28, 2020) 
+> When installing the OpenABE, there could be some issues installing gTest (on Ubuntu) or Bison 3.3 (on MacOS). 
+> While waiting for the OpenABE maintainer to fix them, as a quick solution, you can fix these issues manually.
 
 ### 2.2 Install NAC-ABE
 
