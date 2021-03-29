@@ -20,7 +20,6 @@
 
 #include "consumer.hpp"
 #include "attribute-authority.hpp"
-#include "token-issuer.hpp"
 #include "ndn-crypto/data-enc-dec.hpp"
 
 #include <ndn-cxx/security/signing-helpers.hpp>
@@ -45,49 +44,6 @@ Consumer::Consumer(const security::v2::Certificate& identityCert,
 {
   std::cout << "CONSUMER CONSTRUCTOR" << std::endl;
   fetchPublicParams();
-}
-
-void
-Consumer::obtainAttributes(const Name& tokenIssuerPrefix)
-{
-    NDN_LOG_INFO(m_cert.getIdentity() << "Fetch token and private key");
-
-    Name requestTokenName = tokenIssuerPrefix;
-    requestTokenName.append(TokenIssuer::TOKEN_REQUEST);
-    requestTokenName.append(m_cert.getIdentity().wireEncode());
-    Interest interest(requestTokenName);
-    m_keyChain.sign(interest, signingByCertificate(m_cert));
-    interest.setMustBeFresh(true);
-    interest.setCanBePrefix(true);
-
-    NDN_LOG_INFO(m_cert.getIdentity() << " Request token: " << interest.getName());
-    m_face.expressInterest(interest,
-                           [&](const Interest&, const Data& tokenData) {
-                             onTokenData(tokenData);
-                           }, nullptr, nullptr);
-}
-
-void
-Consumer::onTokenData(const Data& tokenData)
-{
-  NDN_LOG_INFO(m_cert.getIdentity() << " get token data");
-  Name interestName = m_attrAuthorityPrefix;
-  interestName.append("DKEY-TOKEN");
-  interestName.append(tokenData.wireEncode());
-  Interest interest(interestName);
-  interest.setMustBeFresh(true);
-  interest.setCanBePrefix(true);
-
-  m_face.expressInterest(interest,
-                         [&](const Interest&, const Data& keyData) {
-                           NDN_LOG_INFO(m_cert.getIdentity() << " get decrypt key data");
-                           const auto& tpm = m_keyChain.getTpm();
-                            const auto& block = keyData.getContent();
-                            auto prvBlock = decryptDataContent(block, tpm, m_cert.getName());
-                            algo::PrivateKey prv;
-                            prv.fromBuffer(Buffer(prvBlock.data(), prvBlock.size()));
-                            m_keyCache = prv;
-                         }, nullptr, nullptr);
 }
 
 void
@@ -180,7 +136,7 @@ Consumer::onCkeyData(const Data& data, std::shared_ptr<algo::CipherText> cipherT
 
   Buffer result;
   try{
-    result = algo::ABESupport::decrypt(m_pubParamsCache, m_keyCache, *cipherText);
+    result = algo::ABESupport::getInstance().decrypt(m_pubParamsCache, m_keyCache, *cipherText);
   }
   catch (const std::exception& e) {
     errorCallback(e.what());

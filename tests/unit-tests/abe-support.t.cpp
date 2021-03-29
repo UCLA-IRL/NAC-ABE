@@ -36,8 +36,6 @@ const uint8_t PLAIN_TEXT[] = {
   0x79, 0x70, 0x74, 0x2d, 0x54, 0x65, 0x73, 0x74
 };
 
-NDN_LOG_INIT(Test.ABESupport);
-
 BOOST_AUTO_TEST_SUITE(TestAbeSupport)
 
 BOOST_AUTO_TEST_CASE(Setup)
@@ -45,7 +43,7 @@ BOOST_AUTO_TEST_CASE(Setup)
   algo::PublicParams pubParams;
   algo::MasterKey masterKey;
 
-  algo::ABESupport::setup(pubParams, masterKey);
+  algo::ABESupport::getInstance().init(pubParams, masterKey);
 
   BOOST_CHECK(pubParams.m_pub != "");
   BOOST_CHECK(masterKey.m_msk != "");
@@ -56,10 +54,10 @@ BOOST_AUTO_TEST_CASE(GenPrivateKey)
   algo::PublicParams pubParams;
   algo::MasterKey masterKey;
 
-  algo::ABESupport::setup(pubParams, masterKey);
+  algo::ABESupport::getInstance().init(pubParams, masterKey);
 
-  std::vector<std::string> attrList = {"attr1", "attr2"};
-  algo::PrivateKey prvKey = algo::ABESupport::prvKeyGen(pubParams, masterKey, attrList);
+  std::vector<std::string> attrList = { "attr1", "attr2" };
+  algo::PrivateKey prvKey = algo::ABESupport::getInstance().prvKeyGen(pubParams, masterKey, attrList);
 
   BOOST_CHECK(prvKey.m_prv != "");
 }
@@ -69,81 +67,72 @@ BOOST_AUTO_TEST_CASE(Encryption)
   algo::PublicParams pubParams;
   algo::MasterKey masterKey;
 
-  algo::ABESupport::setup(pubParams, masterKey);
-  algo::CipherText cipherText = algo::ABESupport::encrypt(pubParams, "attr1 and attr2",
-                                                          Buffer(PLAIN_TEXT, sizeof(PLAIN_TEXT)));
+  algo::ABESupport::getInstance().init(pubParams, masterKey);
+  algo::CipherText cipherText = algo::ABESupport::getInstance().encrypt(pubParams, "attr1 and attr2",
+                                                                        Buffer(PLAIN_TEXT, sizeof(PLAIN_TEXT)));
 
   BOOST_CHECK(cipherText.m_aesKey.size() != 0);
   BOOST_CHECK(cipherText.m_content.size() > sizeof(PLAIN_TEXT));
 }
 
-BOOST_AUTO_TEST_CASE(Decryption)
+BOOST_AUTO_TEST_CASE(EncryptionDecryption)
 {
+  // key init
   algo::PublicParams pubParams;
   algo::MasterKey masterKey;
+  algo::ABESupport::getInstance().init(pubParams, masterKey);
 
-  // setup
-  algo::ABESupport::setup(pubParams, masterKey);
+  // encryption/decryption test case 1
+  std::vector<std::string> attrList = { "ucla", "professor" };
+  auto prvKey = algo::ABESupport::getInstance().prvKeyGen(pubParams, masterKey, attrList);
+  auto cipherText1 = algo::ABESupport::getInstance().encrypt(pubParams, "(ucla or mit) and professor", Buffer(PLAIN_TEXT, sizeof(PLAIN_TEXT)));
+  auto result1 = algo::ABESupport::getInstance().decrypt(pubParams, prvKey, cipherText1);
+  BOOST_CHECK_EQUAL_COLLECTIONS(result1.begin(), result1.end(), PLAIN_TEXT, PLAIN_TEXT + sizeof(PLAIN_TEXT));
 
-  // generate prv key
-  std::vector<std::string> attrList = {"attr1", "attr3"};
-  algo::PrivateKey prvKey = algo::ABESupport::prvKeyGen(pubParams, masterKey, attrList);
+  // encryption/decryption test case 2
+  uint8_t random32[32];
+  random::generateSecureBytes(random32, sizeof(random32));
+  auto cipherText2 = algo::ABESupport::getInstance().encrypt(pubParams, "ucla and professor", Buffer(random32, sizeof(random32)));
+  auto result2 = algo::ABESupport::getInstance().decrypt(pubParams, prvKey, cipherText2);
+  BOOST_CHECK_EQUAL_COLLECTIONS(result2.begin(), result2.end(), random32, random32 + sizeof(random32));
 
-  // encrypt
-  algo::CipherText cipherText = algo::ABESupport::encrypt(pubParams, "(attr1 or attr2) and attr3",
-                                                          Buffer(PLAIN_TEXT, sizeof(PLAIN_TEXT)));
+  // encryption/decryption test case 3
+  uint8_t random64[64];
+  random::generateSecureBytes(random64, sizeof(random64));
+  auto cipherText3 = algo::ABESupport::getInstance().encrypt(pubParams, "ucla or mit", Buffer(random64, sizeof(random64)));
+  auto result3 = algo::ABESupport::getInstance().decrypt(pubParams, prvKey, cipherText3);
+  BOOST_CHECK_EQUAL_COLLECTIONS(result3.begin(), result3.end(), random64, random64 + sizeof(random64));
 
-  // decrypt
-  Buffer result = algo::ABESupport::decrypt(pubParams, prvKey, cipherText);
+  // encryption/decryption test case 4
+  uint8_t random1024[1024];
+  random::generateSecureBytes(random1024, sizeof(random1024));
+  auto cipherText4 = algo::ABESupport::getInstance().encrypt(pubParams, "ucla or professor", Buffer(random1024, sizeof(random1024)));
+  auto result4 = algo::ABESupport::getInstance().decrypt(pubParams, prvKey, cipherText4);
+  BOOST_CHECK_EQUAL_COLLECTIONS(result4.begin(), result4.end(), random1024, random1024 + sizeof(random1024));
 
-  BOOST_CHECK_EQUAL_COLLECTIONS(result.begin(), result.end(),
-                                PLAIN_TEXT, PLAIN_TEXT + sizeof(PLAIN_TEXT));
-
-  // 32 bytes random plaintext encryption and decryption
-  uint8_t randomBytes1[32];
-  random::generateSecureBytes(randomBytes1, sizeof(randomBytes1));
-
-  algo::CipherText cipherTextRandomBytes1 = algo::ABESupport::encrypt(pubParams, "(attr1 or attr2) and attr3",
-                                                          Buffer(randomBytes1, sizeof(randomBytes1)));
-                                  
-  Buffer decryptedRandomBytes1 = algo::ABESupport::decrypt(pubParams, prvKey, cipherTextRandomBytes1);      
-  BOOST_CHECK_EQUAL_COLLECTIONS(decryptedRandomBytes1.begin(), decryptedRandomBytes1.end(),
-                                randomBytes1, randomBytes1 + sizeof(randomBytes1));
-
-  // 64 bytes random plaintext encryption and decryption
-  uint8_t randomBytes2[64];
-  random::generateSecureBytes(randomBytes2, sizeof(randomBytes2));
-
-  algo::CipherText cipherTextRandomBytes2 = algo::ABESupport::encrypt(pubParams, "(attr1 or attr2) and attr3",
-                                                          Buffer(randomBytes2, sizeof(randomBytes2)));
-                                  
-  Buffer decryptedRandomBytes2 = algo::ABESupport::decrypt(pubParams, prvKey, cipherTextRandomBytes2);      
-  BOOST_CHECK_EQUAL_COLLECTIONS(decryptedRandomBytes2.begin(), decryptedRandomBytes2.end(),
-                                randomBytes2, randomBytes2 + sizeof(randomBytes2));
-
-  // 1024 bytes random plaintext encryption and decryption
-  uint8_t randomBytes3[1024];
-  random::generateSecureBytes(randomBytes3, sizeof(randomBytes3));
-
-  algo::CipherText cipherTextRandomBytes3 = algo::ABESupport::encrypt(pubParams, "(attr1 or attr2) and attr3",
-                                                          Buffer(randomBytes3, sizeof(randomBytes3)));
-                                  
-  Buffer decryptedRandomBytes3 = algo::ABESupport::decrypt(pubParams, prvKey, cipherTextRandomBytes3);      
-  BOOST_CHECK_EQUAL_COLLECTIONS(decryptedRandomBytes3.begin(), decryptedRandomBytes3.end(),
-                                randomBytes3, randomBytes3 + sizeof(randomBytes3));
-
-  // the following case tests decryption using wrong key; expects decryption failure
-  // generate prv key
-  std::vector<std::string> wrongKeyAttrList = {"attr4", "attr5", "attr6"};
-  algo::PrivateKey wrongPrvKey = algo::ABESupport::prvKeyGen(pubParams, masterKey, wrongKeyAttrList);
-  bool decryptedSuccess = false;
+  // encryption/decryption test case 5: access forbidden
+  std::vector<std::string> wrongKeyAttrList = { "mit", "professor" };
+  auto anotherPrvKey = algo::ABESupport::getInstance().prvKeyGen(pubParams, masterKey, wrongKeyAttrList);
   try {
-      Buffer decryptedRandomBytes3 = algo::ABESupport::decrypt(pubParams, wrongPrvKey, cipherTextRandomBytes3); 
-      decryptedSuccess = true;
-  } catch (const std::runtime_error& e) {
-
+    auto result5 = algo::ABESupport::getInstance().decrypt(pubParams, anotherPrvKey, cipherText2);
+    BOOST_CHECK_EQUAL_COLLECTIONS(result5.begin(), result5.end(), random32, random32 + sizeof(random32));
+    BOOST_CHECK(false);
   }
-  BOOST_CHECK(!decryptedSuccess);
+  catch (const std::runtime_error& e) {
+    std::cout << "Cannot decrypt because of the wrong decryption key attribute set" << std::endl;
+    BOOST_CHECK(true);
+  }
+
+  // encryption/decryption test case 6: access forbidden
+  algo::CipherText cipherText6 = algo::ABESupport::getInstance().encrypt(pubParams, "mit and professor", Buffer(PLAIN_TEXT, sizeof(PLAIN_TEXT)));
+  try{
+    auto result6 = algo::ABESupport::getInstance().decrypt(pubParams, prvKey, cipherText6);
+    BOOST_CHECK(false);
+  }
+  catch (const std::runtime_error& e) {
+    std::cout << "Cannot decrypt because of the wrong encryption attribute policy" << std::endl;
+    BOOST_CHECK(true);
+  }
 }
 
 BOOST_AUTO_TEST_SUITE_END()

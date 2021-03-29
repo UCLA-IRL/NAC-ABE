@@ -37,42 +37,36 @@ namespace algo {
 class ABESupport
 {
 public:
-  static void
-  setup(PublicParams& pubParams, MasterKey& masterKey);
+  static ABESupport&
+  getInstance();
+
+  ~ABESupport();
+
+  ABESupport(ABESupport const&) = delete;
+  void operator=(ABESupport const&)  = delete;
+
+public:
+  void
+  init(PublicParams& pubParams, MasterKey& masterKey);
 
   /**
    * The policy is specified as a simple string which encodes a postorder
-   * traversal of threshold tree defining the access policy. As an
-   * example:
-   * "foo bar fim 2of3 baf 1of2"
+   * traversal of threshold tree defining the access policy.
    */
-  static PrivateKey
+  PrivateKey
   prvKeyGen(PublicParams& pubParams, MasterKey& masterKey,
             const std::vector<std::string>& attrList);
 
-  static CipherText
+  CipherText
   encrypt(const PublicParams& pubParams,
           const std::string& policy, Buffer plaintext);
 
-  static Buffer
+  Buffer
   decrypt(const PublicParams& pubParams,
           const PrivateKey& prvKey, CipherText cipherText);
 
-// public:
-//   static void
-//   prependToArray(GByteArray* pt, const guint8 *data, guint dataSize);
-
-//   static void
-//   removeFrontFromArray(GByteArray* pt, uint32_t dataSize);
-
-//   static GByteArray*
-//   aes_128_encrypt(GByteArray* pt, element_t k);
-
-//   static GByteArray*
-//   aes_128_decrypt(GByteArray* ct, element_t k, uint32_t outputSize);
-
-//   static void
-//   init_aes(element_t k, int enc, AES_KEY* key, unsigned char* iv);
+private:
+  ABESupport();
 };
 
 } // namespace algo

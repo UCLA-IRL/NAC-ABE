@@ -19,11 +19,9 @@
  */
 
 #include "attribute-authority.hpp"
-#include "attribute-authority-token.hpp"
 #include "consumer.hpp"
 #include "data-owner.hpp"
 #include "producer.hpp"
-#include "token-issuer.hpp"
 #include "test-common.hpp"
 #include <ndn-cxx/util/dummy-client-face.hpp>
 
@@ -224,31 +222,6 @@ BOOST_AUTO_TEST_CASE(IntegratedTest)
   );
   advanceClocks(time::milliseconds(20), 60);
   BOOST_CHECK(isConsumeCbCalled);
-}
-
-BOOST_AUTO_TEST_CASE(IntegratedTest2)
-{
-  // set up token issuer
-  NDN_LOG_INFO("Create Token Issuer. Token Issuer prefix:"<<tokenIssuerCert.getIdentity());
-  TokenIssuer tokenIssuer = TokenIssuer(tokenIssuerCert, tokenIssuerFace, m_keyChain);
-  advanceClocks(time::milliseconds(20), 60);
-  BOOST_CHECK_EQUAL(tokenIssuer.m_interestFilterIds.size(), 1);
-
-  // define attr list for consumer rights
-  std::list<std::string> attrList = {"attr1", "attr3"};
-  NDN_LOG_INFO("Add comsumer 1 "<<consumerCert1.getIdentity()<<" with attributes: attr1, attr3");
-  tokenIssuer.m_tokens.insert(std::pair<Name, std::list<std::string>>(consumerCert1.getIdentity(),
-                                                                      attrList));
-  BOOST_CHECK_EQUAL(tokenIssuer.m_tokens.size(), 1);
-
-
-  std::list<std::string> attrList1 = {"attr1"};
-  NDN_LOG_INFO("Add comsumer 2 "<<consumerCert2.getIdentity()<<" with attributes: attr1");
-  tokenIssuer.m_tokens.insert(std::pair<Name, std::list<std::string>>(consumerCert2.getIdentity(),
-                                                                      attrList1));
-  BOOST_CHECK_EQUAL(tokenIssuer.m_tokens.size(), 2);
-
-  NDN_LOG_DEBUG("after token issuer");
 }
 
 BOOST_AUTO_TEST_SUITE_END()

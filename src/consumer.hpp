@@ -49,9 +49,6 @@ public:
            uint8_t repeatAttempts = 3);
 
   void
-  obtainAttributes(const Name& tokenIssuerPrefix);
-
-  void
   obtainAttributes();
 
   void
@@ -72,9 +69,6 @@ private:
   onCkeyData(const Data& data, std::shared_ptr<algo::CipherText> cipherText,
                          const ConsumptionCallback& successCallBack,
                          const ErrorCallback& errorCallback);
-
-  void
-  onTokenData(const Data& tokenData);
 
   void
   handleNack(const Interest& interest, const lp::Nack& nack,

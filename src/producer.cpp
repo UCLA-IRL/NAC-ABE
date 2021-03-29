@@ -83,8 +83,7 @@ Producer::produce(const Name& dataPrefix, const std::string& accessPolicy,
   }
   else {
     NDN_LOG_INFO("encrypt data:"<<dataPrefix);
-    auto cipherText = algo::ABESupport::encrypt(m_pubParamsCache, accessPolicy,
-                                                Buffer(content, contentLen));
+    auto cipherText = algo::ABESupport::getInstance().encrypt(m_pubParamsCache, accessPolicy, Buffer(content, contentLen));
 
     Name ckName = security::v2::extractIdentityFromCertName(m_cert.getName());
     ckName.append("CK").append(std::to_string(random::generateSecureWord32()));

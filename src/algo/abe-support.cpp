@@ -29,12 +29,28 @@ namespace ndn {
 namespace nacabe {
 namespace algo {
 
-NDN_LOG_INIT(nacabe.ABESupport);
+NDN_LOG_INIT(nacabe.abesupport);
 
-void
-ABESupport::setup(PublicParams& pubParams, MasterKey& masterKey)
+ABESupport&
+ABESupport::getInstance()
+{
+  static ABESupport instance;
+  return instance;
+}
+
+ABESupport::ABESupport()
 {
   InitializeOpenABE();
+}
+
+ABESupport::~ABESupport()
+{
+  ShutdownOpenABE();
+}
+
+void
+ABESupport::init(PublicParams& pubParams, MasterKey& masterKey)
+{
   OpenABECryptoContext cpabe("CP-ABE");
   cpabe.generateParams();
   std::string mpk, msk;
@@ -42,16 +58,15 @@ ABESupport::setup(PublicParams& pubParams, MasterKey& masterKey)
   cpabe.exportSecretParams(msk);
   pubParams.m_pub = mpk;
   masterKey.m_msk = msk;
-  ShutdownOpenABE();
 }
 
 PrivateKey
 ABESupport::prvKeyGen(PublicParams& pubParams, MasterKey& masterKey,
-                      const std::vector<std::string>& attrList)
+                      const std::vector <std::string>& attrList)
 {
-  InitializeOpenABE();
   std::string privKey;
   try {
+    // step 0: set up ABE Context
     OpenABECryptoContext cpabe("CP-ABE");
     cpabe.importPublicParams(pubParams.m_pub);
     cpabe.importSecretParams(masterKey.m_msk);
@@ -65,9 +80,8 @@ ABESupport::prvKeyGen(PublicParams& pubParams, MasterKey& masterKey,
     cpabe.keygen(policyString, "abe-priv-key");
     cpabe.exportUserKey("abe-priv-key", privKey);
     cpabe.deleteKey("abe-priv-key");
-    ShutdownOpenABE();
-  } catch (oabe::ZCryptoBoxException& ex) {
-    ShutdownOpenABE();
+  }
+  catch (const oabe::ZCryptoBoxException& ex) {
     BOOST_THROW_EXCEPTION(NacAlgoError("cannot generate private key for the policy"));
   }
 
@@ -80,12 +94,11 @@ CipherText
 ABESupport::encrypt(const PublicParams& pubParams,
                     const std::string& policy, Buffer plainText)
 {
-  // step 0: set up ABE Context
-  InitializeOpenABE();
   try {
+    // step 0: set up ABE Context
     OpenABECryptoContext cpabe("CP-ABE");
     cpabe.importPublicParams(pubParams.m_pub);
-  
+
     // step 1: generate a AES symmetric key
     OpenABESymKey symKey;
     symKey.generateSymmetricKey(DEFAULT_SYM_KEY_BYTES);
@@ -110,16 +123,14 @@ ABESupport::encrypt(const PublicParams& pubParams,
 
     Buffer cipherContentSegment((uint8_t*) ciphertext.c_str(),
                                 (uint32_t) ciphertext.size() + 1);
-                                
+
     result.m_aesKey = aesKeySegment;
     result.m_content = cipherContentSegment;
     result.m_plainTextSize = plainText.size();
 
-    // step 5: shut down ABE Context
-    ShutdownOpenABE();
     return result;
-  } catch (oabe::ZCryptoBoxException& ex) {
-    ShutdownOpenABE();
+  }
+  catch (oabe::ZCryptoBoxException& ex) {
     BOOST_THROW_EXCEPTION(NacAlgoError(
       "cannot encrypt the plaintext using given public paramater and policy."));
   }
@@ -129,13 +140,11 @@ Buffer
 ABESupport::decrypt(const PublicParams& pubParams,
                     const PrivateKey& prvKey, CipherText cipherText)
 {
-  // step 0: set up ABE Context
-  InitializeOpenABE();
-
   try {
+    // step 0: set up ABE Context
     OpenABECryptoContext cpabe("CP-ABE");
     cpabe.importPublicParams(pubParams.m_pub);
-  
+
     // step 1: import prvKey into OpenABE
     cpabe.enableKeyManager("user1");
     cpabe.importUserKey("key1", prvKey.m_prv);
@@ -147,7 +156,7 @@ ABESupport::decrypt(const PublicParams& pubParams,
     if (!result) {
       BOOST_THROW_EXCEPTION(NacAlgoError("Decryption error!"));
     }
-  
+
     // step 3: use the decrypted symmetricKey to AES decrypt cipherText.m_content
     OpenABESymKeyEnc aes(symmetricKey);
     std::string cipherContentStr(reinterpret_cast<char*>(cipherText.m_content.data()));
@@ -155,13 +164,12 @@ ABESupport::decrypt(const PublicParams& pubParams,
 
     // step 4: set up a Buffer for the decrypted content, and return the Buffer
     Buffer ret((uint8_t*) recoveredContent.c_str(),
-                  (uint32_t) recoveredContent.size());
+               (uint32_t) recoveredContent.size());
 
     // step 5: finalize
-    ShutdownOpenABE();
     return ret;
-  } catch (oabe::ZCryptoBoxException& ex) {
-    ShutdownOpenABE();
+  }
+  catch (oabe::ZCryptoBoxException& ex) {
     BOOST_THROW_EXCEPTION(NacAlgoError(
       "cannot decrypt the ciphertext using given private key."));
   }

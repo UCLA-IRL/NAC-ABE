@@ -62,7 +62,7 @@ BOOST_AUTO_TEST_CASE(Constructor)
   c2.setInterestFilter(InterestFilter(attrAuthorityPrefix),
                        [&](const ndn::InterestFilter&, const ndn::Interest& interest) {
                          algo::MasterKey m_masterKey;
-                         algo::ABESupport::setup(m_pubParams, m_masterKey);
+                         algo::ABESupport::getInstance().init(m_pubParams, m_masterKey);
                          Data result;
                          Name dataName = interest.getName();
                          dataName.appendTimestamp();
@@ -164,7 +164,7 @@ BOOST_AUTO_TEST_CASE(encryptContent)
   algo::MasterKey masterKey;
   Producer producer(cert, c1, m_keyChain, attrAuthorityPrefix);
   advanceClocks(time::milliseconds(20), 60);
-  algo::ABESupport::setup(pubParams, masterKey);
+  algo::ABESupport::getInstance().init(pubParams, masterKey);
 
   BOOST_CHECK(pubParams.m_pub != "");
   BOOST_CHECK(masterKey.m_msk != "");
@@ -173,7 +173,7 @@ BOOST_AUTO_TEST_CASE(encryptContent)
   // generate prv key
   std::vector<std::string> attrList = {"attr1", "attr2", "attr3", "attr4", "attr5",
                                        "attr6", "attr7", "attr8", "attr9", "attr10"};
-  algo::PrivateKey prvKey = algo::ABESupport::prvKeyGen(pubParams, masterKey, attrList);
+  algo::PrivateKey prvKey = algo::ABESupport::getInstance().prvKeyGen(pubParams, masterKey, attrList);
 
   std::shared_ptr<Data> data, ckData;
   std::tie(data, ckData) = producer.produce(Name("/dataset1/example/data1"), "attr1 or attr2", PLAIN_TEXT, sizeof(PLAIN_TEXT));

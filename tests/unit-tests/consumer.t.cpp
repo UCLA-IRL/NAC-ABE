@@ -38,7 +38,6 @@ public:
     : c1(io, m_keyChain, util::DummyClientFace::Options{true, true})
     , c2(io, m_keyChain, util::DummyClientFace::Options{true, true})
     , attrAuthorityPrefix("/authority")
-    , tokenIssuerPrefix("/token/issuer")
   {
     c1.linkTo(c2);
     auto id = addIdentity("/consumer");
@@ -50,7 +49,6 @@ public:
   util::DummyClientFace c1;
   util::DummyClientFace c2;
   Name attrAuthorityPrefix;
-  Name tokenIssuerPrefix;
   security::v2::Certificate cert;
 };
 
@@ -62,7 +60,7 @@ BOOST_AUTO_TEST_CASE(Constructor)
   c2.setInterestFilter((attrAuthorityPrefix),
                      [&] (const ndn::InterestFilter&, const ndn::Interest& interest) {
                         algo::MasterKey m_masterKey;
-                        algo::ABESupport::setup(m_pubParams, m_masterKey);
+                        algo::ABESupport::getInstance().init(m_pubParams, m_masterKey);
                         Data result;
                         Name dataName = interest.getName();
                         dataName.appendTimestamp();

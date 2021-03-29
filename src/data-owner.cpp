@@ -91,14 +91,11 @@ DataOwner::commandProducerPolicy(const Name& prefix, const Name& dataPrefix, con
   };
 
   // set link object if it is available
-
-
   m_face.expressInterest(*interest, dataCallback,
                          nullptr,
                          [=] (const Interest&) {
                            errorCb("time out");
                          });
-
 }
 
 } // namespace nacabe

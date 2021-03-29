@@ -20,7 +20,6 @@
 
 #include "attribute-authority.hpp"
 #include "json-helper.hpp"
-#include "token-issuer.hpp"
 #include "ndn-crypto/data-enc-dec.hpp"
 
 #include <ndn-cxx/security/transform/public-key.hpp>
@@ -41,7 +40,7 @@ AttributeAuthority::AttributeAuthority(const security::v2::Certificate& identity
 {
   // ABE setup
   NDN_LOG_INFO("Set up public parameters and master key.");
-  algo::ABESupport::setup(m_pubParams, m_masterKey);
+  algo::ABESupport::getInstance().init(m_pubParams, m_masterKey);
 
   // prefix registration
   auto prefixId = m_face.registerPrefix(m_cert.getIdentity(),
@@ -102,7 +101,7 @@ AttributeAuthority::onDecryptionKeyRequest(const Interest& request)
   }
 
   // generate ABE private key and do encryption
-  algo::PrivateKey ABEPrvKey = algo::ABESupport::prvKeyGen(m_pubParams, m_masterKey, attrs);
+  algo::PrivateKey ABEPrvKey = algo::ABESupport::getInstance().prvKeyGen(m_pubParams, m_masterKey, attrs);
   auto prvBuffer = ABEPrvKey.toBuffer();
 
   // reply interest with encrypted private key
