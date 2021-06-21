@@ -46,3 +46,6 @@ __pycache__/
 
 # Other
 /VERSION
+
+.idea/
+cmake-build-*/

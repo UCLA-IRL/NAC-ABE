@@ -21,7 +21,9 @@
 #ifndef NAC_ABE_COMMON_HPP
 #define NAC_ABE_COMMON_HPP
 
+#ifndef CMAKE_BUILD
 #include "nac-abe-config.hpp"
+#endif
 
 #ifdef HAVE_TESTS
 #define VIRTUAL_WITH_TESTS virtual
