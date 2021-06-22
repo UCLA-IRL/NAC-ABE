@@ -100,19 +100,19 @@ BOOST_AUTO_TEST_CASE(IntegratedTest)
   NDN_LOG_INFO("Create Consumer 1. Consumer 1 prefix:"<<consumerCert1.getIdentity());
   Consumer consumer1 = Consumer(consumerFace1, m_keyChain, consumerCert1, aaCert);
   advanceClocks(time::milliseconds(20), 60);
-  BOOST_CHECK(consumer1.m_pubParamsCache.m_pub != "");
+  BOOST_CHECK(consumer1.m_paramFetcher.getPublicParams().m_pub != "");
 
   // set up consumer
   NDN_LOG_INFO("Create Consumer 2. Consumer 2 prefix:"<<consumerCert2.getIdentity());
   Consumer consumer2 = Consumer(consumerFace2, m_keyChain, consumerCert2, aaCert);
   advanceClocks(time::milliseconds(20), 60);
-  BOOST_CHECK(consumer2.m_pubParamsCache.m_pub != "");
+  BOOST_CHECK(consumer2.m_paramFetcher.getPublicParams().m_pub != "");
 
   // set up producer
   NDN_LOG_INFO("Create Producer. Producer prefix:"<<producerCert.getIdentity());
   Producer producer = Producer(producerFace, m_keyChain, producerCert, aaCert, dataOwnerCert);
   advanceClocks(time::milliseconds(20), 60);
-  BOOST_CHECK(producer.m_pubParamsCache.m_pub != "");
+  BOOST_CHECK(producer.m_paramFetcher.getPublicParams().m_pub != "");
 
   // set up data owner
   NDN_LOG_INFO("Create Data Owner. Data Owner prefix:"<<dataOwnerCert.getIdentity());

@@ -25,6 +25,7 @@
 #include "algo/public-params.hpp"
 #include "algo/private-key.hpp"
 #include "algo/cipher-text.hpp"
+#include "param-fetcher.hpp"
 
 namespace ndn {
 namespace nacabe {
@@ -73,9 +74,6 @@ private:
                  const ErrorCallback& errorCallback);
 
   void
-  onAttributePubParams(const Interest& request, const Data& pubParamData);
-
-  void
   onCkeyData(const Data& data, std::shared_ptr<algo::CipherText> cipherText,
                          const ConsumptionCallback& successCallBack,
                          const ErrorCallback& errorCallback);
@@ -88,9 +86,6 @@ private:
   handleTimeout(const Interest& interest, int nRetrials,
                 const DataCallback& dataCallback, const ErrorCallback& errorCallback);
 
-  void
-  fetchPublicParams();
-
 PUBLIC_WITH_TESTS_ELSE_PRIVATE:
   security::v2::Certificate m_cert;
   Face& m_face;
@@ -98,9 +93,9 @@ PUBLIC_WITH_TESTS_ELSE_PRIVATE:
   Name m_attrAuthorityPrefix;
   uint8_t m_repeatAttempts;
 
-  algo::PublicParams m_pubParamsCache;
   TrustConfig m_trustConfig;
   algo::PrivateKey m_keyCache;
+  ParamFetcher m_paramFetcher;
 };
 
 } // namespace nacabe

@@ -23,6 +23,7 @@
 
 #include "trust-config.hpp"
 #include "algo/public-params.hpp"
+#include "param-fetcher.hpp"
 
 #include <ndn-cxx/security/verification-helpers.hpp>
 
@@ -83,13 +84,7 @@ public:
 
 PUBLIC_WITH_TESTS_ELSE_PRIVATE:
   void
-  onAttributePubParams(const Data& pubParamData);
-
-  void
   onPolicyInterest(const Interest& interest);
-
-  void
-  fetchPublicParams();
 
   void
   addNewPolicy(const Name& dataPrefix, const std::string& policy);
@@ -107,8 +102,8 @@ PUBLIC_WITH_TESTS_ELSE_PRIVATE:
 
   std::vector<PolicyTuple> m_policies;
   RegisteredPrefixHandle m_registeredPrefixHandle;
-  algo::PublicParams m_pubParamsCache;
   TrustConfig m_trustConfig;
+  ParamFetcher m_paramFetcher;
 };
 
 } // namespace nacabe

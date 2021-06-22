@@ -41,10 +41,11 @@ Consumer::Consumer(Face& face, security::v2::KeyChain& keyChain,
   , m_keyChain(keyChain)
   , m_attrAuthorityPrefix(attrAuthorityCertificate.getIdentity())
   , m_repeatAttempts(repeatAttempts)
+  , m_paramFetcher(m_face, m_attrAuthorityPrefix, m_trustConfig)
 {
   std::cout << "CONSUMER CONSTRUCTOR" << std::endl;
   m_trustConfig.addOrUpdateCertificate(attrAuthorityCertificate);
-  fetchPublicParams();
+  m_paramFetcher.fetchPublicParams();
 }
 
 void
@@ -138,7 +139,7 @@ Consumer::onCkeyData(const Data& data, std::shared_ptr<algo::CipherText> cipherT
 
   Buffer result;
   try{
-    result = algo::ABESupport::getInstance().cpDecrypt(m_pubParamsCache, m_keyCache, *cipherText);
+    result = algo::ABESupport::getInstance().cpDecrypt(m_paramFetcher.getPublicParams(), m_keyCache, *cipherText);
   }
   catch (const std::exception& e) {
     errorCallback(e.what());
@@ -168,40 +169,6 @@ Consumer::handleTimeout(const Interest& interest, int nRetrials,
   else {
     errorCallback("Run out retries: still timeout");
   }
-}
-
-void
-Consumer::onAttributePubParams(const Interest& request, const Data& pubParamData)
-{
-  std::cout << "CONSUMER_CPP in onAttributePubParams()..." << std::endl;
-  NDN_LOG_INFO(m_cert.getIdentity()<<" Get public parameters");
-  Name attrAuthorityKey = pubParamData.getSignatureInfo().getKeyLocator().getName();
-  auto optionalAAKey = m_trustConfig.findCertificate(attrAuthorityKey.getPrefix(-2));
-  if (optionalAAKey) {
-    if (!security::verifySignature(pubParamData, *optionalAAKey)) {
-      NDN_THROW(std::runtime_error("Fetched public parameters cannot be authenticated: bad signature"));
-    }
-  }
-  else {
-    NDN_THROW(std::runtime_error("Fetched public parameters cannot be authenticated: no certificate"));
-  }
-  auto block = pubParamData.getContent();
-  m_pubParamsCache.fromBuffer(Buffer(block.value(), block.value_size()));
-}
-
-void
-Consumer::fetchPublicParams()
-{
-  // fetch pub parameters
-  Name interestName = m_attrAuthorityPrefix;
-  interestName.append(PUBLIC_PARAMS);
-  Interest interest(interestName);
-  interest.setMustBeFresh(true);
-  interest.setCanBePrefix(true);
-
-  NDN_LOG_INFO(m_cert.getIdentity() << " Request public parameters:"<<interest.getName());
-  std::cout << "CONSUMER_CPP in fetchPublicParams()..." << interestName << std::endl;
-  m_face.expressInterest(interest, std::bind(&Consumer::onAttributePubParams, this, _1, _2), nullptr, nullptr);
 }
 
 } // namespace nacabe

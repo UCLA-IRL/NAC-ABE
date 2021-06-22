@@ -84,7 +84,7 @@ BOOST_AUTO_TEST_CASE(Constructor)
   Producer producer(c1, m_keyChain, producerCert, authorityCert);
   advanceClocks(time::milliseconds(10), 100);
 
-  BOOST_CHECK(producer.m_pubParamsCache.m_pub != "");
+  BOOST_CHECK(producer.m_paramFetcher.getPublicParams().m_pub != "");
 }
 
 BOOST_AUTO_TEST_CASE(onPolicyInterest)
@@ -165,7 +165,7 @@ BOOST_AUTO_TEST_CASE(encryptContent)
   BOOST_CHECK(pubParams.m_pub != "");
   BOOST_CHECK(masterKey.m_msk != "");
 
-  producer.m_pubParamsCache = pubParams;
+  producer.m_paramFetcher.m_pubParamsCache = pubParams;
   // generate prv key
   std::vector<std::string> attrList = {"attr1", "attr2", "attr3", "attr4", "attr5",
                                        "attr6", "attr7", "attr8", "attr9", "attr10"};

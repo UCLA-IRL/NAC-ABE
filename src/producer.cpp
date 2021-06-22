@@ -43,6 +43,7 @@ Producer::Producer(Face& face,
   , m_attrAuthorityPrefix(attrAuthorityCertificate.getIdentity())
   , m_dataOwnerPrefix(dataOwnerCertificate.getIdentity())
   , m_repeatAttempts(repeatAttempts)
+  , m_paramFetcher(m_face, m_attrAuthorityPrefix, m_trustConfig)
 {
   // prefix registration
   m_registeredPrefixHandle = m_face.setInterestFilter(Name(m_cert.getIdentity()).append(SET_POLICY),
@@ -54,7 +55,7 @@ Producer::Producer(Face& face,
 
   m_trustConfig.addOrUpdateCertificate(attrAuthorityCertificate);
   m_trustConfig.addOrUpdateCertificate(dataOwnerCertificate);
-  fetchPublicParams();
+  m_paramFetcher.fetchPublicParams();
 }
 
 Producer::Producer(Face& face,
@@ -67,6 +68,7 @@ Producer::Producer(Face& face,
     , m_keyChain(keyChain)
     , m_attrAuthorityPrefix(attrAuthorityCertificate.getIdentity())
     , m_repeatAttempts(repeatAttempts)
+    , m_paramFetcher(m_face, m_attrAuthorityPrefix, m_trustConfig)
 {
   // prefix registration
   m_registeredPrefixHandle = m_face.setInterestFilter(Name(m_cert.getIdentity()).append(SET_POLICY),
@@ -77,7 +79,7 @@ Producer::Producer(Face& face,
   NDN_LOG_DEBUG("set prefix:" << m_cert.getIdentity());
 
   m_trustConfig.addOrUpdateCertificate(attrAuthorityCertificate);
-  fetchPublicParams();
+  m_paramFetcher.fetchPublicParams();
 }
 
 Producer::~Producer()
@@ -85,35 +87,18 @@ Producer::~Producer()
   m_registeredPrefixHandle.unregister();
 }
 
-void
-Producer::onAttributePubParams(const Data& pubParamData)
-{
-  NDN_LOG_INFO("Get public parameters");
-  auto optionalAAKey = m_trustConfig.findCertificate(m_attrAuthorityPrefix);
-  if (optionalAAKey) {
-    if (!security::verifySignature(pubParamData, *optionalAAKey)) {
-      NDN_THROW(std::runtime_error("Fetched public parameters cannot be authenticated: bad signature"));
-    }
-  }
-  else {
-    NDN_THROW(std::runtime_error("Fetched public parameters cannot be authenticated: no certificate"));
-  }
-  auto block = pubParamData.getContent();
-  m_pubParamsCache.fromBuffer(Buffer(block.value(), block.value_size()));
-}
-
 std::tuple<std::shared_ptr<Data>, std::shared_ptr<Data>>
 Producer::produce(const Name& dataName, const std::string& accessPolicy,
                   const uint8_t* content, size_t contentLen)
 {
   // do encryption
-  if (m_pubParamsCache.m_pub == "") {
+  if (m_paramFetcher.getPublicParams().m_pub == "") {
     NDN_LOG_INFO("public parameters doesn't exist" );
     return std::make_tuple(nullptr, nullptr);
   }
   else {
     NDN_LOG_INFO("cpEncrypt data:" << dataName);
-    auto cipherText = algo::ABESupport::getInstance().cpEncrypt(m_pubParamsCache, accessPolicy,
+    auto cipherText = algo::ABESupport::getInstance().cpEncrypt(m_paramFetcher.getPublicParams(), accessPolicy,
                                                                 Buffer(content, contentLen));
 
     Name ckName = security::v2::extractIdentityFromCertName(m_cert.getName());
@@ -222,23 +207,6 @@ Producer::onPolicyInterest(const Interest& interest)
   m_keyChain.sign(reply, signingByCertificate(m_cert));
   NDN_LOG_DEBUG("after sign");
   m_face.put(reply);
-}
-
-void
-Producer::fetchPublicParams()
-{
-  // fetch pub parameters
-  Name interestName = m_attrAuthorityPrefix;
-  interestName.append(PUBLIC_PARAMS);
-  Interest interest(interestName);
-  interest.setMustBeFresh(true);
-  interest.setCanBePrefix(true);
-
-  NDN_LOG_INFO("Request public parameters:"<<interest.getName());
-  m_face.expressInterest(interest,
-                         [this] (const Interest&, const Data& data) { onAttributePubParams(data); },
-                         [=](const Interest&, const lp::Nack&){ NDN_LOG_INFO("NACK"); },
-                         [=](const Interest&){ NDN_LOG_INFO("Timeout"); });
 }
 
 } // namespace nacabe

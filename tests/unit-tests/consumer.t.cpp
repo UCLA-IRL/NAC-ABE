@@ -81,7 +81,7 @@ BOOST_AUTO_TEST_CASE(Constructor)
   Consumer consumer(c1, m_keyChain, consumerCert, authorityCert);
   advanceClocks(time::milliseconds(20), 60);
 
-  BOOST_CHECK(consumer.m_pubParamsCache.m_pub != "");
+  BOOST_CHECK(consumer.m_paramFetcher.getPublicParams().m_pub != "");
 }
 
 BOOST_AUTO_TEST_SUITE_END()
