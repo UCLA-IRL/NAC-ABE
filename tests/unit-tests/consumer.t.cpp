@@ -56,24 +56,10 @@ BOOST_FIXTURE_TEST_SUITE(TestConsumer, TestConsumerFixture)
 
 BOOST_AUTO_TEST_CASE(Constructor)
 {
-  algo::PublicParams m_pubParams;
-  c2.setInterestFilter(attrAuthorityPrefix,
+  bool commandReceived = false;
+  c2.setInterestFilter(Name(attrAuthorityPrefix).append("PUBPARAMS"),
                      [&] (const ndn::InterestFilter&, const ndn::Interest& interest) {
-                        algo::MasterKey m_masterKey;
-                       algo::ABESupport::getInstance().cpInit(m_pubParams, m_masterKey);
-                        Data result;
-                        Name dataName = interest.getName();
-                        dataName.appendTimestamp();
-                        result.setName(dataName);
-                        const auto& contentBuf = m_pubParams.toBuffer();
-                        result.setContent(makeBinaryBlock(ndn::tlv::Content, contentBuf.data(), contentBuf.size()));
-                        result.setFreshnessPeriod(5_s);
-                        m_keyChain.sign(result, signingByCertificate(authorityCert));
-
-                        NDN_LOG_TRACE("Reply public params request.");
-                        NDN_LOG_TRACE("Pub params size: " << contentBuf.size());
-                        std::cout << "CONSUMER_TEST SENT PUB_PARAMS ON BEHALF OF AA" << std::endl;
-                        c2.put(result);
+                        commandReceived = true;
                      });
 
   advanceClocks(time::milliseconds(20), 60);
@@ -81,7 +67,7 @@ BOOST_AUTO_TEST_CASE(Constructor)
   Consumer consumer(c1, m_keyChain, consumerCert, authorityCert);
   advanceClocks(time::milliseconds(20), 60);
 
-  BOOST_CHECK(consumer.m_paramFetcher.getPublicParams().m_pub != "");
+  BOOST_CHECK(commandReceived);
 }
 
 BOOST_AUTO_TEST_SUITE_END()
