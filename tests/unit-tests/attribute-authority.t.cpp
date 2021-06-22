@@ -122,6 +122,40 @@ BOOST_AUTO_TEST_CASE(onPrvKey)
   BOOST_CHECK_EQUAL(count, 1);
 }
 
+BOOST_AUTO_TEST_CASE(onKpPrvKey)
+{
+  Name consumerName("/consumer");
+  Policy policy = "(a or b) and (c or d)";
+
+  util::DummyClientFace face(io, {true, true});
+  KpAttributeAuthority aa(authorityCert, face, m_keyChain);
+  aa.addNewPolicy(consumerCert, policy);
+
+  Name interestName = attrAuthorityPrefix;
+  interestName.append("DKEY").append(consumerName.wireEncode());
+  Interest interest(interestName);
+  interest.setCanBePrefix(true);
+  m_keyChain.sign(interest, security::signingByCertificate(consumerCert));
+
+  advanceClocks(time::milliseconds(20), 60);
+
+  int count = 0;
+  face.onSendData.connect([&] (const Data& response) {
+    count++;
+    BOOST_CHECK(security::verifySignature(response, authorityCert));
+
+    std::cout << response;
+    std::cout << "dkey Data length: " << response.wireEncode().size() << std::endl;
+    std::cout << "dkey Name length: " << response.getName().wireEncode().size() << std::endl;
+    std::cout << "=================================\n";
+  });
+  face.receive(interest);
+
+  advanceClocks(time::milliseconds(20), 60);
+  BOOST_CHECK_EQUAL(count, 1);
+}
+
+
 BOOST_AUTO_TEST_SUITE_END()
 
 } // namespace tests
