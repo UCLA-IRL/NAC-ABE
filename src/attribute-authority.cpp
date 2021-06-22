@@ -33,7 +33,7 @@ NDN_LOG_INIT(nacabe.attribute-authority);
 
 //public
 AttributeAuthority::AttributeAuthority(const security::v2::Certificate& identityCert, Face& face,
-                                       security::v2::KeyChain& keyChain, const AbeType &abeType)
+                                           security::v2::KeyChain& keyChain, const AbeType &abeType)
   : m_cert(identityCert)
   , m_face(face)
   , m_keyChain(keyChain)
@@ -58,17 +58,17 @@ AttributeAuthority::AttributeAuthority(const security::v2::Certificate& identity
 
       // public parameter filter
       auto filterId = m_face.setInterestFilter(Name(name).append(PUBLIC_PARAMS),
-                                          bind(&AttributeAuthority::onPublicParamsRequest, this, _2));
+                                          bind(&CpAttributeAuthority::onPublicParamsRequest, this, _2));
       m_interestFilterIds.push_back(filterId);
       NDN_LOG_TRACE("InterestFilter " << Name(name).append(PUBLIC_PARAMS) << " got set");
 
       // decryption key filter
       filterId = m_face.setInterestFilter(Name(name).append(DECRYPT_KEY),
-                                          bind(&AttributeAuthority::onDecryptionKeyRequest, this, _2));
+                                          bind(&CpAttributeAuthority::onDecryptionKeyRequest, this, _2));
       m_interestFilterIds.push_back(filterId);
       NDN_LOG_TRACE("InterestFilter " << Name(name).append(DECRYPT_KEY) << " got set");
     },
-    bind(&AttributeAuthority::onRegisterFailed, this, _2));
+    bind(&CpAttributeAuthority::onRegisterFailed, this, _2));
   m_registeredPrefixIds.push_back(prefixId);
 }
 
@@ -80,19 +80,6 @@ AttributeAuthority::~AttributeAuthority()
   for (auto& prefixId : m_registeredPrefixIds) {
     prefixId.unregister();
   }
-}
-
-void
-AttributeAuthority::addNewPolicy(const security::v2::Certificate& decryptorCert, const std::list<std::string>& attributes)
-{
-  m_trustConfig.addOrUpdateCertificate(decryptorCert);
-  m_tokens.insert(std::make_pair(decryptorCert.getIdentity(), attributes));
-}
-
-void
-AttributeAuthority::addNewPolicy(const Name& decryptorIdentityName, const std::list<std::string>& attributes)
-{
-  m_tokens.insert(std::make_pair(decryptorIdentityName, attributes));
 }
 
 void
@@ -116,13 +103,8 @@ AttributeAuthority::onDecryptionKeyRequest(const Interest& request)
     NDN_LOG_INFO("DKEY Request Interest cannot be authenticated: no certificate");
     return;
   }
-  std::vector<std::string> attrs;
-  for (auto attrName : m_tokens[identityName]) {
-    attrs.push_back(attrName);
-  }
 
-  // generate ABE private key and do encryption
-  algo::PrivateKey ABEPrvKey = algo::ABESupport::getInstance().cpPrvKeyGen(m_pubParams, m_masterKey, attrs);
+  auto ABEPrvKey = getPrivateKey(identityName);
   auto prvBuffer = ABEPrvKey.toBuffer();
 
   // reply interest with encrypted private key
@@ -165,11 +147,63 @@ AttributeAuthority::onRegisterFailed(const std::string& reason)
   NDN_LOG_TRACE("Error: failed to register prefix in local hub's daemon, REASON: " << reason);
 }
 
-void
-AttributeAuthority::init()
-{
-  // do noting for now
+CpAttributeAuthority::CpAttributeAuthority(const security::v2::Certificate& identityCert, Face& m_face,
+                                           security::v2::KeyChain& keyChain)
+    : AttributeAuthority(identityCert, m_face, keyChain, ABE_TYPE_CP_ABE){
+
 }
+
+CpAttributeAuthority::~CpAttributeAuthority() {};
+
+void
+CpAttributeAuthority::addNewPolicy(const Name& decryptorIdentityName, const std::list<std::string>& attributes)
+{
+  m_tokens.insert(std::make_pair(decryptorIdentityName, attributes));
+}
+
+void
+CpAttributeAuthority::addNewPolicy(const security::v2::Certificate& decryptorCert, const std::list<std::string>& attributes)
+{
+  m_trustConfig.addOrUpdateCertificate(decryptorCert);
+  addNewPolicy(decryptorCert.getIdentity(), attributes);
+}
+
+algo::PrivateKey CpAttributeAuthority::getPrivateKey(Name identityName) {
+  const auto& attributes = m_tokens.at(identityName);
+  std::vector<std::string> attrs(attributes.begin(), attributes.end());
+
+  // generate ABE private key and do encryption
+  return algo::ABESupport::getInstance().cpPrvKeyGen(m_pubParams, m_masterKey, attrs);
+}
+
+KpAttributeAuthority::KpAttributeAuthority(const security::v2::Certificate& identityCert, Face& m_face,
+                                           security::v2::KeyChain& keyChain)
+    : AttributeAuthority(identityCert, m_face, keyChain, ABE_TYPE_KP_ABE){
+
+}
+
+KpAttributeAuthority::~KpAttributeAuthority() {};
+
+void
+KpAttributeAuthority::addNewPolicy(const Name& decryptorIdentityName, const Policy& policy)
+{
+  m_tokens.insert(std::make_pair(decryptorIdentityName, policy));
+}
+
+void
+KpAttributeAuthority::addNewPolicy(const security::v2::Certificate& decryptorCert, const Policy& policy)
+{
+  m_trustConfig.addOrUpdateCertificate(decryptorCert);
+  addNewPolicy(decryptorCert.getIdentity(), policy);
+}
+
+algo::PrivateKey KpAttributeAuthority::getPrivateKey(Name identityName) {
+  const auto& policy = m_tokens.at(identityName);
+
+  // generate ABE private key and do encryption
+  return algo::ABESupport::getInstance().kpPrvKeyGen(m_pubParams, m_masterKey, policy);
+}
+
 
 } // namespace nacabe
 } // namespace ndn

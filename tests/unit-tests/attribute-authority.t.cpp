@@ -51,7 +51,7 @@ BOOST_FIXTURE_TEST_SUITE(TestAttributeAuthority, TestAttributeAuthorityFixture)
 BOOST_AUTO_TEST_CASE(Constructor)
 {
   util::DummyClientFace face(io, {true, true});
-  AttributeAuthority aa(authorityCert, face, m_keyChain, ABE_TYPE_CP_ABE);
+  CpAttributeAuthority aa(authorityCert, face, m_keyChain);
   BOOST_CHECK(aa.m_pubParams.m_pub != "");
   BOOST_CHECK(aa.m_masterKey.m_msk != "");
 }
@@ -59,7 +59,7 @@ BOOST_AUTO_TEST_CASE(Constructor)
 BOOST_AUTO_TEST_CASE(onPublicParams)
 {
   util::DummyClientFace face(io, {true, true});
-  AttributeAuthority aa(authorityCert, face, m_keyChain, ABE_TYPE_CP_ABE);
+  CpAttributeAuthority aa(authorityCert, face, m_keyChain);
   Name interestName = attrAuthorityPrefix;
   Interest request(interestName.append(PUBLIC_PARAMS));
   request.setCanBePrefix(true);
@@ -95,7 +95,7 @@ BOOST_AUTO_TEST_CASE(onPrvKey)
                                      "attr6", "attr7", "attr8", "attr9", "attr10"};
 
   util::DummyClientFace face(io, {true, true});
-  AttributeAuthority aa(authorityCert, face, m_keyChain, ABE_TYPE_CP_ABE);
+  CpAttributeAuthority aa(authorityCert, face, m_keyChain);
   aa.addNewPolicy(consumerCert, attrList);
 
   Name interestName = attrAuthorityPrefix;

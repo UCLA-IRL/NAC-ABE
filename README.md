@@ -99,7 +99,7 @@ The library mainly provide supports for four roles in an NDN based ABE scenario.
 * **Encryptor**. The party who get decryption keys from the attribute authority and consume encrypted data.
 * **Decryptor**. The party who follows data owner's decision and produce encrypted data.
 
-These four parties are implemented in four classes in the library: `AttributeAuthority`, `DataOwner`, `producer`, and `consumer`.
+These four parties are implemented in four classes in the library: `CpAttributeAuthority`, `DataOwner`, `producer`, and `consumer`.
 
 > For now, only Ciphertext Policy Attribute-based Encryption (CP-ABE) is supported. 
 > A future work is to support KP-ABE as well so that the application can decide the favor based on its requirements.
@@ -117,7 +117,7 @@ From the perspective of the data flow:
 
 ```c++
 // obtain or create a certificate for attribute authority
-AttributeAuthority aa = AttributeAuthority(aaCert, face, keychain);
+CpAttributeAuthority aa = CpAttributeAuthority(aaCert, face, keychain);
 ```
 
 #### Add policy

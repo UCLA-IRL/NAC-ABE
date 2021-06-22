@@ -30,11 +30,47 @@ namespace nacabe {
 
 class AttributeAuthority
 {
-public:
+protected:
   AttributeAuthority(const security::v2::Certificate& identityCert, Face& m_face,
-                     security::v2::KeyChain& keyChain, const AbeType& abeType);
+                       security::v2::KeyChain& keyChain, const AbeType& abeType);
 
-  ~AttributeAuthority();
+  virtual ~AttributeAuthority();
+protected:
+  virtual algo::PrivateKey getPrivateKey(Name identityName) = 0;
+
+PUBLIC_WITH_TESTS_ELSE_PRIVATE:
+  void
+  onDecryptionKeyRequest(const Interest& interest);
+
+  void
+  onPublicParamsRequest(const Interest& interest);
+
+  void
+  onRegisterFailed(const std::string& reason);
+
+PUBLIC_WITH_TESTS_ELSE_PROTECTED:
+  security::v2::Certificate m_cert;
+  Face& m_face;
+  security::v2::KeyChain& m_keyChain;
+
+  AbeType m_abeType;
+  algo::PublicParams m_pubParams;
+  algo::MasterKey m_masterKey;
+
+  TrustConfig m_trustConfig;
+
+PUBLIC_WITH_TESTS_ELSE_PRIVATE:
+  std::list<RegisteredPrefixHandle> m_registeredPrefixIds;
+  std::list<InterestFilterHandle> m_interestFilterIds;
+};
+
+class CpAttributeAuthority: public AttributeAuthority
+{
+public:
+  CpAttributeAuthority(const security::v2::Certificate& identityCert, Face& m_face,
+                       security::v2::KeyChain& keyChain);
+
+  ~CpAttributeAuthority();
 
   /**
    * @brief Add a new policy <decryptor name, decryptor attributes> into the state.
@@ -57,36 +93,48 @@ public:
   void
   addNewPolicy(const Name& decryptorIdentityName, const std::list<std::string>& attributes);
 
-PUBLIC_WITH_TESTS_ELSE_PRIVATE:
-  void
-  onDecryptionKeyRequest(const Interest& interest);
-
-  void
-  onPublicParamsRequest(const Interest& interest);
-
-  void
-  onRegisterFailed(const std::string& reason);
-
-  void
-  init();
+protected:
+  algo::PrivateKey getPrivateKey(Name identityName) override;
 
 PUBLIC_WITH_TESTS_ELSE_PRIVATE:
-  security::v2::Certificate m_cert;
-  Face& m_face;
-  security::v2::KeyChain& m_keyChain;
-
-  AbeType m_abeType;
-  algo::PublicParams m_pubParams;
-  algo::MasterKey m_masterKey;
-
-  TrustConfig m_trustConfig;
-
   std::map<Name/* Consumer Identity */, std::list<std::string>/* Attr */> m_tokens;
+};
+
+class KpAttributeAuthority: public AttributeAuthority
+{
+public:
+  KpAttributeAuthority(const security::v2::Certificate& identityCert, Face& m_face,
+                       security::v2::KeyChain& keyChain);
+
+  ~KpAttributeAuthority();
+
+  /**
+   * @brief Add a new policy <decryptor name, decryptor attributes> into the state.
+   *
+   * Note that we only support RSA decryptor certificate for the purpose of key encryption.
+   *
+   * @param decryptorCert The decryptor's certificate, will be added into known identities as well.
+   * @param policy The access policy of the decryptor.
+   */
+  void
+  addNewPolicy(const security::v2::Certificate& decryptorCert, const Policy& policy);
+
+  /**
+   * @brief Add a new policy <decryptor name, decryptor attributes> into the state.
+   * @param decryptorIdentityName The decryptor's name.
+   *                              This assumes its certificate has already been stored in the known identities.
+   *                              Otherwise it will throw an error when the decryptor asks for the key.
+   * @param policy The access policy of the decryptor.
+   */
+  void
+  addNewPolicy(const Name& decryptorIdentityName, const Policy& policy);
+
+  algo::PrivateKey getPrivateKey(Name identityName) override;
 
 PUBLIC_WITH_TESTS_ELSE_PRIVATE:
-  std::list<RegisteredPrefixHandle> m_registeredPrefixIds;
-  std::list<InterestFilterHandle> m_interestFilterIds;
+  std::map<Name/* Consumer Identity */, Policy> m_tokens;
 };
+
 
 } // namespace nacabe
 } // namespace ndn
