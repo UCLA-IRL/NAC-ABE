@@ -32,38 +32,77 @@
 
 namespace ndn {
 namespace nacabe {
+
+   /**
+   * The policy is specified as a simple string which encodes a inorder
+   * traversal of threshold tree defining the access policy.
+   */
+   typedef std::string Policy;
+
 namespace algo {
 
-class ABESupport
-{
+class ABESupport {
 public:
-  static ABESupport&
+  static ABESupport &
   getInstance();
 
   ~ABESupport();
 
-  ABESupport(ABESupport const&) = delete;
-  void operator=(ABESupport const&)  = delete;
+  ABESupport(ABESupport const &) = delete;
+
+  void operator=(ABESupport const &) = delete;
 
 public:
   void
-  init(PublicParams& pubParams, MasterKey& masterKey);
+  cpInit(PublicParams &pubParams, MasterKey &masterKey);
 
-  /**
-   * The policy is specified as a simple string which encodes a postorder
-   * traversal of threshold tree defining the access policy.
-   */
   PrivateKey
-  prvKeyGen(PublicParams& pubParams, MasterKey& masterKey,
-            const std::vector<std::string>& attrList);
+  cpPrvKeyGen(PublicParams &pubParams, MasterKey &masterKey,
+              const std::vector<std::string> &attrList);
 
   CipherText
-  encrypt(const PublicParams& pubParams,
-          const std::string& policy, Buffer plaintext);
+  cpEncrypt(const PublicParams &pubParams,
+            const Policy &policy, Buffer plaintext);
 
   Buffer
-  decrypt(const PublicParams& pubParams,
-          const PrivateKey& prvKey, CipherText cipherText);
+  cpDecrypt(const PublicParams &pubParams,
+            const PrivateKey &prvKey, CipherText cipherText);
+
+public:
+  void
+  kpInit(PublicParams &pubParams, MasterKey &masterKey);
+
+  PrivateKey
+  kpPrvKeyGen(PublicParams &pubParams, MasterKey &masterKey,
+              const Policy &policy);
+
+  CipherText
+  kpEncrypt(const PublicParams &pubParams,
+            const std::vector<std::string> &attrList, Buffer plaintext);
+
+  Buffer
+  kpDecrypt(const PublicParams &pubParams,
+            const PrivateKey &prvKey, CipherText cipherText);
+
+private:
+  void
+  init(oabe::OpenABECryptoContext &context, PublicParams &pubParams, MasterKey &masterKey);
+
+  PrivateKey
+  prvKeyGen(oabe::OpenABECryptoContext &context, PublicParams &pubParams, MasterKey &masterKey,
+            const std::string &policyOrAttribute);
+
+  CipherText
+  encrypt(oabe::OpenABECryptoContext &context, const PublicParams &pubParams,
+          const std::string &policyOrAttribute, Buffer plaintext);
+
+  Buffer
+  decrypt(oabe::OpenABECryptoContext &context, const PublicParams &pubParams,
+          const PrivateKey &prvKey, CipherText cipherText);
+
+private:
+  static const char *SCHEMA_CPABE;
+  static const char *SCHEMA_KPABE;
 
 private:
   ABESupport();

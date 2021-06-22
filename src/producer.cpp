@@ -112,8 +112,9 @@ Producer::produce(const Name& dataName, const std::string& accessPolicy,
     return std::make_tuple(nullptr, nullptr);
   }
   else {
-    NDN_LOG_INFO("encrypt data:" << dataName);
-    auto cipherText = algo::ABESupport::getInstance().encrypt(m_pubParamsCache, accessPolicy, Buffer(content, contentLen));
+    NDN_LOG_INFO("cpEncrypt data:" << dataName);
+    auto cipherText = algo::ABESupport::getInstance().cpEncrypt(m_pubParamsCache, accessPolicy,
+                                                                Buffer(content, contentLen));
 
     Name ckName = security::v2::extractIdentityFromCertName(m_cert.getName());
     ckName.append("CK").append(std::to_string(random::generateSecureWord32()));

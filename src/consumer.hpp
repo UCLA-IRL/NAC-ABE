@@ -55,7 +55,7 @@ public:
    * @brief Consume an encrypted data packet
    *
    * The function will first fetch the encrypted data packet, then fetch the CK data packet.
-   * After decrypting CK with cached DKEY, the CK will be used to decrypt the data packet.
+   * After decrypting CK with cached DKEY, the CK will be used to cpDecrypt the data packet.
    *
    * @param dataName The packet name.
    * @param consumptionCb The success callback.

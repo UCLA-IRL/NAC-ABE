@@ -62,7 +62,7 @@ Consumer::obtainAttributes()
 
   m_face.expressInterest(interest,
                          [&](const Interest&, const Data& keyData) {
-                           NDN_LOG_INFO(m_cert.getIdentity() << " get decrypt key data");
+                           NDN_LOG_INFO(m_cert.getIdentity() << " get cpDecrypt key data");
                            const auto& tpm = m_keyChain.getTpm();
                             const auto& block = keyData.getContent();
                             auto prvBlock = decryptDataContent(block, tpm, m_cert.getName());
@@ -138,7 +138,7 @@ Consumer::onCkeyData(const Data& data, std::shared_ptr<algo::CipherText> cipherT
 
   Buffer result;
   try{
-    result = algo::ABESupport::getInstance().decrypt(m_pubParamsCache, m_keyCache, *cipherText);
+    result = algo::ABESupport::getInstance().cpDecrypt(m_pubParamsCache, m_keyCache, *cipherText);
   }
   catch (const std::exception& e) {
     errorCallback(e.what());

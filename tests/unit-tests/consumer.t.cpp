@@ -60,7 +60,7 @@ BOOST_AUTO_TEST_CASE(Constructor)
   c2.setInterestFilter(attrAuthorityPrefix,
                      [&] (const ndn::InterestFilter&, const ndn::Interest& interest) {
                         algo::MasterKey m_masterKey;
-                        algo::ABESupport::getInstance().init(m_pubParams, m_masterKey);
+                       algo::ABESupport::getInstance().cpInit(m_pubParams, m_masterKey);
                         Data result;
                         Name dataName = interest.getName();
                         dataName.appendTimestamp();

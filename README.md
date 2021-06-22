@@ -95,7 +95,7 @@ To run tests, you must have `--with-tests` when you config the project.
 The library mainly provide supports for four roles in an NDN based ABE scenario.
 
 * **Attribute Authority**. The party who owns the system master key. It publishes the public parameters to the system and generate decryption keys for decryptors.
-* **Data owner**. The party who decides how encryptors should encrypt their data. 
+* **Data owner**. The party who decides how encryptors should cpEncrypt their data. 
 * **Encryptor**. The party who get decryption keys from the attribute authority and consume encrypted data.
 * **Decryptor**. The party who follows data owner's decision and produce encrypted data.
 
@@ -133,7 +133,7 @@ aa.addNewPolicy(decryptorCertificate, attrList);
 After starting an attribute authority and added policies for decryptors, 
 the attribute authority will listen to the prefix `/<attribute authority prefix>/DKEY` to answer possible attribute request from decryptors.
 When a request arrives, the attribute authority will first use a known decryptor cetificate to verify the request, then locates the attribtue lists of this decryptor.
-After that, the attribute authority will create a new AES key to encrypt the attributes, then use the decryptor's RSA public key from the certificate to encrypt the AES key.
+After that, the attribute authority will create a new AES key to cpEncrypt the attributes, then use the decryptor's RSA public key from the certificate to cpEncrypt the AES key.
 The encrypted attributes will be returned back to the decryptor.
 
 ### 3.2 Data Owner
@@ -210,7 +210,7 @@ consumer.consume(dataName, successCallback, failCallback);
 ```
 
 This function will fetch the content Data packet by the name, fetch the corresponding encrypted CK Data packet.
-Then it uses its decryption key (DKEY) to decrypt the CK, then use the CK to decrypt the content Data packet.
+Then it uses its decryption key (DKEY) to cpDecrypt the CK, then use the CK to cpDecrypt the content Data packet.
 
 ## 4 Issue Report
 

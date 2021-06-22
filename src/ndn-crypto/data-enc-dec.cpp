@@ -29,13 +29,13 @@ Block
 encryptDataContentWithCK(const uint8_t* payload, size_t payloadLen,
                          const uint8_t* rsaKey, size_t rsaKeyLen)
 {
-  // first create AES key and encrypt the payload
+  // first create AES key and cpEncrypt the payload
   AesKeyParams param;
   auto aesKey = Aes::generateKey(param);
   auto iv = Aes::generateIV();
   auto encryptedPayload = Aes::encrypt(aesKey.data(), aesKey.size(), payload, payloadLen, iv);
 
-  // second use RSA key to encrypt the AES key
+  // second use RSA key to cpEncrypt the AES key
   auto encryptedAesKey = Rsa::encrypt(rsaKey, rsaKeyLen, aesKey.data(), aesKey.size());
 
   // create the content block
@@ -78,7 +78,7 @@ decryptDataContent(const Block& dataBlock, const security::Tpm& tpm, const Name&
   Buffer encryptedPayload(dataBlock.get(TLV_EncryptedContent).value(),
                           dataBlock.get(TLV_EncryptedContent).value_size());
 
-  // auto aesKey = Rsa::decrypt(key, keyLen, encryptedAesKey.data(), encryptedAesKey.size());
+  // auto aesKey = Rsa::cpDecrypt(key, keyLen, encryptedAesKey.data(), encryptedAesKey.size());
   auto aesKey = tpm.decrypt(encryptedAesKey.data(), encryptedAesKey.size(),
                             security::v2::extractKeyNameFromCertName(certName));
   auto payload = Aes::decrypt(aesKey->data(), aesKey->size(),
