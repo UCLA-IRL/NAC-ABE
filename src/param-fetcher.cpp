@@ -44,6 +44,11 @@ ParamFetcher::onAttributePubParams(const Data &pubParamData) {
   } else {
     NDN_THROW(std::runtime_error("Fetched public parameters cannot be authenticated: no certificate"));
   }
+
+  m_abeType = readString(pubParamData.getName().get((ssize_t) m_attrAuthorityPrefix.size() + 1));
+  if (m_abeType != ABE_TYPE_CP_ABE && m_abeType != ABE_TYPE_KP_ABE) {
+    NDN_THROW(std::runtime_error("Fetched public parameters with unsupported ABE type"));
+  }
   auto block = pubParamData.getContent();
   m_pubParamsCache.fromBuffer(Buffer(block.value(), block.value_size()));
 }
@@ -51,6 +56,11 @@ ParamFetcher::onAttributePubParams(const Data &pubParamData) {
 algo::PublicParams
 ParamFetcher::getPublicParams() {
   return m_pubParamsCache;
+}
+
+AbeType
+ParamFetcher::getAbeType() {
+  return m_abeType;
 }
 
 }

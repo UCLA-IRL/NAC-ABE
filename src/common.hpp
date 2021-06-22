@@ -106,6 +106,10 @@ static const std::string PUBLIC_PARAMS = "PUBPARAMS";
 static const std::string DECRYPT_KEY = "DKEY";
 static const std::string SET_POLICY = "SET_POLICY";
 
+typedef std::string AbeType;
+static const std::string ABE_TYPE_CP_ABE = "CP-ABE";
+static const std::string ABE_TYPE_KP_ABE = "KP-ABE";
+
 } // namespace nacabe
 } // namespace ndn
 

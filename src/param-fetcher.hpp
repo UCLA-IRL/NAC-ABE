@@ -25,8 +25,11 @@ public:
   void fetchPublicParams();
 
   algo::PublicParams getPublicParams();
+
+  AbeType getAbeType();
 PUBLIC_WITH_TESTS_ELSE_PRIVATE:
   algo::PublicParams m_pubParamsCache;
+  AbeType m_abeType;
   Face &m_face;
   const Name &m_attrAuthorityPrefix;
   const TrustConfig &m_trustConfig;

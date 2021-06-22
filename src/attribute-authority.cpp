@@ -33,14 +33,23 @@ NDN_LOG_INIT(nacabe.attribute-authority);
 
 //public
 AttributeAuthority::AttributeAuthority(const security::v2::Certificate& identityCert, Face& face,
-                                       security::v2::KeyChain& keyChain)
+                                       security::v2::KeyChain& keyChain, const AbeType &abeType)
   : m_cert(identityCert)
   , m_face(face)
   , m_keyChain(keyChain)
+  , m_abeType(abeType)
 {
   // ABE setup
-  NDN_LOG_INFO("Set up public parameters and master key.");
-  algo::ABESupport::getInstance().cpInit(m_pubParams, m_masterKey);
+  if (m_abeType == ABE_TYPE_CP_ABE) {
+    NDN_LOG_INFO("Using CP-ABE. Set up public parameters and master key.");
+    algo::ABESupport::getInstance().cpInit(m_pubParams, m_masterKey);
+  } else if (m_abeType == ABE_TYPE_KP_ABE) {
+    NDN_LOG_INFO("Using KP-ABE. Set up public parameters and master key.");
+    algo::ABESupport::getInstance().kpInit(m_pubParams, m_masterKey);
+  } else {
+    NDN_LOG_ERROR("Unsupported ABE type.");
+    NDN_THROW(std::runtime_error("Unsupported ABE type."));
+  }
 
   // prefix registration
   auto prefixId = m_face.registerPrefix(m_cert.getIdentity(),
@@ -65,10 +74,10 @@ AttributeAuthority::AttributeAuthority(const security::v2::Certificate& identity
 
 AttributeAuthority::~AttributeAuthority()
 {
-  for (auto prefixId : m_interestFilterIds) {
+  for (const auto& prefixId : m_interestFilterIds) {
     prefixId.cancel();
   }
-  for (auto prefixId : m_registeredPrefixIds) {
+  for (auto& prefixId : m_registeredPrefixIds) {
     prefixId.unregister();
   }
 }
@@ -130,10 +139,11 @@ AttributeAuthority::onDecryptionKeyRequest(const Interest& request)
 void
 AttributeAuthority::onPublicParamsRequest(const Interest& interest)
 {
-  // naming: /AA-prefix/PUBLICPARAMS
+  // naming: /AA-prefix/PUBPARAMS
   NDN_LOG_INFO("on public Params request:"<<interest.getName());
   Data result;
   Name dataName = interest.getName();
+  dataName.append(m_abeType);
   dataName.appendTimestamp();
   result.setName(dataName);
   const auto& contentBuf = m_pubParams.toBuffer();

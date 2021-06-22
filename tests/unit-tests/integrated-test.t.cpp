@@ -82,7 +82,7 @@ BOOST_AUTO_TEST_CASE(IntegratedTest)
 {
   // set up AA
   NDN_LOG_INFO("Create Attribute Authority. AA prefix: " << aaCert.getIdentity());
-  AttributeAuthority aa = AttributeAuthority(aaCert, aaFace, m_keyChain);
+  AttributeAuthority aa = AttributeAuthority(aaCert, aaFace, m_keyChain, ABE_TYPE_CP_ABE);
   advanceClocks(time::milliseconds(20), 60);
 
   // define attr list for consumer rights

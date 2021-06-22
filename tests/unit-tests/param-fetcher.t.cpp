@@ -65,6 +65,7 @@ BOOST_AUTO_TEST_CASE(Constructor)
                          algo::ABESupport::getInstance().cpInit(m_pubParams, m_masterKey);
                          Data result;
                          Name dataName = interest.getName();
+                         dataName.append(ABE_TYPE_CP_ABE);
                          dataName.appendTimestamp();
                          result.setName(dataName);
                          result.setFreshnessPeriod(10_s);
@@ -84,6 +85,7 @@ BOOST_AUTO_TEST_CASE(Constructor)
   advanceClocks(time::milliseconds(10), 100);
 
   BOOST_CHECK(paramFetcher.getPublicParams().m_pub != "");
+  BOOST_CHECK(paramFetcher.getAbeType() == ABE_TYPE_CP_ABE);
 }
 
 BOOST_AUTO_TEST_SUITE_END()

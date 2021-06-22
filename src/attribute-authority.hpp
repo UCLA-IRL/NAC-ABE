@@ -32,7 +32,7 @@ class AttributeAuthority
 {
 public:
   AttributeAuthority(const security::v2::Certificate& identityCert, Face& m_face,
-                     security::v2::KeyChain& keyChain);
+                     security::v2::KeyChain& keyChain, const AbeType& abeType);
 
   ~AttributeAuthority();
 
@@ -75,6 +75,7 @@ PUBLIC_WITH_TESTS_ELSE_PRIVATE:
   Face& m_face;
   security::v2::KeyChain& m_keyChain;
 
+  AbeType m_abeType;
   algo::PublicParams m_pubParams;
   algo::MasterKey m_masterKey;
 
