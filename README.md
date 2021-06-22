@@ -37,7 +37,7 @@ To work with the master version, please checkout to NDN-CXX 0.7.1 and install.
 #### 2.1.2 openabe
 
 NAC-ABE is using cryptography support provided by library openabe. 
-To install openable, you can visit the [website](https://github.com/zeutro/openabe).
+To install openabe, you can visit the [website](https://github.com/zeutro/openabe).
 
 > (As noticed in Mar 28, 2020) 
 > When installing the OpenABE, there could be some issues installing gTest (on Ubuntu) or Bison 3.3 (on MacOS). 
