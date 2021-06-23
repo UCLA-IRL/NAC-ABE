@@ -198,7 +198,7 @@ After starting a decryptor, the decryptor will automatically fetch the public pa
 #### Obtain the decryption key (DKEY), i.e., attributes
 
 ```c++
-consumer.obtainAttributes();
+consumer.obtainDecryptionKey();
 ```
 
 This function will fetch the DKEY from the attribute authority.

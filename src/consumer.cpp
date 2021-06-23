@@ -49,7 +49,7 @@ Consumer::Consumer(Face& face, security::v2::KeyChain& keyChain,
 }
 
 void
-Consumer::obtainAttributes()
+Consumer::obtainDecryptionKey()
 {
   // /<attribute authority prefix>/DKEY/<decryptor name block>
   NDN_LOG_INFO(m_cert.getIdentity() << "Fetch private key");
@@ -63,7 +63,7 @@ Consumer::obtainAttributes()
 
   m_face.expressInterest(interest,
                          [&](const Interest&, const Data& keyData) {
-                           NDN_LOG_INFO(m_cert.getIdentity() << " get cpDecrypt key data");
+                           NDN_LOG_INFO(m_cert.getIdentity() << " get decrypt key data");
                            const auto& tpm = m_keyChain.getTpm();
                             const auto& block = keyData.getContent();
                             auto prvBlock = decryptDataContent(block, tpm, m_cert.getName());
@@ -139,7 +139,12 @@ Consumer::onCkeyData(const Data& data, std::shared_ptr<algo::CipherText> cipherT
 
   Buffer result;
   try{
-    result = algo::ABESupport::getInstance().cpDecrypt(m_paramFetcher.getPublicParams(), m_keyCache, *cipherText);
+    if (m_paramFetcher.m_abeType == ABE_TYPE_CP_ABE)
+      result = algo::ABESupport::getInstance().cpDecrypt(m_paramFetcher.getPublicParams(), m_keyCache, *cipherText);
+    else if (m_paramFetcher.m_abeType == ABE_TYPE_KP_ABE)
+      result = algo::ABESupport::getInstance().kpDecrypt(m_paramFetcher.getPublicParams(), m_keyCache, *cipherText);
+    else
+      errorCallback("Unsupported ABE type");
   }
   catch (const std::exception& e) {
     errorCallback(e.what());

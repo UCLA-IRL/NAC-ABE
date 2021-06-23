@@ -161,7 +161,7 @@ BOOST_AUTO_TEST_CASE(IntegratedTest)
   );
 
   bool isConsumeCbCalled = false;
-  consumer1.obtainAttributes();
+  consumer1.obtainDecryptionKey();
   advanceClocks(time::milliseconds(20), 60);
   consumer1.consume(producerCert.getIdentity().append(dataName),
     [&] (const Buffer& result) {
@@ -182,7 +182,7 @@ BOOST_AUTO_TEST_CASE(IntegratedTest)
   BOOST_CHECK(isConsumeCbCalled);
 
   isConsumeCbCalled = false;
-  consumer2.obtainAttributes();
+  consumer2.obtainDecryptionKey();
   advanceClocks(time::milliseconds(20), 60);
   consumer2.consume(producerCert.getIdentity().append(dataName),
     [&] (const Buffer& result) {

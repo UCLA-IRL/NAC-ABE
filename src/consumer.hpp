@@ -50,7 +50,7 @@ public:
    * Interest: /<attribute authority prefix>/DKEY/<decryptor name block>, signed
    */
   void
-  obtainAttributes();
+  obtainDecryptionKey();
 
   /**
    * @brief Consume an encrypted data packet
