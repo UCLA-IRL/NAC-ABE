@@ -14,3 +14,8 @@ Replied param format:
 ```
 /AA-prefix/DKEY/<identity-name-block>/<signature>
 ```
+
+## Policy Set
+```
+/<producer prefix>/SET_POLICY/<data prefix block>/<attribute or policy block>
+```

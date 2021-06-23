@@ -37,7 +37,7 @@ public:
             security::KeyChain& keyChain);
 
   /**
-   * @brief Notice a producer the encryption policy for data produced under a specific data prefix.
+   * @brief For CP-ABE, Notice a producer the encryption policy for data produced under a specific data prefix.
    *
    * Command Interest: /<producer prefix>/SET_POLICY/<data prefix block>/<policy string>, signed.
    * The data prefix do not contain producer's prefix.
@@ -45,12 +45,41 @@ public:
    * @param producerPrefix Producer's prefix.
    * @param dataPrefix Data prefix. Do not contain producer's prefix.
    * @param policy The policy for the data produced under the @p producerPrefix and @p dataPrefix
-   * @param SuccessCb The success callback.
+   * @param successCb The success callback.
    * @param errorCb The failure callback.
    */
   void
   commandProducerPolicy(const Name& producerPrefix, const Name& dataPrefix, const std::string& policy,
-                        const SuccessCallback& SuccessCb, const ErrorCallback& errorCb);
+                        const SuccessCallback& successCb, const ErrorCallback& errorCb);
+
+  /**
+   * @brief For KP-ABE, Notice a producer the encryption attributes for data produced under a specific data prefix.
+   *
+   * Command Interest: /<producer prefix>/SET_POLICY/<data prefix block>/<attributes>, signed.
+   * The data prefix do not contain producer's prefix.
+   *
+   * @param producerPrefix Producer's prefix.
+   * @param dataPrefix Data prefix. Do not contain producer's prefix.
+   * @param policy The policy for the data produced under the @p producerPrefix and @p dataPrefix
+   * @param successCb The success callback.
+   * @param errorCb The failure callback.
+   */
+  void
+  commandProducerPolicy(const Name& producerPrefix, const Name& dataPrefix, const std::list<std::string>& attributes,
+                        const SuccessCallback& successCb, const ErrorCallback& errorCb);
+
+private:
+  /**
+   * Generic method for commanding the producer.
+   * @param producerPrefix Producer's prefix.
+   * @param dataPrefix Data prefix. Do not contain producer's prefix.
+   * @param policy The policy for the data produced under the @p producerPrefix and @p dataPrefix
+   * @param successCb The success callback.
+   * @param errorCb The failure callback.
+   */
+  void
+  commandProducerPolicy(const Name& producerPrefix, const Name& dataPrefix, const Block& policyBlock,
+                        const SuccessCallback& successCb, const ErrorCallback& errorCb);
 
 private:
   security::Certificate m_cert;

@@ -37,17 +37,17 @@ DataOwner::DataOwner(const security::Certificate& identityCert, Face& face,
 }
 
 void
-DataOwner::commandProducerPolicy(const Name& prefix, const Name& dataPrefix, const std::string& policy,
-                                 const SuccessCallback& SuccessCb, const ErrorCallback& errorCb)
+DataOwner::commandProducerPolicy(const Name& prefix, const Name& dataPrefix, const Block& policyBlock,
+                                 const SuccessCallback& successCb, const ErrorCallback& errorCb)
 {
-  NDN_LOG_INFO("Set data " << dataPrefix<<" in Producer "<<prefix<<" with policy "<<policy);
   Name policyName = prefix;
   policyName.append(SET_POLICY);
   policyName.append(dataPrefix.wireEncode());
-  policyName.append(policy);
+  policyName.append(policyBlock);
   shared_ptr<Interest> interest = make_shared<Interest>(policyName);
   interest->setCanBePrefix(false);
   interest->setMustBeFresh(true);
+  interest->setInterestLifetime(time::seconds(1));
   m_keyChain.sign(*interest, signingByCertificate(m_cert));
 
   // prepare callback functions
@@ -58,7 +58,7 @@ DataOwner::commandProducerPolicy(const Name& prefix, const Name& dataPrefix, con
       errorCb("register failed");
     }
     else {
-      SuccessCb(validData);
+      successCb(validData);
     }
   };
 
@@ -71,10 +71,33 @@ DataOwner::commandProducerPolicy(const Name& prefix, const Name& dataPrefix, con
 
   // set link object if it is available
   m_face.expressInterest(*interest, dataCallback,
-                         nullptr,
+                         [=] (const Interest&, const lp::Nack&) {
+                           errorCb("nack");
+                         },
                          [=] (const Interest&) {
                            errorCb("time out");
                          });
+}
+
+void DataOwner::commandProducerPolicy(const Name &producerPrefix, const Name &dataPrefix, const std::string &policy,
+                                      const DataOwner::SuccessCallback &successCb,
+                                      const DataOwner::ErrorCallback &errorCb) {
+  NDN_LOG_INFO("Set data " << dataPrefix<<" in Producer "<< producerPrefix <<" with policy "<< policy);
+  commandProducerPolicy(producerPrefix, dataPrefix, makeStringBlock(tlv::GenericNameComponent, policy), successCb, errorCb);
+}
+
+void DataOwner::commandProducerPolicy(const Name &producerPrefix, const Name &dataPrefix,
+                                      const std::list<std::string> &attributes,
+                                      const DataOwner::SuccessCallback &successCb,
+                                      const DataOwner::ErrorCallback &errorCb) {
+  Block attributeBlock(tlv::GenericNameComponent);
+  std::stringstream ss("|");
+  for (const auto& i : attributes) {
+    attributeBlock.push_back(makeStringBlock(TLV_Attribute, i));
+    ss << i + "|";
+  }
+  NDN_LOG_INFO("Set data " << dataPrefix<<" in Producer "<< producerPrefix <<" with attribute "<< ss.str());
+  commandProducerPolicy(producerPrefix, dataPrefix, attributeBlock, successCb, errorCb);
 }
 
 } // namespace nacabe

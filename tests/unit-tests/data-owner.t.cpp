@@ -49,7 +49,7 @@ public:
 
 BOOST_FIXTURE_TEST_SUITE(TestDataOwner, TestDataOwnerFixture)
 
-BOOST_AUTO_TEST_CASE(setPolicy)
+BOOST_AUTO_TEST_CASE(CpSetPolicy)
 {
   security::Identity id = addIdentity("/nacabe/test/dataowner");
   security::Key key = id.getDefaultKey();
@@ -57,59 +57,286 @@ BOOST_AUTO_TEST_CASE(setPolicy)
 
   DataOwner dataowner(cert, c1, m_keyChain);
 
-  Name producerPrefix = Name("/producer");
-  Name dataPrefix = Name("/dataset1/example");
+  Name producerPrefix = Name("/producer1");
+  Name dataPrefix = Name("/data");
   std::string policy = "attr1 and attr2 or attr3";
   Name interestName = producerPrefix;
-  interestName.append(dataPrefix.wireEncode())
-              .append(SET_POLICY)
-              .append(policy);
+  interestName.append(SET_POLICY)
+      .append(dataPrefix.wireEncode())
+      .append(policy);
 
-  c2.setInterestFilter(Name("/producer"),
+  advanceClocks(time::milliseconds(1), 10);
+
+  auto f1 = c2.setInterestFilter(Name("/producer1"),
+                                 [&] (const ndn::InterestFilter&, const ndn::Interest& interest) {
+                                   BOOST_CHECK_EQUAL(interest.getName().getSubName(0, 1), producerPrefix);
+                                   BOOST_CHECK_EQUAL(interest.getName().get(1).toUri(), SET_POLICY);
+                                   BOOST_CHECK_EQUAL(Name(interest.getName().get(2).blockFromValue()), dataPrefix);
+                                   BOOST_CHECK_EQUAL(readString(interest.getName().get(3)), policy);
+
+                                   BOOST_CHECK(security::verifySignature(interest, cert));
+
+                                   Data reply;
+                                   reply.setName(interest.getName());
+                                   reply.setContent(makeStringBlock(tlv::Content, "success"));
+                                   reply.setFreshnessPeriod(time::seconds(1));
+                                   m_keyChain.sign(reply, signingByCertificate(cert));
+                                   c2.put(reply);
+                                 });
+
+  advanceClocks(time::milliseconds(1), 100);
+
+  bool getItem = false;
+  dataowner.commandProducerPolicy(producerPrefix, dataPrefix, policy,
+                                  [&] (const Data& data) {
+                                    BOOST_CHECK(interestName.isPrefixOf(data.getName().toUri()));
+                                    getItem = true;
+                                  },
+                                  [=] (const std::string&) {
+                                    BOOST_CHECK(false);
+                                  });
+
+  advanceClocks(time::milliseconds(1), 10);
+  BOOST_CHECK(getItem);
+  f1.cancel();
+
+  // bad reply check
+  auto f2 = c2.setInterestFilter(Name("/producer1"),
+                                 [&] (const ndn::InterestFilter&, const ndn::Interest& interest) {
+                                   BOOST_CHECK_EQUAL(interest.getName().getSubName(0, 1), producerPrefix);
+                                   BOOST_CHECK_EQUAL(interest.getName().get(1).toUri(), SET_POLICY);
+                                   BOOST_CHECK_EQUAL(Name(interest.getName().get(2).blockFromValue()), dataPrefix);
+                                   BOOST_CHECK_EQUAL(readString(interest.getName().get(3)), policy);
+
+                                   BOOST_CHECK(security::verifySignature(interest, cert));
+
+                                   Data reply;
+                                   reply.setName(interest.getName());
+                                   reply.setContent(makeStringBlock(tlv::Content, "failure"));
+                                   reply.setFreshnessPeriod(time::seconds(1));
+                                   m_keyChain.sign(reply, signingByCertificate(cert));
+                                   c2.put(reply);
+                                 });
+
+  advanceClocks(time::milliseconds(1), 100);
+
+  getItem = false;
+  dataowner.commandProducerPolicy(producerPrefix, dataPrefix, policy,
+                                  [=] (const Data& data) {
+                                    BOOST_CHECK(false);
+                                  },
+                                  [&] (const std::string& s) {
+                                    BOOST_CHECK_EQUAL(s, "register failed");
+                                    getItem = true;
+                                  });
+
+  advanceClocks(time::milliseconds(1), 10);
+  BOOST_CHECK(getItem);
+  f2.cancel();
+
+  // timeout check
+  auto f3 = c2.setInterestFilter(Name("/producer1"),
+                                 [&] (const ndn::InterestFilter&, const ndn::Interest& interest) {
+                                   BOOST_CHECK_EQUAL(interest.getName().getSubName(0, 1), producerPrefix);
+                                   BOOST_CHECK_EQUAL(interest.getName().get(1).toUri(), SET_POLICY);
+                                   BOOST_CHECK_EQUAL(Name(interest.getName().get(2).blockFromValue()), dataPrefix);
+                                   BOOST_CHECK_EQUAL(readString(interest.getName().get(3)), policy);
+
+                                   BOOST_CHECK(security::verifySignature(interest, cert));
+                                 });
+
+  advanceClocks(time::milliseconds(1), 100);
+
+  getItem = false;
+  dataowner.commandProducerPolicy(producerPrefix, dataPrefix, policy,
+                                  [=] (const Data& data) {
+                                    BOOST_CHECK(false);
+                                  },
+                                  [&] (const std::string& s) {
+                                    BOOST_CHECK_EQUAL(s, "time out");
+                                    getItem = true;
+                                  });
+
+  advanceClocks(time::milliseconds(100), 20);
+  BOOST_CHECK(getItem);
+  f3.cancel();
+
+  // nack check
+  auto f4 = c2.setInterestFilter(Name("/producer1"),
+                                 [&] (const ndn::InterestFilter&, const ndn::Interest& interest) {
+                                   BOOST_CHECK_EQUAL(interest.getName().getSubName(0, 1), producerPrefix);
+                                   BOOST_CHECK_EQUAL(interest.getName().get(1).toUri(), SET_POLICY);
+                                   BOOST_CHECK_EQUAL(Name(interest.getName().get(2).blockFromValue()), dataPrefix);
+                                   BOOST_CHECK_EQUAL(readString(interest.getName().get(3)), policy);
+
+                                   BOOST_CHECK(security::verifySignature(interest, cert));
+
+                                   lp::Nack nack(interest);
+                                   nack.setReason(lp::NackReason::NO_ROUTE);
+                                   c2.put(nack);
+                                 });
+
+  advanceClocks(time::milliseconds(1), 100);
+
+  getItem = false;
+  dataowner.commandProducerPolicy(producerPrefix, dataPrefix, policy,
+                                  [=] (const Data& data) {
+                                    BOOST_CHECK(false);
+                                  },
+                                  [&] (const std::string& s) {
+                                    BOOST_CHECK_EQUAL(s, "nack");
+                                    getItem = true;
+                                  });
+
+  advanceClocks(time::milliseconds(1), 20);
+  BOOST_CHECK(getItem);
+  f4.cancel();
+}
+
+BOOST_AUTO_TEST_CASE(KpSetPolicy)
+{
+  security::Identity id = addIdentity("/nacabe/test/dataowner");
+  security::Key key = id.getDefaultKey();
+  security::Certificate cert = key.getDefaultCertificate();
+
+  DataOwner dataowner(cert, c1, m_keyChain);
+
+  Name producerPrefix = Name("/producer1");
+  Name dataPrefix = Name("/data");
+  std::list<std::string> attributes = {"attr1", "attr2", "attr3"};
+  Block attributeBlock(tlv::GenericNameComponent);
+  for (const auto& i : attributes) attributeBlock.push_back(makeStringBlock(TLV_Attribute, i));
+  Name interestName = producerPrefix;
+  interestName.append(SET_POLICY)
+      .append(dataPrefix.wireEncode())
+      .append(attributeBlock);
+
+  advanceClocks(time::milliseconds(1), 10);
+
+  auto f1 = c2.setInterestFilter(Name("/producer1"),
                        [&] (const ndn::InterestFilter&, const ndn::Interest& interest) {
-                         BOOST_CHECK_EQUAL(interest.getName().get(0).toUri(), "/producer1");
+                         BOOST_CHECK_EQUAL(interest.getName().getSubName(0, 1), producerPrefix);
                          BOOST_CHECK_EQUAL(interest.getName().get(1).toUri(), SET_POLICY);
-                         BOOST_CHECK_EQUAL(interest.getName().get(2).toUri(), "/data");
-                         BOOST_CHECK_EQUAL(interest.getName().get(3).toUri(), policy);
-                         BOOST_CHECK_EQUAL(interest.getName().get(4).toUri(), "addSig");
+                         BOOST_CHECK_EQUAL(Name(interest.getName().get(2).blockFromValue()), dataPrefix);
+                         BOOST_CHECK_EQUAL(interest.getName().get(3).wireEncode(), attributeBlock);
+
+                         BOOST_CHECK(security::verifySignature(interest, cert));
 
                          Data reply;
                          reply.setName(interest.getName());
                          reply.setContent(makeStringBlock(tlv::Content, "success"));
+                         reply.setFreshnessPeriod(time::seconds(1));
                          m_keyChain.sign(reply, signingByCertificate(cert));
                          c2.put(reply);
                        });
 
-  dataowner.commandProducerPolicy(producerPrefix, dataPrefix, policy,
-                                 [=] (const Data& data) {
-                                   BOOST_CHECK_EQUAL(data.getName().toUri(), interestName.toUri());
-                                 },
-                                 [=] (const std::string&) {
-                                   BOOST_CHECK(false);
-                                 });
+  advanceClocks(time::milliseconds(1), 100);
 
-  c2.setInterestFilter(Name("/producer2").append(SET_POLICY),
+  bool getItem = false;
+  dataowner.commandProducerPolicy(producerPrefix, dataPrefix, attributes,
+                                  [&] (const Data& data) {
+                                    BOOST_CHECK(interestName.isPrefixOf(data.getName().toUri()));
+                                    getItem = true;
+                                  },
+                                  [=] (const std::string&) {
+                                    BOOST_CHECK(false);
+                                  });
+
+  advanceClocks(time::milliseconds(1), 10);
+  BOOST_CHECK(getItem);
+  f1.cancel();
+
+  // bad reply check
+  auto f2 = c2.setInterestFilter(Name("/producer1"),
                        [&] (const ndn::InterestFilter&, const ndn::Interest& interest) {
-                         BOOST_CHECK_EQUAL(interest.getName().get(0).toUri(), "/producer2");
+                         BOOST_CHECK_EQUAL(interest.getName().getSubName(0, 1), producerPrefix);
                          BOOST_CHECK_EQUAL(interest.getName().get(1).toUri(), SET_POLICY);
-                         BOOST_CHECK_EQUAL(interest.getName().get(2).toUri(), "/data");
-                         BOOST_CHECK_EQUAL(interest.getName().get(3).toUri(), policy);
-                         BOOST_CHECK_EQUAL(interest.getName().get(4).toUri(), "addSig");
+                         BOOST_CHECK_EQUAL(Name(interest.getName().get(2).blockFromValue()), dataPrefix);
+                         BOOST_CHECK_EQUAL(interest.getName().get(3).wireEncode(), attributeBlock);
+
+                         BOOST_CHECK(security::verifySignature(interest, cert));
 
                          Data reply;
                          reply.setName(interest.getName());
-                         reply.setContent(makeStringBlock(tlv::Content, "exist"));
+                         reply.setContent(makeStringBlock(tlv::Content, "failure"));
+                         reply.setFreshnessPeriod(time::seconds(1));
                          m_keyChain.sign(reply, signingByCertificate(cert));
                          c2.put(reply);
                        });
 
-  dataowner.commandProducerPolicy(producerPrefix, dataPrefix, policy,
-                                 [=] (const Data&) {
-                                   BOOST_CHECK(false);
-                                 },
-                                 [=] (const std::string& err) {
-                                   BOOST_CHECK_EQUAL(err, "register failed");
+  advanceClocks(time::milliseconds(1), 100);
+
+  getItem = false;
+  dataowner.commandProducerPolicy(producerPrefix, dataPrefix, attributes,
+                                  [=] (const Data& data) {
+                                    BOOST_CHECK(false);
+                                  },
+                                  [&] (const std::string& s) {
+                                    BOOST_CHECK_EQUAL(s, "register failed");
+                                    getItem = true;
+                                  });
+
+  advanceClocks(time::milliseconds(1), 10);
+  BOOST_CHECK(getItem);
+  f2.cancel();
+
+  // timeout check
+  auto f3 = c2.setInterestFilter(Name("/producer1"),
+                                 [&] (const ndn::InterestFilter&, const ndn::Interest& interest) {
+                                   BOOST_CHECK_EQUAL(interest.getName().getSubName(0, 1), producerPrefix);
+                                   BOOST_CHECK_EQUAL(interest.getName().get(1).toUri(), SET_POLICY);
+                                   BOOST_CHECK_EQUAL(Name(interest.getName().get(2).blockFromValue()), dataPrefix);
+                                   BOOST_CHECK_EQUAL(interest.getName().get(3).wireEncode(), attributeBlock);
+
+                                   BOOST_CHECK(security::verifySignature(interest, cert));
                                  });
+
+  advanceClocks(time::milliseconds(1), 100);
+
+  getItem = false;
+  dataowner.commandProducerPolicy(producerPrefix, dataPrefix, attributes,
+                                  [=] (const Data& data) {
+                                    BOOST_CHECK(false);
+                                  },
+                                  [&] (const std::string& s) {
+                                    BOOST_CHECK_EQUAL(s, "time out");
+                                    getItem = true;
+                                  });
+
+  advanceClocks(time::milliseconds(100), 20);
+  BOOST_CHECK(getItem);
+  f3.cancel();
+
+  // nack check
+  auto f4 = c2.setInterestFilter(Name("/producer1"),
+                                 [&] (const ndn::InterestFilter&, const ndn::Interest& interest) {
+                                   BOOST_CHECK_EQUAL(interest.getName().getSubName(0, 1), producerPrefix);
+                                   BOOST_CHECK_EQUAL(interest.getName().get(1).toUri(), SET_POLICY);
+                                   BOOST_CHECK_EQUAL(Name(interest.getName().get(2).blockFromValue()), dataPrefix);
+                                   BOOST_CHECK_EQUAL(interest.getName().get(3).wireEncode(), attributeBlock);
+
+                                   BOOST_CHECK(security::verifySignature(interest, cert));
+
+                                   lp::Nack nack(interest);
+                                   nack.setReason(lp::NackReason::NO_ROUTE);
+                                   c2.put(nack);
+                                 });
+
+  advanceClocks(time::milliseconds(1), 100);
+
+  getItem = false;
+  dataowner.commandProducerPolicy(producerPrefix, dataPrefix, attributes,
+                                  [=] (const Data& data) {
+                                    BOOST_CHECK(false);
+                                  },
+                                  [&] (const std::string& s) {
+                                    BOOST_CHECK_EQUAL(s, "nack");
+                                    getItem = true;
+                                  });
+
+  advanceClocks(time::milliseconds(1), 20);
+  BOOST_CHECK(getItem);
+  f4.cancel();
 }
 
 BOOST_AUTO_TEST_SUITE_END()
