@@ -51,9 +51,9 @@ public:
   util::DummyClientFace c1;
   util::DummyClientFace c2;
   Name attrAuthorityPrefix;
-  security::v2::Certificate producerCert;
-  security::v2::Certificate authorityCert;
-  security::v2::Certificate ownerCert;
+  security::Certificate producerCert;
+  security::Certificate authorityCert;
+  security::Certificate ownerCert;
 };
 
 BOOST_FIXTURE_TEST_SUITE(TestProducer, TestProducerFixture)

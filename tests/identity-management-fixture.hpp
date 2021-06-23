@@ -63,7 +63,7 @@ public:
    */
   security::Identity
   addIdentity(const Name& identityName,
-              const KeyParams& params = security::v2::KeyChain::getDefaultKeyParams());
+              const KeyParams& params = security::KeyChain::getDefaultKeyParams());
 
   /**
    *  @brief Save identity certificate to a file
@@ -85,12 +85,12 @@ public:
    */
   security::Identity
   addSubCertificate(const Name& subIdentityName, const security::Identity& issuer,
-                    const KeyParams& params = security::v2::KeyChain::getDefaultKeyParams());
+                    const KeyParams& params = security::KeyChain::getDefaultKeyParams());
 
   /**
    * @brief Add a self-signed certificate to @p key with issuer ID @p issuer
    */
-  security::v2::Certificate
+  security::Certificate
   addCertificate(const security::Key& key, const std::string& issuer);
 
 protected:

@@ -48,8 +48,8 @@ public:
   util::DummyClientFace c1;
   util::DummyClientFace c2;
   Name attrAuthorityPrefix;
-  security::v2::Certificate consumerCert;
-  security::v2::Certificate authorityCert;
+  security::Certificate consumerCert;
+  security::Certificate authorityCert;
 };
 
 BOOST_FIXTURE_TEST_SUITE(TestConsumer, TestConsumerFixture)

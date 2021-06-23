@@ -53,7 +53,7 @@ BOOST_AUTO_TEST_CASE(setPolicy)
 {
   security::Identity id = addIdentity("/nacabe/test/dataowner");
   security::Key key = id.getDefaultKey();
-  security::v2::Certificate cert = key.getDefaultCertificate();
+  security::Certificate cert = key.getDefaultCertificate();
 
   DataOwner dataowner(cert, c1, m_keyChain);
 

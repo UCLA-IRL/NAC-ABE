@@ -49,13 +49,13 @@ TrustConfig::parse(const JsonSection& jsonConfig)
   auto it = caList.begin();
   for (; it != caList.end(); it++) {
     std::istringstream ss(it->second.get<std::string>("certificate"));
-    auto certItem = *(io::load<security::v2::Certificate>(ss));
+    auto certItem = *(io::load<security::Certificate>(ss));
     m_knownIdentities.insert(std::make_pair(certItem.getIdentity(), certItem));
   }
 }
 
 void
-TrustConfig::addOrUpdateCertificate(const security::v2::Certificate& certificate)
+TrustConfig::addOrUpdateCertificate(const security::Certificate& certificate)
 {
   auto search = m_knownIdentities.find(certificate.getIdentity());
   if (search != m_knownIdentities.end()) {
@@ -66,7 +66,7 @@ TrustConfig::addOrUpdateCertificate(const security::v2::Certificate& certificate
   }
 }
 
-optional<security::v2::Certificate>
+optional<security::Certificate>
 TrustConfig::findCertificate(const Name& identityName) const
 {
   auto search = m_knownIdentities.find(identityName);

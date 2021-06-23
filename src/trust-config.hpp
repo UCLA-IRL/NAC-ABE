@@ -33,9 +33,9 @@ public:
   load(const std::string& fileName);
 
   void
-  addOrUpdateCertificate(const security::v2::Certificate& certificate);
+  addOrUpdateCertificate(const security::Certificate& certificate);
 
-  optional<security::v2::Certificate>
+  optional<security::Certificate>
   findCertificate(const Name& identityName) const;
 
 private:
@@ -43,7 +43,7 @@ private:
   parse(const JsonSection& jsonConfig);
 
 public:
-  std::map<Name, security::v2::Certificate> m_knownIdentities;
+  std::map<Name, security::Certificate> m_knownIdentities;
 };
 
 } // namespace nacabe

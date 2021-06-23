@@ -32,9 +32,9 @@ namespace nacabe {
 NDN_LOG_INIT(nacabe.consumer);
 
 // public
-Consumer::Consumer(Face& face, security::v2::KeyChain& keyChain,
-                   const security::v2::Certificate& identityCert,
-                   const security::v2::Certificate& attrAuthorityCertificate,
+Consumer::Consumer(Face& face, security::KeyChain& keyChain,
+                   const security::Certificate& identityCert,
+                   const security::Certificate& attrAuthorityCertificate,
                    uint8_t repeatAttempts)
   : m_cert(identityCert)
   , m_face(face)

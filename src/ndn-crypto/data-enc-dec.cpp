@@ -80,7 +80,7 @@ decryptDataContent(const Block& dataBlock, const security::Tpm& tpm, const Name&
 
   // auto aesKey = Rsa::cpDecrypt(key, keyLen, encryptedAesKey.data(), encryptedAesKey.size());
   auto aesKey = tpm.decrypt(encryptedAesKey.data(), encryptedAesKey.size(),
-                            security::v2::extractKeyNameFromCertName(certName));
+                            security::extractKeyNameFromCertName(certName));
   auto payload = Aes::decrypt(aesKey->data(), aesKey->size(),
                               encryptedPayload.data(), encryptedPayload.size(), iv);
   return payload;

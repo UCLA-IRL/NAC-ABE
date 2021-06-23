@@ -39,16 +39,16 @@ public:
 
 public:
   Producer(Face& face,
-           security::v2::KeyChain& keyChain,
-           const security::v2::Certificate& identityCert,
-           const security::v2::Certificate& attrAuthorityCertificate,
-           const security::v2::Certificate& dataOwnerCertificate,
+           security::KeyChain& keyChain,
+           const security::Certificate& identityCert,
+           const security::Certificate& attrAuthorityCertificate,
+           const security::Certificate& dataOwnerCertificate,
            uint8_t repeatAttempts = 3);
 
   Producer(Face& face,
-           security::v2::KeyChain& keyChain,
-           const security::v2::Certificate& identityCert,
-           const security::v2::Certificate& attrAuthorityCertificate,
+           security::KeyChain& keyChain,
+           const security::Certificate& identityCert,
+           const security::Certificate& attrAuthorityCertificate,
            uint8_t repeatAttempts = 3);
 
   ~Producer();
@@ -93,9 +93,9 @@ PUBLIC_WITH_TESTS_ELSE_PRIVATE:
   findMatchedPolicy(const Name& dataName);
 
 PUBLIC_WITH_TESTS_ELSE_PRIVATE:
-  security::v2::Certificate m_cert;
+  security::Certificate m_cert;
   Face& m_face;
-  security::v2::KeyChain& m_keyChain;
+  security::KeyChain& m_keyChain;
   Name m_attrAuthorityPrefix;
   Name m_dataOwnerPrefix;
   uint8_t m_repeatAttempts;

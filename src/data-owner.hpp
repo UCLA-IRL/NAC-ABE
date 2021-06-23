@@ -33,8 +33,8 @@ public:
   using SuccessCallback = function<void (const Data&)>;
 
 public:
-  DataOwner(const security::v2::Certificate& identityCert, Face& face,
-            security::v2::KeyChain& keyChain);
+  DataOwner(const security::Certificate& identityCert, Face& face,
+            security::KeyChain& keyChain);
 
   /**
    * @brief Notice a producer the encryption policy for data produced under a specific data prefix.
@@ -53,10 +53,10 @@ public:
                         const SuccessCallback& SuccessCb, const ErrorCallback& errorCb);
 
 private:
-  security::v2::Certificate m_cert;
+  security::Certificate m_cert;
   Face& m_face;
-  security::v2::KeyChain& m_keyChain;
-  unique_ptr<security::v2::Validator> m_validator;
+  security::KeyChain& m_keyChain;
+  unique_ptr<security::Validator> m_validator;
 };
 
 } // namespace nacabe

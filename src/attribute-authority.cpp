@@ -32,8 +32,8 @@ namespace nacabe {
 NDN_LOG_INIT(nacabe.attribute-authority);
 
 //public
-AttributeAuthority::AttributeAuthority(const security::v2::Certificate& identityCert, Face& face,
-                                           security::v2::KeyChain& keyChain, const AbeType &abeType)
+AttributeAuthority::AttributeAuthority(const security::Certificate& identityCert, Face& face,
+                                           security::KeyChain& keyChain, const AbeType &abeType)
   : m_cert(identityCert)
   , m_face(face)
   , m_keyChain(keyChain)
@@ -147,8 +147,8 @@ AttributeAuthority::onRegisterFailed(const std::string& reason)
   NDN_LOG_TRACE("Error: failed to register prefix in local hub's daemon, REASON: " << reason);
 }
 
-CpAttributeAuthority::CpAttributeAuthority(const security::v2::Certificate& identityCert, Face& m_face,
-                                           security::v2::KeyChain& keyChain)
+CpAttributeAuthority::CpAttributeAuthority(const security::Certificate& identityCert, Face& m_face,
+                                           security::KeyChain& keyChain)
     : AttributeAuthority(identityCert, m_face, keyChain, ABE_TYPE_CP_ABE){
 
 }
@@ -162,7 +162,7 @@ CpAttributeAuthority::addNewPolicy(const Name& decryptorIdentityName, const std:
 }
 
 void
-CpAttributeAuthority::addNewPolicy(const security::v2::Certificate& decryptorCert, const std::list<std::string>& attributes)
+CpAttributeAuthority::addNewPolicy(const security::Certificate& decryptorCert, const std::list<std::string>& attributes)
 {
   m_trustConfig.addOrUpdateCertificate(decryptorCert);
   addNewPolicy(decryptorCert.getIdentity(), attributes);
@@ -176,8 +176,8 @@ algo::PrivateKey CpAttributeAuthority::getPrivateKey(Name identityName) {
   return algo::ABESupport::getInstance().cpPrvKeyGen(m_pubParams, m_masterKey, attrs);
 }
 
-KpAttributeAuthority::KpAttributeAuthority(const security::v2::Certificate& identityCert, Face& m_face,
-                                           security::v2::KeyChain& keyChain)
+KpAttributeAuthority::KpAttributeAuthority(const security::Certificate& identityCert, Face& m_face,
+                                           security::KeyChain& keyChain)
     : AttributeAuthority(identityCert, m_face, keyChain, ABE_TYPE_KP_ABE){
 
 }
@@ -191,7 +191,7 @@ KpAttributeAuthority::addNewPolicy(const Name& decryptorIdentityName, const Poli
 }
 
 void
-KpAttributeAuthority::addNewPolicy(const security::v2::Certificate& decryptorCert, const Policy& policy)
+KpAttributeAuthority::addNewPolicy(const security::Certificate& decryptorCert, const Policy& policy)
 {
   m_trustConfig.addOrUpdateCertificate(decryptorCert);
   addNewPolicy(decryptorCert.getIdentity(), policy);

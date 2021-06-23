@@ -39,9 +39,9 @@ public:
 
 public:
   Consumer(Face& face,
-           security::v2::KeyChain& keyChain,
-           const security::v2::Certificate& identityCert,
-           const security::v2::Certificate& attrAuthorityCertificate,
+           security::KeyChain& keyChain,
+           const security::Certificate& identityCert,
+           const security::Certificate& attrAuthorityCertificate,
            uint8_t repeatAttempts = 3);
 
   /**
@@ -87,9 +87,9 @@ private:
                 const DataCallback& dataCallback, const ErrorCallback& errorCallback);
 
 PUBLIC_WITH_TESTS_ELSE_PRIVATE:
-  security::v2::Certificate m_cert;
+  security::Certificate m_cert;
   Face& m_face;
-  security::v2::KeyChain& m_keyChain;
+  security::KeyChain& m_keyChain;
   Name m_attrAuthorityPrefix;
   uint8_t m_repeatAttempts;
 

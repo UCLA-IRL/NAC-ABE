@@ -31,8 +31,8 @@ namespace nacabe {
 class AttributeAuthority
 {
 protected:
-  AttributeAuthority(const security::v2::Certificate& identityCert, Face& m_face,
-                       security::v2::KeyChain& keyChain, const AbeType& abeType);
+  AttributeAuthority(const security::Certificate& identityCert, Face& m_face,
+                       security::KeyChain& keyChain, const AbeType& abeType);
 
   virtual ~AttributeAuthority();
 protected:
@@ -49,9 +49,9 @@ PUBLIC_WITH_TESTS_ELSE_PRIVATE:
   onRegisterFailed(const std::string& reason);
 
 PUBLIC_WITH_TESTS_ELSE_PROTECTED:
-  security::v2::Certificate m_cert;
+  security::Certificate m_cert;
   Face& m_face;
-  security::v2::KeyChain& m_keyChain;
+  security::KeyChain& m_keyChain;
 
   AbeType m_abeType;
   algo::PublicParams m_pubParams;
@@ -67,8 +67,8 @@ PUBLIC_WITH_TESTS_ELSE_PRIVATE:
 class CpAttributeAuthority: public AttributeAuthority
 {
 public:
-  CpAttributeAuthority(const security::v2::Certificate& identityCert, Face& m_face,
-                       security::v2::KeyChain& keyChain);
+  CpAttributeAuthority(const security::Certificate& identityCert, Face& m_face,
+                       security::KeyChain& keyChain);
 
   ~CpAttributeAuthority();
 
@@ -81,7 +81,7 @@ public:
    * @param attributes The attributes owned by the decryptor.
    */
   void
-  addNewPolicy(const security::v2::Certificate& decryptorCert, const std::list<std::string>& attributes);
+  addNewPolicy(const security::Certificate& decryptorCert, const std::list<std::string>& attributes);
 
   /**
    * @brief Add a new policy <decryptor name, decryptor attributes> into the state.
@@ -103,8 +103,8 @@ PUBLIC_WITH_TESTS_ELSE_PRIVATE:
 class KpAttributeAuthority: public AttributeAuthority
 {
 public:
-  KpAttributeAuthority(const security::v2::Certificate& identityCert, Face& m_face,
-                       security::v2::KeyChain& keyChain);
+  KpAttributeAuthority(const security::Certificate& identityCert, Face& m_face,
+                       security::KeyChain& keyChain);
 
   ~KpAttributeAuthority();
 
@@ -117,7 +117,7 @@ public:
    * @param policy The access policy of the decryptor.
    */
   void
-  addNewPolicy(const security::v2::Certificate& decryptorCert, const Policy& policy);
+  addNewPolicy(const security::Certificate& decryptorCert, const Policy& policy);
 
   /**
    * @brief Add a new policy <decryptor name, decryptor attributes> into the state.

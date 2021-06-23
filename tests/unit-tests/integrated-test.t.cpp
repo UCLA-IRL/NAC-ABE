@@ -68,12 +68,12 @@ public:
   util::DummyClientFace consumerFace2;
   util::DummyClientFace dataOwnerFace;
 
-  security::v2::Certificate aaCert;
-  security::v2::Certificate tokenIssuerCert;
-  security::v2::Certificate consumerCert1;
-  security::v2::Certificate consumerCert2;
-  security::v2::Certificate producerCert;
-  security::v2::Certificate dataOwnerCert;
+  security::Certificate aaCert;
+  security::Certificate tokenIssuerCert;
+  security::Certificate consumerCert1;
+  security::Certificate consumerCert2;
+  security::Certificate producerCert;
+  security::Certificate dataOwnerCert;
 };
 
 BOOST_FIXTURE_TEST_SUITE(TestIntegrated, TestIntegratedFixture)

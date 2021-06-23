@@ -32,10 +32,10 @@ NDN_LOG_INIT(nacabe.producer);
 
 //public
 Producer::Producer(Face& face,
-                   security::v2::KeyChain& keyChain,
-                   const security::v2::Certificate& identityCert,
-                   const security::v2::Certificate& attrAuthorityCertificate,
-                   const security::v2::Certificate& dataOwnerCertificate,
+                   security::KeyChain& keyChain,
+                   const security::Certificate& identityCert,
+                   const security::Certificate& attrAuthorityCertificate,
+                   const security::Certificate& dataOwnerCertificate,
                    uint8_t repeatAttempts)
   : m_cert(identityCert)
   , m_face(face)
@@ -59,9 +59,9 @@ Producer::Producer(Face& face,
 }
 
 Producer::Producer(Face& face,
-                   security::v2::KeyChain& keyChain,
-                   const security::v2::Certificate& identityCert,
-                   const security::v2::Certificate& attrAuthorityCertificate,
+                   security::KeyChain& keyChain,
+                   const security::Certificate& identityCert,
+                   const security::Certificate& attrAuthorityCertificate,
                    uint8_t repeatAttempts)
   : m_cert(identityCert)
     , m_face(face)
@@ -101,7 +101,7 @@ Producer::produce(const Name& dataName, const std::string& accessPolicy,
     auto cipherText = algo::ABESupport::getInstance().cpEncrypt(m_paramFetcher.getPublicParams(), accessPolicy,
                                                                 Buffer(content, contentLen));
 
-    Name ckName = security::v2::extractIdentityFromCertName(m_cert.getName());
+    Name ckName = security::extractIdentityFromCertName(m_cert.getName());
     ckName.append("CK").append(std::to_string(random::generateSecureWord32()));
 
     Name contentDataName = m_cert.getIdentity();
