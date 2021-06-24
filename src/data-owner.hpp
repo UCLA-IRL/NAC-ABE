@@ -66,7 +66,7 @@ public:
    * @param errorCb The failure callback.
    */
   void
-  commandProducerPolicy(const Name& producerPrefix, const Name& dataPrefix, const std::list<std::string>& attributes,
+  commandProducerPolicy(const Name& producerPrefix, const Name& dataPrefix, const std::vector<std::string>& attributes,
                         const SuccessCallback& successCb, const ErrorCallback& errorCb);
 
 private:

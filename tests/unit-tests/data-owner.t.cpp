@@ -203,9 +203,10 @@ BOOST_AUTO_TEST_CASE(KpSetPolicy)
 
   Name producerPrefix = Name("/producer1");
   Name dataPrefix = Name("/data");
-  std::list<std::string> attributes = {"attr1", "attr2", "attr3"};
+  std::vector<std::string> attributes = {"attr1", "attr2", "attr3"};
   Block attributeBlock(tlv::GenericNameComponent);
   for (const auto& i : attributes) attributeBlock.push_back(makeStringBlock(TLV_Attribute, i));
+  attributeBlock.encode();
   Name interestName = producerPrefix;
   interestName.append(SET_POLICY)
       .append(dataPrefix.wireEncode())

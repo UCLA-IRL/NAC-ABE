@@ -41,7 +41,6 @@ Consumer::Consumer(Face& face, security::KeyChain& keyChain,
   , m_attrAuthorityPrefix(attrAuthorityCertificate.getIdentity())
   , m_paramFetcher(m_face, m_attrAuthorityPrefix, m_trustConfig)
 {
-  std::cout << "CONSUMER CONSTRUCTOR" << std::endl;
   m_trustConfig.addOrUpdateCertificate(attrAuthorityCertificate);
   m_paramFetcher.fetchPublicParams();
 }

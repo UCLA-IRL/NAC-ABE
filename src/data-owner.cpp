@@ -87,7 +87,7 @@ void DataOwner::commandProducerPolicy(const Name &producerPrefix, const Name &da
 }
 
 void DataOwner::commandProducerPolicy(const Name &producerPrefix, const Name &dataPrefix,
-                                      const std::list<std::string> &attributes,
+                                      const std::vector<std::string> &attributes,
                                       const DataOwner::SuccessCallback &successCb,
                                       const DataOwner::ErrorCallback &errorCb) {
   Block attributeBlock(tlv::GenericNameComponent);
@@ -96,6 +96,7 @@ void DataOwner::commandProducerPolicy(const Name &producerPrefix, const Name &da
     attributeBlock.push_back(makeStringBlock(TLV_Attribute, i));
     ss << i + "|";
   }
+  attributeBlock.encode();
   NDN_LOG_INFO("Set data " << dataPrefix<<" in Producer "<< producerPrefix <<" with attribute "<< ss.str());
   commandProducerPolicy(producerPrefix, dataPrefix, attributeBlock, successCb, errorCb);
 }

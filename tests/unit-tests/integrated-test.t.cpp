@@ -196,6 +196,124 @@ BOOST_AUTO_TEST_CASE(IntegratedTest)
   BOOST_CHECK(isConsumeCbCalled);
 }
 
+BOOST_AUTO_TEST_CASE(KpIntegratedTest)
+{
+  // set up AA
+  NDN_LOG_INFO("Create Attribute Authority. AA prefix: " << aaCert.getIdentity());
+  KpAttributeAuthority aa = KpAttributeAuthority(aaCert, aaFace, m_keyChain);
+  advanceClocks(time::milliseconds(20), 60);
+
+  // define attr list for consumer rights
+  Policy policy1 = "cs";
+  NDN_LOG_INFO("Add comsumer 1 "<< consumerCert1.getIdentity() <<" with policy: " << policy1);
+  aa.addNewPolicy(consumerCert1, policy1);
+  BOOST_CHECK_EQUAL(aa.m_tokens.size(), 1);
+
+  Policy policy2 = "cs and homework";
+  NDN_LOG_INFO("Add comsumer 2 "<<consumerCert2.getIdentity()<<" with policy: " << policy2);
+  aa.addNewPolicy(consumerCert2, policy2);
+  BOOST_CHECK_EQUAL(aa.m_tokens.size(), 2);
+
+  // set up consumer
+  NDN_LOG_INFO("Create Consumer 1. Consumer 1 prefix:"<<consumerCert1.getIdentity());
+  Consumer consumer1 = Consumer(consumerFace1, m_keyChain, consumerCert1, aaCert);
+  advanceClocks(time::milliseconds(20), 60);
+  BOOST_CHECK(consumer1.m_paramFetcher.getPublicParams().m_pub != "");
+
+  // set up consumer
+  NDN_LOG_INFO("Create Consumer 2. Consumer 2 prefix:"<<consumerCert2.getIdentity());
+  Consumer consumer2 = Consumer(consumerFace2, m_keyChain, consumerCert2, aaCert);
+  advanceClocks(time::milliseconds(20), 60);
+  BOOST_CHECK(consumer2.m_paramFetcher.getPublicParams().m_pub != "");
+
+  // set up producer
+  NDN_LOG_INFO("Create Producer. Producer prefix:"<<producerCert.getIdentity());
+  Producer producer = Producer(producerFace, m_keyChain, producerCert, aaCert, dataOwnerCert);
+  advanceClocks(time::milliseconds(20), 60);
+  BOOST_CHECK(producer.m_paramFetcher.getPublicParams().m_pub != "");
+
+  // set up data owner
+  NDN_LOG_INFO("Create Data Owner. Data Owner prefix:"<<dataOwnerCert.getIdentity());
+  DataOwner dataOwner = DataOwner(dataOwnerCert, dataOwnerFace, m_keyChain);
+  advanceClocks(time::milliseconds(20), 60);
+
+  NDN_LOG_INFO("\n=================== start work flow ==================\n");
+
+  Name dataName = "/dataName";
+  std::vector<std::string> attr = {"cs", "exam"};
+
+  bool isPolicySet = false;
+  dataOwner.commandProducerPolicy(producerCert.getIdentity(), dataName, attr,
+                                  [&] (const Data& response) {
+                                    NDN_LOG_DEBUG("on policy set data callback");
+                                    isPolicySet = true;
+                                    BOOST_CHECK_EQUAL(readString(response.getContent()), "success");
+                                    auto attrFound = producer.findMatchedAttributes(dataName);
+                                    BOOST_CHECK_EQUAL_COLLECTIONS(attrFound.begin(), attrFound.end(), attr.begin(), attr.end());
+                                  },
+                                  [=] (const std::string& err) {
+                                    BOOST_CHECK(false);
+                                  });
+
+  NDN_LOG_DEBUG("before policy set");
+  advanceClocks(time::milliseconds(20), 60);
+  BOOST_CHECK(isPolicySet);
+
+  std::shared_ptr<Data> contentData, ckData;
+  auto attributeFound = producer.findMatchedAttributes(dataName);
+  std::tie(contentData, ckData) = producer.produce(dataName, attributeFound, PLAIN_TEXT, sizeof(PLAIN_TEXT));
+  BOOST_CHECK(contentData != nullptr);
+  BOOST_CHECK(ckData != nullptr);
+  NDN_LOG_DEBUG("content data name: " << contentData->getName());
+
+  producerFace.setInterestFilter(producerCert.getIdentity(),
+                                 [&] (const ndn::InterestFilter&, const ndn::Interest& interest) {
+                                   NDN_LOG_INFO("consumer request for"<<interest.toUri());
+                                   if (interest.getName().isPrefixOf(contentData->getName())) {
+                                     producerFace.put(*contentData);
+                                   }
+                                   if (interest.getName().isPrefixOf(ckData->getName())) {
+                                     producerFace.put(*ckData);
+                                   }
+                                 }
+  );
+
+  bool isConsumeCbCalled = false;
+  consumer1.obtainDecryptionKey();
+  advanceClocks(time::milliseconds(20), 60);
+  consumer1.consume(producerCert.getIdentity().append(dataName),
+                    [&] (const Buffer& result) {
+                      isConsumeCbCalled = true;
+                      BOOST_CHECK_EQUAL_COLLECTIONS(result.begin(), result.end(),
+                                                    PLAIN_TEXT, PLAIN_TEXT + sizeof(PLAIN_TEXT));
+                      std::string str;
+                      for(int i =0; i < sizeof(PLAIN_TEXT); ++i) {
+                        str.push_back(result[i]);
+                      }
+                      NDN_LOG_INFO("result:" << str);
+                    },
+                    [&] (const std::string& err) {
+                      BOOST_CHECK(false);
+                    }
+  );
+  advanceClocks(time::milliseconds(20), 60);
+  BOOST_CHECK(isConsumeCbCalled);
+
+  isConsumeCbCalled = false;
+  consumer2.obtainDecryptionKey();
+  advanceClocks(time::milliseconds(20), 60);
+  consumer2.consume(producerCert.getIdentity().append(dataName),
+                    [&] (const Buffer& result) {
+                      BOOST_CHECK(false);
+                    },
+                    [&] (const std::string& err) {
+                      isConsumeCbCalled = true;
+                    }
+  );
+  advanceClocks(time::milliseconds(20), 60);
+  BOOST_CHECK(isConsumeCbCalled);
+}
+
 BOOST_AUTO_TEST_SUITE_END()
 
 } // namespace tests
