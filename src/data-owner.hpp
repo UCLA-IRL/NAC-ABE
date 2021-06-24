@@ -21,6 +21,7 @@
 #ifndef NAC_ABE_DATA_OWNER_HPP
 #define NAC_ABE_DATA_OWNER_HPP
 
+#include <algo/abe-support.hpp>
 #include "common.hpp"
 
 namespace ndn {
@@ -49,7 +50,7 @@ public:
    * @param errorCb The failure callback.
    */
   void
-  commandProducerPolicy(const Name& producerPrefix, const Name& dataPrefix, const std::string& policy,
+  commandProducerPolicy(const Name& producerPrefix, const Name& dataPrefix, const Policy& policy,
                         const SuccessCallback& successCb, const ErrorCallback& errorCb);
 
   /**

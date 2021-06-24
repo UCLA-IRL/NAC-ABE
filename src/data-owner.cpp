@@ -79,7 +79,7 @@ DataOwner::commandProducerPolicy(const Name& prefix, const Name& dataPrefix, con
                          });
 }
 
-void DataOwner::commandProducerPolicy(const Name &producerPrefix, const Name &dataPrefix, const std::string &policy,
+void DataOwner::commandProducerPolicy(const Name &producerPrefix, const Name &dataPrefix, const Policy &policy,
                                       const DataOwner::SuccessCallback &successCb,
                                       const DataOwner::ErrorCallback &errorCb) {
   NDN_LOG_INFO("Set data " << dataPrefix<<" in Producer "<< producerPrefix <<" with policy "<< policy);

@@ -32,7 +32,7 @@ class CipherText
 {
 public:
   Block
-  makeDataContent();
+  makeDataContent() const;
 
   Block
   makeCKContent();

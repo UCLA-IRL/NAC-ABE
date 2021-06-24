@@ -26,6 +26,7 @@
 #include "param-fetcher.hpp"
 
 #include <ndn-cxx/security/verification-helpers.hpp>
+#include <algo/abe-support.hpp>
 
 namespace ndn {
 namespace nacabe {
@@ -35,7 +36,8 @@ class Producer
 public:
   using ErrorCallback = function<void (const std::string&)>;
   using SuccessCallback = function<void (const Data&, const Data&)>;
-  using PolicyTuple = std::tuple<Name, std::string>;
+  using PolicyTuple = std::pair<Name, std::string>;
+  using AttributeTuple = std::pair<Name, std::vector<std::string>>;
 
 public:
   /**
@@ -67,7 +69,7 @@ public:
   ~Producer();
 
   /**
-   * @brief Produce encrypted Data and corresponding encrypted CK Data
+   * @brief Produce CP-encrypted Data and corresponding encrypted CK Data
    *
    * Used when data owner is not used.
    *
@@ -79,7 +81,23 @@ public:
    * @return The encrypted data and the encrypted CK data
    */
   std::tuple<std::shared_ptr<Data>, std::shared_ptr<Data>>
-  produce(const Name& dataName, const std::string& accessPolicy,
+  produce(const Name& dataName, const Policy& accessPolicy,
+          const uint8_t* content, size_t contentLen);
+
+  /**
+   * @brief Produce KP-encrypted Data and corresponding encrypted CK Data
+   *
+   * Used when data owner is not used.
+   *
+   * @param dataName The name of data, not including producer's prefix
+   * @param dataSuffix The suffix of data.
+   * @param accessPolicy The encryption policy, e.g., (ucla or mit) and professor
+   * @param content The payload
+   * @param contentLen The payload length
+   * @return The encrypted data and the encrypted CK data
+   */
+  std::tuple<std::shared_ptr<Data>, std::shared_ptr<Data>>
+  produce(const Name& dataName, const std::vector<std::string>& attributes,
           const uint8_t* content, size_t contentLen);
 
   /**
@@ -100,10 +118,18 @@ PUBLIC_WITH_TESTS_ELSE_PRIVATE:
   onPolicyInterest(const Interest& interest);
 
   void
-  addNewPolicy(const Name& dataPrefix, const std::string& policy);
+  addNewPolicy(const Name& dataPrefix, const Policy& policy);
+
+  void
+  addNewAttributes(const Name& dataPrefix, const std::vector<std::string>& attributes);
 
   std::string
   findMatchedPolicy(const Name& dataName);
+
+  std::vector<std::string>
+  findMatchedAttributes(const Name& dataName);
+
+  shared_ptr <Data> getCkEncryptedData(const Name &dataName, const algo::CipherText &cipherText, const Name &ckName);
 
 PUBLIC_WITH_TESTS_ELSE_PRIVATE:
   security::Certificate m_cert;
@@ -112,7 +138,8 @@ PUBLIC_WITH_TESTS_ELSE_PRIVATE:
   Name m_attrAuthorityPrefix;
   Name m_dataOwnerPrefix;
 
-  std::vector<PolicyTuple> m_policies;
+  std::vector<PolicyTuple> m_policies; //for CP-ABE
+  std::vector<AttributeTuple> m_attributes; //for KP-ABE
   RegisteredPrefixHandle m_registeredPrefixHandle;
   TrustConfig m_trustConfig;
   ParamFetcher m_paramFetcher;

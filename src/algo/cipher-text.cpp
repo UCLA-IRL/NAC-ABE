@@ -28,7 +28,7 @@ namespace algo {
 NDN_LOG_INIT(nacabe.ciphertext);
 
 Block
-CipherText::makeDataContent()
+CipherText::makeDataContent() const
 {
   auto encryptedBlock = makeBinaryBlock(TLV_EncryptedContent,
                                         m_content.data(), m_content.size());

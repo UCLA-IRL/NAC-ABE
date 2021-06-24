@@ -78,6 +78,7 @@ BOOST_AUTO_TEST_CASE(onPolicyInterest)
 {
   NDN_LOG_DEBUG("on policy interest unit test");
   Producer producer(c1, m_keyChain, producerCert, authorityCert, ownerCert);
+  producer.m_paramFetcher.m_abeType = ABE_TYPE_CP_ABE;
   advanceClocks(time::milliseconds(20), 60);
 
   Name dataPrefix("dataPrefix");
@@ -91,14 +92,6 @@ BOOST_AUTO_TEST_CASE(onPolicyInterest)
   setPolicyInterest.setCanBePrefix(true);
   setPolicyInterest.setMustBeFresh(true);
   m_keyChain.sign(setPolicyInterest, signingByCertificate(ownerCert));
-
-  int count = 0;
-  auto onSend = [&](const Data& response, std::string isSuccess) {
-    BOOST_CHECK(security::verifySignature(response, producerCert));
-
-    BOOST_CHECK(readString(response.getContent()) == isSuccess);
-    NDN_LOG_DEBUG("content is:" << readString(response.getContent()) << ", isSuccess:" << isSuccess);
-  };
 
   NDN_LOG_DEBUG("before receive, interest name:" << setPolicyInterest.getName());
   //dynamic_cast<util::DummyClientFace*>(&c1)->receive(setPolicyInterest);
@@ -141,6 +134,68 @@ BOOST_AUTO_TEST_CASE(onPolicyInterest)
   BOOST_CHECK_EQUAL(policyFound, "policy");
 }
 
+BOOST_AUTO_TEST_CASE(onKpPolicyInterest)
+{
+  NDN_LOG_DEBUG("on policy interest unit test");
+  Producer producer(c1, m_keyChain, producerCert, authorityCert, ownerCert);
+  producer.m_paramFetcher.m_abeType = ABE_TYPE_KP_ABE;
+  advanceClocks(time::milliseconds(20), 60);
+
+  Name dataPrefix("dataPrefix");
+  Name setPolicyInterestName = producerCert.getIdentity();
+  setPolicyInterestName.append(SET_POLICY);
+  setPolicyInterestName.append(dataPrefix.wireEncode());
+  setPolicyInterestName.append(Block(tlv::GenericNameComponent, makeStringBlock(TLV_Attribute, "attr1")));
+
+  NDN_LOG_DEBUG("set policy Interest name:" << setPolicyInterestName);
+  Interest setPolicyInterest = Interest(setPolicyInterestName);
+  setPolicyInterest.setCanBePrefix(true);
+  setPolicyInterest.setMustBeFresh(true);
+  m_keyChain.sign(setPolicyInterest, signingByCertificate(ownerCert));
+
+  NDN_LOG_DEBUG("before receive, interest name:" << setPolicyInterest.getName());
+  //dynamic_cast<util::DummyClientFace*>(&c1)->receive(setPolicyInterest);
+  c2.expressInterest(
+      setPolicyInterest,
+      [&](const Interest&, const Data& response) {
+        BOOST_CHECK(security::verifySignature(response, producerCert));
+        BOOST_CHECK(readString(response.getContent()) == "success");
+      },
+      [=](const Interest&, const lp::Nack&) {},
+      [=](const Interest&) {});
+
+  NDN_LOG_DEBUG("set policy Interest:" << setPolicyInterest.getName());
+  ///producer/SET_POLICY/dataPrefix/policy
+  NDN_LOG_DEBUG("data prefix:" << setPolicyInterest.getName().getSubName(2, 1));
+  NDN_LOG_DEBUG(setPolicyInterest.getName().getSubName(3, 1));
+  //_LOG_DEBUG("policy:"<<setPolicyInterest.getName().at(3).toUri());
+
+  advanceClocks(time::milliseconds(20), 60);
+
+  auto attributesFound = producer.findMatchedAttributes(dataPrefix);
+  BOOST_CHECK_EQUAL(producer.m_attributes.size(), 1);
+  BOOST_CHECK_EQUAL(attributesFound.size(), 1);
+  BOOST_CHECK_EQUAL(attributesFound[0], "attr1");
+
+  advanceClocks(time::milliseconds(20), 60);
+
+  c2.expressInterest(
+      setPolicyInterest,
+      [&](const Interest&, const Data& response) {
+        BOOST_CHECK(security::verifySignature(response, producerCert));
+        BOOST_CHECK_EQUAL(readString(response.getContent()), "success");
+      },
+      [=](const Interest&, const lp::Nack&) {},
+      [=](const Interest&) {});
+
+  advanceClocks(time::milliseconds(20), 60);
+
+  attributesFound = producer.findMatchedAttributes(dataPrefix);
+  BOOST_CHECK_EQUAL(producer.m_attributes.size(), 1);
+  BOOST_CHECK_EQUAL(attributesFound.size(), 1);
+  BOOST_CHECK_EQUAL(attributesFound[0], "attr1");
+}
+
 BOOST_AUTO_TEST_CASE(encryptContent)
 {
   algo::PublicParams pubParams;
@@ -153,6 +208,7 @@ BOOST_AUTO_TEST_CASE(encryptContent)
   BOOST_CHECK(masterKey.m_msk != "");
 
   producer.m_paramFetcher.m_pubParamsCache = pubParams;
+  producer.m_paramFetcher.m_abeType = ABE_TYPE_CP_ABE;
   // generate prv key
   std::vector<std::string> attrList = {"attr1", "attr2", "attr3", "attr4", "attr5",
                                        "attr6", "attr7", "attr8", "attr9", "attr10"};
@@ -160,6 +216,30 @@ BOOST_AUTO_TEST_CASE(encryptContent)
 
   std::shared_ptr<Data> data, ckData;
   std::tie(data, ckData) = producer.produce(Name("/dataset1/example/data1"), "attr1 or attr2", PLAIN_TEXT, sizeof(PLAIN_TEXT));
+  BOOST_CHECK(data != nullptr);
+  BOOST_CHECK(ckData != nullptr);
+}
+
+BOOST_AUTO_TEST_CASE(KpEncryptContent)
+{
+  algo::PublicParams pubParams;
+  algo::MasterKey masterKey;
+  Producer producer(c1, m_keyChain, producerCert, authorityCert);
+  advanceClocks(time::milliseconds(20), 60);
+  algo::ABESupport::getInstance().kpInit(pubParams, masterKey);
+
+  BOOST_CHECK(pubParams.m_pub != "");
+  BOOST_CHECK(masterKey.m_msk != "");
+
+  producer.m_paramFetcher.m_pubParamsCache = pubParams;
+  producer.m_paramFetcher.m_abeType = ABE_TYPE_KP_ABE;
+  // generate prv key
+  std::vector<std::string> attrList = {"attr1", "attr2", "attr3", "attr4", "attr5",
+                                       "attr6", "attr7", "attr8", "attr9", "attr10"};
+  algo::PrivateKey prvKey = algo::ABESupport::getInstance().kpPrvKeyGen(pubParams, masterKey, "attr1 or attr2");
+
+  std::shared_ptr<Data> data, ckData;
+  std::tie(data, ckData) = producer.produce(Name("/dataset1/example/data1"), attrList, PLAIN_TEXT, sizeof(PLAIN_TEXT));
   BOOST_CHECK(data != nullptr);
   BOOST_CHECK(ckData != nullptr);
 }
