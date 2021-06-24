@@ -99,10 +99,9 @@ The library mainly provide supports for four roles in an NDN based ABE scenario.
 * **Encryptor**. The party who get decryption keys from the attribute authority and consume encrypted data.
 * **Decryptor**. The party who follows data owner's decision and produce encrypted data.
 
-These four parties are implemented in four classes in the library: `CpAttributeAuthority`, `DataOwner`, `producer`, and `consumer`.
+These five parties are implemented in four classes in the library: `CpAttributeAuthority`, `KpAttributeAuthority`, `DataOwner`, `producer`, and `consumer`.
 
-> For now, only Ciphertext Policy Attribute-based Encryption (CP-ABE) is supported. 
-> A future work is to support KP-ABE as well so that the application can decide the favor based on its requirements.
+> For now, Both Ciphertext Policy Attribute-based Encryption (CP-ABE) and Key Policy Attribute-based Encryption (KP-ABE) is supported. 
 
 From the perspective of the data flow:
 * Content is encrypted by the content KEY (CK), which is symmetric AES key.
@@ -116,8 +115,11 @@ From the perspective of the data flow:
 #### Instantiate a new attribute authority
 
 ```c++
-// obtain or create a certificate for attribute authority
-CpAttributeAuthority aa = CpAttributeAuthority(aaCert, face, keychain);
+// obtain or create a certificate for attribute authority for CP-ABE
+CpAttributeAuthority aa(aaCert, face, keychain);
+
+// obtain or create a certificate for attribute authority for KP-ABE
+KpAttributeAuthority aa(aaCert, face, keychain);
 ```
 
 #### Add policy
@@ -125,9 +127,13 @@ CpAttributeAuthority aa = CpAttributeAuthority(aaCert, face, keychain);
 Add a new decryptor and its corresponding attribute list into authority:
 
 ```c++
-// obtain the decryptor's certificate
+// obtain the decryptor's certificate for CP-ABE
 std::list<std::string> attrList = {"ucla", "professor"};
 aa.addNewPolicy(decryptorCertificate, attrList);
+
+// obtain the decryptor's certificate for KP-ABE
+String policy = "ucla and cs and (exam or quiz);
+aa.addNewPolicy(decryptorCertificate, policy);
 ```
 
 After starting an attribute authority and added policies for decryptors, 
@@ -150,7 +156,11 @@ DataOwner dataOwner = DataOwner(dataOwnerCert, face, keychain);
 Command a data producer to apply certain policy when producing certain Data packets.
 
 ```c++
+//for CP-ABE
 dataOwner.commandProducerPolicy(Name("/producer"), Name("/healthdata"), "ucla and professor", successCallback, failCallback);
+
+//for KP-ABE
+dataOwner.commandProducerPolicy(Name("/producer"), Name("/healthdata"), {"ucla", "cs", "exam"}, successCallback, failCallback);
 ```
 
 To command a data producer, the data owner will use its own private key to sign the command Interest.
@@ -182,7 +192,10 @@ The encryptor can also produce a new data using a new policy:
 
 ```c++
 std::shared_ptr<Data> contentData, ckData;
+//for CP-ABE
 std::tie(contentData, ckData) = producer.produce(dataName, "ucla and professor", sizeof(PLAIN_TEXT));
+//for KP-ABE
+std::tie(contentData, ckData) = producer.produce(dataName, {"ucla","cs","exam"}, sizeof(PLAIN_TEXT));
 ```
 
 ### 3.4 Decryptor (Data Consumer)
