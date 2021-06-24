@@ -38,18 +38,31 @@ public:
   using PolicyTuple = std::tuple<Name, std::string>;
 
 public:
+  /**
+   * Initialize a producer. Use when no data owner defined.
+   * @param face
+   * @param keyChain
+   * @param identityCert
+   * @param attrAuthorityCertificate
+   * @param repeatAttempts
+   */
   Producer(Face& face,
            security::KeyChain& keyChain,
            const security::Certificate& identityCert,
-           const security::Certificate& attrAuthorityCertificate,
-           const security::Certificate& dataOwnerCertificate,
-           uint8_t repeatAttempts = 3);
+           const security::Certificate& attrAuthorityCertificate);
 
+  /**
+   * Initialize a producer. Use when a data owner defined.
+   * @param face
+   * @param keyChain
+   * @param identityCert
+   * @param attrAuthorityCertificate
+   */
   Producer(Face& face,
            security::KeyChain& keyChain,
            const security::Certificate& identityCert,
            const security::Certificate& attrAuthorityCertificate,
-           uint8_t repeatAttempts = 3);
+           const security::Certificate& dataOwnerCertificate);
 
   ~Producer();
 
@@ -98,7 +111,6 @@ PUBLIC_WITH_TESTS_ELSE_PRIVATE:
   security::KeyChain& m_keyChain;
   Name m_attrAuthorityPrefix;
   Name m_dataOwnerPrefix;
-  uint8_t m_repeatAttempts;
 
   std::vector<PolicyTuple> m_policies;
   RegisteredPrefixHandle m_registeredPrefixHandle;

@@ -34,13 +34,11 @@ NDN_LOG_INIT(nacabe.consumer);
 // public
 Consumer::Consumer(Face& face, security::KeyChain& keyChain,
                    const security::Certificate& identityCert,
-                   const security::Certificate& attrAuthorityCertificate,
-                   uint8_t repeatAttempts)
+                   const security::Certificate& attrAuthorityCertificate)
   : m_cert(identityCert)
   , m_face(face)
   , m_keyChain(keyChain)
   , m_attrAuthorityPrefix(attrAuthorityCertificate.getIdentity())
-  , m_repeatAttempts(repeatAttempts)
   , m_paramFetcher(m_face, m_attrAuthorityPrefix, m_trustConfig)
 {
   std::cout << "CONSUMER CONSTRUCTOR" << std::endl;

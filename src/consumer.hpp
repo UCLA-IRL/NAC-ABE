@@ -41,8 +41,7 @@ public:
   Consumer(Face& face,
            security::KeyChain& keyChain,
            const security::Certificate& identityCert,
-           const security::Certificate& attrAuthorityCertificate,
-           uint8_t repeatAttempts = 3);
+           const security::Certificate& attrAuthorityCertificate);
 
   /**
    * @brief Obtain attributes (DKEY) from the attribute authority.
@@ -91,7 +90,6 @@ PUBLIC_WITH_TESTS_ELSE_PRIVATE:
   Face& m_face;
   security::KeyChain& m_keyChain;
   Name m_attrAuthorityPrefix;
-  uint8_t m_repeatAttempts;
 
   TrustConfig m_trustConfig;
   algo::PrivateKey m_keyCache;

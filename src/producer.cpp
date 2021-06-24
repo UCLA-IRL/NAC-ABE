@@ -30,56 +30,38 @@ namespace nacabe {
 
 NDN_LOG_INIT(nacabe.producer);
 
+Producer::Producer(Face& face,
+                   security::KeyChain& keyChain,
+                   const security::Certificate& identityCert,
+                   const security::Certificate& attrAuthorityCertificate)
+  : m_cert(identityCert)
+    , m_face(face)
+    , m_keyChain(keyChain)
+    , m_attrAuthorityPrefix(attrAuthorityCertificate.getIdentity())
+    , m_paramFetcher(m_face, m_attrAuthorityPrefix, m_trustConfig)
+{
+  m_trustConfig.addOrUpdateCertificate(attrAuthorityCertificate);
+  m_paramFetcher.fetchPublicParams();
+}
+
 //public
 Producer::Producer(Face& face,
                    security::KeyChain& keyChain,
                    const security::Certificate& identityCert,
                    const security::Certificate& attrAuthorityCertificate,
-                   const security::Certificate& dataOwnerCertificate,
-                   uint8_t repeatAttempts)
-  : m_cert(identityCert)
-  , m_face(face)
-  , m_keyChain(keyChain)
-  , m_attrAuthorityPrefix(attrAuthorityCertificate.getIdentity())
-  , m_dataOwnerPrefix(dataOwnerCertificate.getIdentity())
-  , m_repeatAttempts(repeatAttempts)
-  , m_paramFetcher(m_face, m_attrAuthorityPrefix, m_trustConfig)
+                   const security::Certificate& dataOwnerCertificate)
+    : Producer(face, keyChain, identityCert, attrAuthorityCertificate)
 {
-  // prefix registration
-  m_registeredPrefixHandle = m_face.setInterestFilter(Name(m_cert.getIdentity()).append(SET_POLICY),
-                                           bind(&Producer::onPolicyInterest, this, _2),
-                                           [](const Name&, const std::string&) {
-    NDN_THROW(std::runtime_error("Cannot register the prefix to the local NFD"));
-  });
-  NDN_LOG_DEBUG("set prefix:" << m_cert.getIdentity());
-
-  m_trustConfig.addOrUpdateCertificate(attrAuthorityCertificate);
+  m_dataOwnerPrefix = dataOwnerCertificate.getIdentity();
   m_trustConfig.addOrUpdateCertificate(dataOwnerCertificate);
-  m_paramFetcher.fetchPublicParams();
-}
 
-Producer::Producer(Face& face,
-                   security::KeyChain& keyChain,
-                   const security::Certificate& identityCert,
-                   const security::Certificate& attrAuthorityCertificate,
-                   uint8_t repeatAttempts)
-  : m_cert(identityCert)
-    , m_face(face)
-    , m_keyChain(keyChain)
-    , m_attrAuthorityPrefix(attrAuthorityCertificate.getIdentity())
-    , m_repeatAttempts(repeatAttempts)
-    , m_paramFetcher(m_face, m_attrAuthorityPrefix, m_trustConfig)
-{
   // prefix registration
   m_registeredPrefixHandle = m_face.setInterestFilter(Name(m_cert.getIdentity()).append(SET_POLICY),
-                                                      bind(&Producer::onPolicyInterest, this, _2),
+                                                      [this](auto &&, auto && PH2) { onPolicyInterest(std::forward<decltype(PH2)>(PH2)); },
                                                       [](const Name&, const std::string&) {
                                                         NDN_THROW(std::runtime_error("Cannot register the prefix to the local NFD"));
                                                       });
   NDN_LOG_DEBUG("set prefix:" << m_cert.getIdentity());
-
-  m_trustConfig.addOrUpdateCertificate(attrAuthorityCertificate);
-  m_paramFetcher.fetchPublicParams();
 }
 
 Producer::~Producer()
