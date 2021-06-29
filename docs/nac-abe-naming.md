@@ -12,10 +12,15 @@ Replied param format:
 
 ## Decryption Keys
 ```
-/AA-prefix/DKEY/<identity-name-block>/<signature>
+/<AA-prefix>/DKEY/<identity-name-block>/<signature>
 ```
 
 ## Policy Set
 ```
 /<producer prefix>/SET_POLICY/<data prefix block>/<attribute or policy block>
+```
+
+## Content Key
+```
+/<producer prefix>/CK/<random number identifier>
 ```
