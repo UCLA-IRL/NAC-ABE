@@ -272,7 +272,7 @@ Producer::onPolicyInterest(const Interest& interest)
 shared_ptr<Data> Producer::getCkEncryptedData(const Name &dataName,const algo::CipherText &cipherText, const Name &ckName) {
   Name contentDataName = m_cert.getIdentity();
   contentDataName.append(dataName);
-  auto data = std::__1::make_shared<Data>(contentDataName);
+  auto data = std::make_shared<Data>(contentDataName);
   auto dataBlock = makeEmptyBlock(tlv::Content);
   dataBlock.push_back(cipherText.makeDataContent());
   dataBlock.push_back(ckName.wireEncode());
