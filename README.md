@@ -53,30 +53,46 @@ Really simple to make it using waf.
 git clone https://github.com/UCLA-IRL/NAC-ABE.git
 ```
 
-#### 2.2.2 Config
+#### 2.2.2 Building
+NAC-ABE support building by both CMake and waf build. 
 
+##### 2.2.2.1 cmake build
+We start by configuring:
+```bash
+# in the root directory of NAC-ABE
+mkdir build && cd build
+cmake ..
+```
+or if you want to enable tests.
+```bash
+mkdir build && cd build
+cmake -DHAVE_TESTS=True ..
+```
+Then compile with
+```bash
+make
+```
+And install by
+```bash
+make install
+```
+
+##### 2.2.2.2 waf build
+We start by configuring:
 ```bash
 # in the root directory of NAC-ABE
 ./waf configure
 ```
-
 or if you want to enable tests.
-
 ```bash
 ./waf configure --with-tests
 ```
-
-#### 2.2.3 Compile
-
+Then compile with
 ```bash
-# in the root directory of NAC-ABE
 ./waf
 ```
-
-#### 2.2.4 Install (sudo might be needed)
-
+And install by
 ```bash
-# in the root directory of NAC-ABE
 ./waf install
 ```
 
