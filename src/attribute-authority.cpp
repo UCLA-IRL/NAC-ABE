@@ -85,19 +85,14 @@ AttributeAuthority::~AttributeAuthority()
 void
 AttributeAuthority::onDecryptionKeyRequest(const Interest& request)
 {
-  // naming: /AA-prefix/DKEY/<identity name block>/<signature>
+  // naming: /AA-prefix/DKEY/<identity name block>
   NDN_LOG_INFO("get DKEY request:"<<request.getName());
   Name identityName(request.getName().at(m_cert.getIdentity().size() + 1).blockFromValue());
 
   // verify request and generate token
-  JsonSection root;
   auto optionalCert = m_trustConfig.findCertificate(identityName);
   if (optionalCert) {
     NDN_LOG_INFO("Find consumer(decryptor) certificate.");
-    if (!security::verifySignature(request, *optionalCert)) {
-      NDN_LOG_INFO("DKEY Request Interest cannot be authenticated: bad signature");
-      return;
-    }
   }
   else {
     NDN_LOG_INFO("DKEY Request Interest cannot be authenticated: no certificate");

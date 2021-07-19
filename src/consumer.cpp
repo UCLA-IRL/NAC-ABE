@@ -56,7 +56,6 @@ Consumer::obtainDecryptionKey()
   Interest interest(interestName);
   interest.setMustBeFresh(true);
   interest.setCanBePrefix(true);
-  m_keyChain.sign(interest, signingByCertificate(m_cert));
 
   m_face.expressInterest(interest,
                          [&](const Interest&, const Data& keyData) {
