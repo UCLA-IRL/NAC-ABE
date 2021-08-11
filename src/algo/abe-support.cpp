@@ -175,6 +175,10 @@ ABESupport::encrypt(oabe::OpenABECryptoContext& context, const PublicParams &pub
     std::string encryptedSymmetricKey;
     context.encrypt(policyOrAttribute, symmetricKey, encryptedSymmetricKey);
 
+    Buffer encAesKeySegment((uint8_t*) encryptedSymmetricKey.c_str(),
+                         (uint32_t) encryptedSymmetricKey.size() + 1);
+    auto contentKey = std::make_shared<ContentKey>(symmetricKey, std::move(encAesKeySegment));
+
     // step 3: use the AES symmetric key to cpEncrypt the plain text
     OpenABESymKeyEnc aes(symmetricKey);
     std::string ciphertext = aes.encrypt(
@@ -185,13 +189,11 @@ ABESupport::encrypt(oabe::OpenABECryptoContext& context, const PublicParams &pub
     // step 4: put encryptedSymmetricKey and ciphertext in CipherText object
     //           and return the CipherText Object
     CipherText result;
-    Buffer aesKeySegment((uint8_t*) encryptedSymmetricKey.c_str(),
-                         (uint32_t) encryptedSymmetricKey.size() + 1);
 
     Buffer cipherContentSegment((uint8_t*) ciphertext.c_str(),
                                 (uint32_t) ciphertext.size() + 1);
 
-    result.m_aesKey = aesKeySegment;
+    result.m_contentKey = contentKey;
     result.m_content = cipherContentSegment;
     result.m_plainTextSize = plaintext.size();
 
@@ -216,15 +218,14 @@ ABESupport::decrypt(oabe::OpenABECryptoContext& context, const PublicParams &pub
     context.importUserKey("key1", prvKey.m_prv);
 
     // step 2: cpDecrypt cipherText.aesKey, which is the encrypted symmetric key
-    std::string encryptedSymmetricKey(reinterpret_cast<char*>(cipherText.m_aesKey.data()));
-    std::string symmetricKey;
-    bool result = context.decrypt(encryptedSymmetricKey, symmetricKey);
+    std::string encryptedSymmetricKey(reinterpret_cast<char*>(cipherText.m_contentKey->m_encAesKey.data()));
+    bool result = context.decrypt(encryptedSymmetricKey, cipherText.m_contentKey->m_aesKey);
     if (!result) {
       BOOST_THROW_EXCEPTION(NacAlgoError("Decryption error!"));
     }
 
     // step 3: use the decrypted symmetricKey to AES cpDecrypt cipherText.m_content
-    OpenABESymKeyEnc aes(symmetricKey);
+    OpenABESymKeyEnc aes(cipherText.m_contentKey->m_aesKey);
     std::string cipherContentStr(reinterpret_cast<char*>(cipherText.m_content.data()));
     std::string recoveredContent = aes.decrypt(cipherContentStr);
 

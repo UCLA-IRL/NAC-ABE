@@ -21,6 +21,7 @@
 #ifndef NAC_ABE_ALGO_CIPHER_TEXT_HPP
 #define NAC_ABE_ALGO_CIPHER_TEXT_HPP
 
+#include "content-key.hpp"
 #include "algo-common.hpp"
 #include "public-params.hpp"
 
@@ -34,11 +35,8 @@ public:
   Block
   makeDataContent() const;
 
-  Block
-  makeCKContent();
-
 public:
-  Buffer m_aesKey; // encrypted AES key
+  std::shared_ptr<ContentKey> m_contentKey; // content key
   Buffer m_content; // encrypted content
   uint32_t m_plainTextSize; // plain text length
 

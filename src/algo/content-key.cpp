@@ -18,24 +18,38 @@
  * See AUTHORS.md for complete list of NAC-ABE authors and contributors.
  */
 
-#include "cipher-text.hpp"
+#include "content-key.hpp"
 #include <ndn-cxx/util/concepts.hpp>
 
 namespace ndn {
 namespace nacabe {
 namespace algo {
 
-NDN_LOG_INIT(nacabe.ciphertext);
+NDN_LOG_INIT(nacabe.contentKey);
+
+ContentKey::ContentKey(std::string aesKey, Buffer encAesKey) :
+    m_aesKey(std::move(aesKey)),
+    m_encAesKey(std::move(encAesKey))
+{}
+
+ContentKey::ContentKey() :
+    ContentKey("", Buffer()) {}
+
+std::string& ContentKey::getAesKey() {
+  return m_aesKey;
+}
+Buffer& ContentKey::getEncAesKey() {
+  return m_encAesKey;
+}
 
 Block
-CipherText::makeDataContent() const
+ContentKey::makeCKContent()
 {
-  NDN_LOG_INFO("plaintext size : " << m_plainTextSize);
-  auto content = makeEmptyBlock(tlv::Content);
-  content.push_back(makeBinaryBlock(TLV_EncryptedContent,
-                                        m_content.data(), m_content.size()));
-  content.push_back(makeNonNegativeIntegerBlock(TLV_PlainTextSize, m_plainTextSize));
-  return content;
+  NDN_LOG_INFO("encrypted aes key size : " << m_encAesKey.size());
+  auto ckBlock = makeEmptyBlock(tlv::Content);
+  ckBlock.push_back(makeBinaryBlock(TLV_EncryptedAesKey, m_encAesKey.data(), m_encAesKey.size()));
+  ckBlock.encode();
+  return ckBlock;
 }
 
 } // namespace algo

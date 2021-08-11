@@ -18,26 +18,33 @@
  * See AUTHORS.md for complete list of NAC-ABE authors and contributors.
  */
 
-#include "cipher-text.hpp"
-#include <ndn-cxx/util/concepts.hpp>
+#ifndef NAC_ABE_ALGO_CONTENT_KEY_HPP
+#define NAC_ABE_ALGO_CONTENT_KEY_HPP
+
+#include "algo-common.hpp"
+#include "public-params.hpp"
 
 namespace ndn {
 namespace nacabe {
 namespace algo {
 
-NDN_LOG_INIT(nacabe.ciphertext);
-
-Block
-CipherText::makeDataContent() const
+class ContentKey
 {
-  NDN_LOG_INFO("plaintext size : " << m_plainTextSize);
-  auto content = makeEmptyBlock(tlv::Content);
-  content.push_back(makeBinaryBlock(TLV_EncryptedContent,
-                                        m_content.data(), m_content.size()));
-  content.push_back(makeNonNegativeIntegerBlock(TLV_PlainTextSize, m_plainTextSize));
-  return content;
-}
+public:
+  ContentKey(std::string aesKey, Buffer encAesKey);
+  ContentKey();
+  std::string& getAesKey();
+  Buffer& getEncAesKey();
+
+  Block
+  makeCKContent();
+public:
+  std::string m_aesKey; // raw AES key
+  Buffer m_encAesKey; // encrypted AES key
+};
 
 } // namespace algo
 } // namespace nacabe
 } // namespace ndn
+
+#endif // NAC_ABE_ALGO_CONTENT_KEY_HPP

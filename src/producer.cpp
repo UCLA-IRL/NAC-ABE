@@ -94,7 +94,7 @@ Producer::produce(const Name& dataName, const std::string& accessPolicy,
     Name ckDataName = ckName;
     ckDataName.append("ENC-BY").append(accessPolicy);
     auto ckData = std::make_shared<Data>(ckDataName);
-    ckData->setContent(cipherText.makeCKContent());
+    ckData->setContent(cipherText.m_contentKey->makeCKContent());
     ckData->setFreshnessPeriod(5_s);
     m_keyChain.sign(*ckData, signingByCertificate(m_cert));
 
@@ -134,7 +134,7 @@ Producer::produce(const Name& dataName, const std::vector<std::string>& attribut
     for (const auto& i : attributes) b.push_back(makeStringBlock(TLV_Attribute, i));
     ckDataName.append("ENC-BY").append(b);
     auto ckData = std::make_shared<Data>(ckDataName);
-    ckData->setContent(cipherText.makeCKContent());
+    ckData->setContent(cipherText.m_contentKey->makeCKContent());
     ckData->setFreshnessPeriod(5_s);
     m_keyChain.sign(*ckData, signingByCertificate(m_cert));
 
@@ -273,8 +273,7 @@ shared_ptr<Data> Producer::getCkEncryptedData(const Name &dataName,const algo::C
   Name contentDataName = m_cert.getIdentity();
   contentDataName.append(dataName);
   auto data = std::make_shared<Data>(contentDataName);
-  auto dataBlock = makeEmptyBlock(tlv::Content);
-  dataBlock.push_back(cipherText.makeDataContent());
+  auto dataBlock = cipherText.makeDataContent();
   dataBlock.push_back(ckName.wireEncode());
   dataBlock.encode();
   data->setContent(dataBlock);
