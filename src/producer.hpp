@@ -85,6 +85,21 @@ public:
           const uint8_t* content, size_t contentLen);
 
   /**
+   * @brief Produce CP-encrypted CK Data
+   *
+   * Used when data owner is not used.
+   *
+   * @param dataName The name of data, not including producer's prefix
+   * @param dataSuffix The suffix of data.
+   * @param accessPolicy The encryption policy, e.g., (ucla or mit) and professor
+   * @param content The payload
+   * @param contentLen The payload length
+   * @return The content key and the encrypted CK data
+   */
+  std::pair<std::shared_ptr<algo::ContentKey>, std::shared_ptr<Data>>
+  ckDataGen(const Policy& accessPolicy);
+
+  /**
    * @brief Produce KP-encrypted Data and corresponding encrypted CK Data
    *
    * Used when data owner is not used.
@@ -101,6 +116,21 @@ public:
           const uint8_t* content, size_t contentLen);
 
   /**
+   * @brief Produce KP-encrypted CK Data
+   *
+   * Used when data owner is not used.
+   *
+   * @param dataName The name of data, not including producer's prefix
+   * @param dataSuffix The suffix of data.
+   * @param accessPolicy The encryption policy, e.g., (ucla or mit) and professor
+   * @param content The payload
+   * @param contentLen The payload length
+   * @return The content key and the encrypted CK data
+   */
+  std::pair<std::shared_ptr<algo::ContentKey>, std::shared_ptr<Data>>
+  ckDataGen(const std::vector<std::string>& attributes);
+
+  /**
    * @brief Produce encrypted Data and corresponding encrypted CK Data
    *
    * Used when the data owner is used and data owner has command the policy for the @p dataPrefix
@@ -112,6 +142,20 @@ public:
    */
   std::tuple<std::shared_ptr<Data>, std::shared_ptr<Data>>
   produce(const Name& dataName, const uint8_t* content, size_t contentLen);
+
+  /**
+   * @brief Produce encrypted Data and from CK Data
+   *
+   * Used when the CK is known
+   *
+   * @param dataName The name of data, not including producer's prefix
+   * @param content The payload
+   * @param contentLen The payload length
+   * @return The encrypted data and the encrypted CK data
+   */
+  std::shared_ptr<Data>
+  produce(std::shared_ptr<algo::ContentKey> key, const Name& keyName,
+          const Name& dataName, const uint8_t* content, size_t contentLen);
 
 PUBLIC_WITH_TESTS_ELSE_PRIVATE:
   void

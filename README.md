@@ -214,6 +214,27 @@ std::tie(contentData, ckData) = producer.produce(dataName, "ucla and professor",
 std::tie(contentData, ckData) = producer.produce(dataName, {"ucla","cs","exam"}, sizeof(PLAIN_TEXT));
 ```
 
+#### Reusing content keys
+
+To produce multiple data under the same content key (thus the same policy), use the content key generation api:
+```c++
+std::shared_ptr<ContentKey> contentKey;
+std::shared_ptr<Data> ckData;
+//for CP-ABE
+std::tie(contentKey, ckData) = producer.ckDataGen(dataName, "ucla and professor", sizeof(PLAIN_TEXT));
+//for KP-ABE
+std::tie(contentKey, ckData) = producer.ckDataGen(dataName, {"ucla","cs","exam"}, sizeof(PLAIN_TEXT));
+```
+
+Then, for each Data:
+```c++
+std::shared_ptr<Data> contentData;
+//for CP-ABE
+contentData = producer.produce(contentKey, ckData.getName(), dataName, "ucla and professor", sizeof(PLAIN_TEXT));
+//for KP-ABE
+contentData = producer.produce(contentKey, ckData.getName(), dataName, {"ucla","cs","exam"}, sizeof(PLAIN_TEXT));
+```
+
 ### 3.4 Decryptor (Data Consumer)
 
 #### Instantiate a new decryptor

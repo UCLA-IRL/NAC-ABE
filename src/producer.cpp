@@ -23,6 +23,7 @@
 #include <ndn-cxx/util/random.hpp>
 #include <ndn-cxx/security/signing-helpers.hpp>
 #include <ndn-cxx/encoding/block-helpers.hpp>
+#include <utility>
 #include <ndn-cxx/security/verification-helpers.hpp>
 
 namespace ndn {
@@ -73,28 +74,36 @@ std::tuple<std::shared_ptr<Data>, std::shared_ptr<Data>>
 Producer::produce(const Name& dataName, const std::string& accessPolicy,
                   const uint8_t* content, size_t contentLen)
 {
+  auto contentKey = ckDataGen(accessPolicy);
+  if (contentKey.first == nullptr) {
+    return std::make_tuple(nullptr, nullptr);
+  } else {
+    auto data = produce(contentKey.first, contentKey.second->getName(), dataName, content, contentLen);
+    return std::make_tuple(data, contentKey.second);
+  }
+}
+
+std::pair<std::shared_ptr<algo::ContentKey>, std::shared_ptr<Data>>
+Producer::ckDataGen(const Policy& accessPolicy) {
   // do encryption
   if (m_paramFetcher.getPublicParams().m_pub == "") {
     NDN_LOG_INFO("public parameters doesn't exist" );
-    return std::make_tuple(nullptr, nullptr);
+    return std::make_pair(nullptr, nullptr);
   } else if (m_paramFetcher.getAbeType() != ABE_TYPE_CP_ABE) {
     NDN_LOG_INFO("Not a CP-ABE encrypted data" );
-    return std::make_tuple(nullptr, nullptr);
+    return std::make_pair(nullptr, nullptr);
   }
   else {
-    NDN_LOG_INFO("cpEncrypt data:" << dataName);
-    auto cipherText = algo::ABESupport::getInstance().cpEncrypt(m_paramFetcher.getPublicParams(), accessPolicy,
-                                                                Buffer(content, contentLen));
+    NDN_LOG_INFO("CK data for:" << accessPolicy);
+    auto contentKey = algo::ABESupport::getInstance().cpContentKeyGen(m_paramFetcher.getPublicParams(), accessPolicy);
 
     Name ckName = security::extractIdentityFromCertName(m_cert.getName());
     ckName.append("CK").append(std::to_string(random::generateSecureWord32()));
 
-    shared_ptr<Data> data = getCkEncryptedData(dataName, cipherText, ckName);
-
     Name ckDataName = ckName;
     ckDataName.append("ENC-BY").append(accessPolicy);
     auto ckData = std::make_shared<Data>(ckDataName);
-    ckData->setContent(cipherText.m_contentKey->makeCKContent());
+    ckData->setContent(contentKey->makeCKContent());
     ckData->setFreshnessPeriod(5_s);
     m_keyChain.sign(*ckData, signingByCertificate(m_cert));
 
@@ -103,7 +112,7 @@ Producer::produce(const Name& dataName, const std::string& accessPolicy,
     NDN_LOG_TRACE("CK Name length: " << ckData->getName().wireEncode().size());
     NDN_LOG_TRACE("=================================");
 
-    return std::make_tuple(data, ckData);
+    return std::make_pair(contentKey, ckData);
   }
 }
 
@@ -111,30 +120,43 @@ std::tuple<std::shared_ptr<Data>, std::shared_ptr<Data>>
 Producer::produce(const Name& dataName, const std::vector<std::string>& attributes,
         const uint8_t* content, size_t contentLen)
 {
+  auto contentKey = ckDataGen(attributes);
+  if (contentKey.first == nullptr) {
+    return std::make_tuple(nullptr, nullptr);
+  } else {
+    auto data = produce(contentKey.first, contentKey.second->getName(), dataName, content, contentLen);
+    return std::make_tuple(data, contentKey.second);
+  }
+}
+
+std::pair<std::shared_ptr<algo::ContentKey>, std::shared_ptr<Data>>
+Producer::ckDataGen(const std::vector<std::string>& attributes)
+{
   // do encryption
   if (m_paramFetcher.getPublicParams().m_pub == "") {
     NDN_LOG_INFO("public parameters doesn't exist" );
-    return std::make_tuple(nullptr, nullptr);
+    return std::make_pair(nullptr, nullptr);
   } else if (m_paramFetcher.getAbeType() != ABE_TYPE_KP_ABE) {
     NDN_LOG_INFO("Not a KP-ABE encrypted data" );
-    return std::make_tuple(nullptr, nullptr);
+    return std::make_pair(nullptr, nullptr);
   }
   else {
-    NDN_LOG_INFO("cpEncrypt data:" << dataName);
-    auto cipherText = algo::ABESupport::getInstance().kpEncrypt(m_paramFetcher.getPublicParams(), attributes,
-                                                                Buffer(content, contentLen));
+    {
+      std::stringstream ss;
+      for (const auto &i: attributes) ss << i << "|";
+      NDN_LOG_INFO("Generate CK data: |" << ss.str());
+    }
+    auto contentKey = algo::ABESupport::getInstance().kpContentKeyGen(m_paramFetcher.getPublicParams(), attributes);
 
     Name ckName = security::extractIdentityFromCertName(m_cert.getName());
     ckName.append("CK").append(std::to_string(random::generateSecureWord32()));
-
-    shared_ptr<Data> data = getCkEncryptedData(dataName, cipherText, ckName);
 
     Name ckDataName = ckName;
     Block b(tlv::GenericNameComponent);
     for (const auto& i : attributes) b.push_back(makeStringBlock(TLV_Attribute, i));
     ckDataName.append("ENC-BY").append(b);
     auto ckData = std::make_shared<Data>(ckDataName);
-    ckData->setContent(cipherText.m_contentKey->makeCKContent());
+    ckData->setContent(contentKey->makeCKContent());
     ckData->setFreshnessPeriod(5_s);
     m_keyChain.sign(*ckData, signingByCertificate(m_cert));
 
@@ -143,7 +165,7 @@ Producer::produce(const Name& dataName, const std::vector<std::string>& attribut
     NDN_LOG_TRACE("CK Name length: " << ckData->getName().wireEncode().size());
     NDN_LOG_TRACE("=================================");
 
-    return std::make_tuple(data, ckData);
+    return std::make_pair(contentKey, ckData);
   }
 }
 
@@ -166,6 +188,14 @@ Producer::produce(const Name& dataName, const uint8_t* content, size_t contentLe
   } else {
     return std::make_tuple(nullptr, nullptr);
   }
+}
+
+std::shared_ptr<Data>
+Producer::produce(std::shared_ptr<algo::ContentKey> key, const Name& keyName,
+        const Name& dataName, const uint8_t* content, size_t contentLen) {
+  NDN_LOG_INFO("encrypt on data:" << dataName);
+  auto cipherText = algo::ABESupport::getInstance().encrypt(std::move(key), Buffer(content, contentLen));
+  return getCkEncryptedData(dataName, cipherText, keyName);
 }
 
 void
