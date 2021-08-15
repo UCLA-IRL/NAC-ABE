@@ -235,6 +235,8 @@ contentData = producer.produce(contentKey, ckData.getName(), dataName, "ucla and
 contentData = producer.produce(contentKey, ckData.getName(), dataName, {"ucla","cs","exam"}, sizeof(PLAIN_TEXT));
 ```
 
+You can also use CacheProducer, which will automatically cache and reuse all the keys generated. 
+
 ### 3.4 Decryptor (Data Consumer)
 
 #### Instantiate a new decryptor
