@@ -66,9 +66,9 @@ public:
            const security::Certificate& attrAuthorityCertificate,
            const security::Certificate& dataOwnerCertificate);
 
-  ~Producer();
+  virtual ~Producer();
 
-  /**
+  virtual /**
    * @brief Produce CP-encrypted Data and corresponding encrypted CK Data
    *
    * Used when data owner is not used.
