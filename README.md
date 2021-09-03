@@ -112,10 +112,10 @@ The library mainly provide supports for four roles in an NDN based ABE scenario.
 
 * **Attribute Authority**. The party who owns the system master key. It publishes the public parameters to the system and generate decryption keys for decryptors.
 * **Data owner**. The party who decides how encryptors should cpEncrypt their data. 
-* **Encryptor**. The party who get decryption keys from the attribute authority and consume encrypted data.
-* **Decryptor**. The party who follows data owner's decision and produce encrypted data.
+* **Encryptor**. The party who follows data owner's decision and produce encrypted data.
+* **Decryptor**. The party who get decryption keys from the attribute authority and consume encrypted data.
 
-These five parties are implemented in four classes in the library: `CpAttributeAuthority`, `KpAttributeAuthority`, `DataOwner`, `producer`, and `consumer`.
+These four parties are implemented in five classes in the library: `CpAttributeAuthority`, `KpAttributeAuthority`, `DataOwner`, `producer`, and `consumer`.
 
 > For now, Both Ciphertext Policy Attribute-based Encryption (CP-ABE) and Key Policy Attribute-based Encryption (KP-ABE) is supported. 
 
