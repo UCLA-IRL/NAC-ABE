@@ -49,7 +49,7 @@ set(PKG_CONFIG_LIBS
         "-L\${libdir} -l${PROJECT_NAME}"
         )
 set(PKG_CONFIG_CFLAGS
-        "-I\${includedir}"
+        "-I\${includedir} -DCMAKE_BUILD"
         )
 configure_file("${CMAKE_CURRENT_SOURCE_DIR}/cmake-pkgconfig.pc.in"
         "${CMAKE_CURRENT_BINARY_DIR}/lib${PROJECT_NAME}.pc")
