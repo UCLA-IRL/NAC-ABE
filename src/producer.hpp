@@ -112,7 +112,7 @@ public:
    * @return The encrypted data and the encrypted CK data
    */
   std::tuple<std::shared_ptr<Data>, std::shared_ptr<Data>>
-  produce(const Name& dataName, const std::vector<std::string>& attributes,
+  virtual produce(const Name& dataName, const std::vector<std::string>& attributes,
           const uint8_t* content, size_t contentLen);
 
   /**
