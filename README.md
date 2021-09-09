@@ -111,7 +111,7 @@ To run tests, you must have `--with-tests` when you config the project.
 The library mainly provide supports for four roles in an NDN based ABE scenario.
 
 * **Attribute Authority**. The party who owns the system master key. It publishes the public parameters to the system and generate decryption keys for decryptors.
-* **Data owner**. The party who decides how encryptors should cpEncrypt their data. 
+* **Data owner**. The party who decides how encryptors should encrypt their data. 
 * **Encryptor**. The party who follows data owner's decision and produce encrypted data.
 * **Decryptor**. The party who get decryption keys from the attribute authority and consume encrypted data.
 
