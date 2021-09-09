@@ -5,5 +5,5 @@ includedir=@INCLUDEDIR@
 Name: ndn-abac
 Description: ndn-abac library
 Version: @VERSION@
-Libs: -L${libdir} -lndn-abac
+Libs: -L${libdir} -lnac-abe
 Cflags: -I${includedir}

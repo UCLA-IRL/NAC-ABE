@@ -59,7 +59,7 @@ public:
    */
   std::tuple<std::shared_ptr<Data>, std::shared_ptr<Data>>
   produce(const Name &dataName, const Policy &accessPolicy,
-          const uint8_t *content, size_t contentLen);
+          const uint8_t *content, size_t contentLen) override;
 
   /**
    * @brief Produce KP-encrypted Data and corresponding encrypted CK Data
@@ -75,7 +75,7 @@ public:
    */
   std::tuple<std::shared_ptr<Data>, std::shared_ptr<Data>>
   produce(const Name &dataName, const std::vector<std::string> &attributes,
-          const uint8_t *content, size_t contentLen);
+          const uint8_t *content, size_t contentLen) override;
 
 PUBLIC_WITH_TESTS_ELSE_PRIVATE:
   std::map<std::string, std::pair<std::shared_ptr<algo::ContentKey>, std::shared_ptr<Data>>> m_cpKeyCache;

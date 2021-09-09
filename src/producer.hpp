@@ -26,7 +26,7 @@
 #include "param-fetcher.hpp"
 
 #include <ndn-cxx/security/verification-helpers.hpp>
-#include <algo/abe-support.hpp>
+#include "algo/abe-support.hpp"
 
 namespace ndn {
 namespace nacabe {
@@ -99,7 +99,7 @@ public:
   std::pair<std::shared_ptr<algo::ContentKey>, std::shared_ptr<Data>>
   ckDataGen(const Policy& accessPolicy);
 
-  /**
+  virtual /**
    * @brief Produce KP-encrypted Data and corresponding encrypted CK Data
    *
    * Used when data owner is not used.

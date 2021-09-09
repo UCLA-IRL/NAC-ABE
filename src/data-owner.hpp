@@ -21,7 +21,7 @@
 #ifndef NAC_ABE_DATA_OWNER_HPP
 #define NAC_ABE_DATA_OWNER_HPP
 
-#include <algo/abe-support.hpp>
+#include "algo/abe-support.hpp"
 #include "common.hpp"
 
 namespace ndn {
