@@ -5,7 +5,7 @@
 #ifndef NAC_ABE_PARAM_FETCHER_H
 #define NAC_ABE_PARAM_FETCHER_H
 
-#include <algo/public-params.hpp>
+#include "algo/public-params.hpp"
 #include "common.hpp"
 #include "trust-config.hpp"
 
