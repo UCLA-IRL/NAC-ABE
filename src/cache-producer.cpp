@@ -31,6 +31,9 @@ CacheProducer::produce(const Name &dataName, const Policy &accessPolicy,
         const uint8_t *content, size_t contentLen) {
   if (m_cpKeyCache.count(accessPolicy) == 0) {
     auto k = ckDataGen(accessPolicy);
+    if (k.first == nullptr || k.second == nullptr) {
+      return std::make_tuple(nullptr, nullptr);
+    }
     m_cpKeyCache.emplace(accessPolicy, k);
   }
   auto& key = m_cpKeyCache.at(accessPolicy);
@@ -46,6 +49,9 @@ CacheProducer::produce(const Name &dataName, const std::vector<std::string> &att
   auto attStr = ss.str();
   if (m_kpKeyCache.count(attStr) == 0) {
     auto k = ckDataGen(attributes);
+    if (k.first == nullptr || k.second == nullptr) {
+      return std::make_tuple(nullptr, nullptr);
+    }
     m_kpKeyCache.emplace(attStr, k);
   }
   auto& key = m_kpKeyCache.at(attStr);
