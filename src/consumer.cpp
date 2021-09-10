@@ -80,7 +80,7 @@ Consumer::consume(const Name& dataName,
 
   NDN_LOG_INFO(m_cert.getIdentity() << " Ask for data " << interest.getName() );
   m_face.expressInterest(interest,
-                         [&] (const Interest&, const Data& data) {
+                         [=] (const Interest&, const Data& data) {
                            decryptContent(data, consumptionCb, errorCallback);
                          }, nullptr, nullptr);
 }
