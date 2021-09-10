@@ -13,6 +13,9 @@ if (HAVE_TESTS)
     add_compile_definitions(HAVE_TESTS)
 endif(HAVE_TESTS)
 
+set (CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -fno-omit-frame-pointer -fsanitize=address")
+set (CMAKE_LINKER_FLAGS_DEBUG "${CMAKE_LINKER_FLAGS_DEBUG} -fno-omit-frame-pointer -fsanitize=address")
+
 # dependencies
 find_package(PkgConfig REQUIRED)
 pkg_check_modules(NDN_CXX REQUIRED libndn-cxx)
