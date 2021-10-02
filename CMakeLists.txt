@@ -29,7 +29,7 @@ include_directories(src)
 include_directories(build/src)
 
 add_compile_definitions(SYSCONFDIR="${CMAKE_INSTALL_PREFIX}/etc")
-add_compile_definitions(CMAKE_BUILD)
+add_compile_definitions(NAC_ABE_CMAKE_BUILD)
 
 # link
 link_directories(${NDN_CXX_LIBRARY_DIRS})
@@ -49,7 +49,7 @@ set(PKG_CONFIG_LIBS
         "-L\${libdir} -l${PROJECT_NAME}"
         )
 set(PKG_CONFIG_CFLAGS
-        "-I\${includedir} -DCMAKE_BUILD"
+        "-I\${includedir} -DNAC_ABE_CMAKE_BUILD"
         )
 configure_file("${CMAKE_CURRENT_SOURCE_DIR}/cmake-pkgconfig.pc.in"
         "${CMAKE_CURRENT_BINARY_DIR}/lib${PROJECT_NAME}.pc")

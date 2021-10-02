@@ -21,7 +21,7 @@
 #ifndef NAC_ABE_COMMON_HPP
 #define NAC_ABE_COMMON_HPP
 
-#ifndef CMAKE_BUILD
+#ifndef NAC_ABE_CMAKE_BUILD
 #include "nac-abe-config.hpp"
 #endif
 
