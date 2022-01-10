@@ -73,7 +73,7 @@ public:
    *
    * Used when data owner is not used.
    *
-   * @param dataName The name of data, not including producer's prefix
+   * @param dataNameSuffix The name of data, not including producer's prefix
    * @param dataSuffix The suffix of data.
    * @param accessPolicy The encryption policy, e.g., (ucla or mit) and professor
    * @param content The payload
@@ -81,7 +81,7 @@ public:
    * @return The encrypted data and the encrypted CK data
    */
   std::tuple<std::shared_ptr<Data>, std::shared_ptr<Data>>
-  produce(const Name& dataName, const Policy& accessPolicy,
+  produce(const Name& dataNameSuffix, const Policy& accessPolicy,
           const uint8_t* content, size_t contentLen);
 
   /**
@@ -89,7 +89,7 @@ public:
    *
    * Used when data owner is not used.
    *
-   * @param dataName The name of data, not including producer's prefix
+   * @param dataNameSuffix The name of data, not including producer's prefix
    * @param dataSuffix The suffix of data.
    * @param accessPolicy The encryption policy, e.g., (ucla or mit) and professor
    * @param content The payload
@@ -104,7 +104,7 @@ public:
    *
    * Used when data owner is not used.
    *
-   * @param dataName The name of data, not including producer's prefix
+   * @param dataNameSuffix The name of data, not including producer's prefix
    * @param dataSuffix The suffix of data.
    * @param accessPolicy The encryption policy, e.g., (ucla or mit) and professor
    * @param content The payload
@@ -112,7 +112,7 @@ public:
    * @return The encrypted data and the encrypted CK data
    */
   std::tuple<std::shared_ptr<Data>, std::shared_ptr<Data>>
-  virtual produce(const Name& dataName, const std::vector<std::string>& attributes,
+  virtual produce(const Name& dataNameSuffix, const std::vector<std::string>& attributes,
           const uint8_t* content, size_t contentLen);
 
   /**
@@ -120,7 +120,7 @@ public:
    *
    * Used when data owner is not used.
    *
-   * @param dataName The name of data, not including producer's prefix
+   * @param dataNameSuffix The name of data, not including producer's prefix
    * @param dataSuffix The suffix of data.
    * @param accessPolicy The encryption policy, e.g., (ucla or mit) and professor
    * @param content The payload
@@ -135,27 +135,27 @@ public:
    *
    * Used when the data owner is used and data owner has command the policy for the @p dataPrefix
    *
-   * @param dataName The name of data, not including producer's prefix
+   * @param dataNameSuffix The name of data, not including producer's prefix
    * @param content The payload
    * @param contentLen The payload length
    * @return The encrypted data and the encrypted CK data
    */
   std::tuple<std::shared_ptr<Data>, std::shared_ptr<Data>>
-  produce(const Name& dataName, const uint8_t* content, size_t contentLen);
+  produce(const Name& dataNameSuffix, const uint8_t* content, size_t contentLen);
 
   /**
    * @brief Produce encrypted Data and from CK Data
    *
    * Used when the CK is known
    *
-   * @param dataName The name of data, not including producer's prefix
+   * @param dataNameSuffix The name of data, not including producer's prefix
    * @param content The payload
    * @param contentLen The payload length
    * @return The encrypted data and the encrypted CK data
    */
   std::shared_ptr<Data>
   produce(std::shared_ptr<algo::ContentKey> key, const Name& keyName,
-          const Name& dataName, const uint8_t* content, size_t contentLen);
+          const Name& dataNameSuffix, const uint8_t* content, size_t contentLen);
 
 PUBLIC_WITH_TESTS_ELSE_PRIVATE:
   void
@@ -168,12 +168,12 @@ PUBLIC_WITH_TESTS_ELSE_PRIVATE:
   addNewAttributes(const Name& dataPrefix, const std::vector<std::string>& attributes);
 
   std::string
-  findMatchedPolicy(const Name& dataName);
+  findMatchedPolicy(const Name& dataNameSuffix);
 
   std::vector<std::string>
-  findMatchedAttributes(const Name& dataName);
+  findMatchedAttributes(const Name& dataNameSuffix);
 
-  shared_ptr <Data> getCkEncryptedData(const Name &dataName, const algo::CipherText &cipherText, const Name &ckName);
+  shared_ptr <Data> getCkEncryptedData(const Name &dataNameSuffix, const algo::CipherText &cipherText, const Name &ckName);
 
 PUBLIC_WITH_TESTS_ELSE_PRIVATE:
   security::Certificate m_cert;

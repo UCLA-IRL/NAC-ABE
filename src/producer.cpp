@@ -71,14 +71,14 @@ Producer::~Producer()
 }
 
 std::tuple<std::shared_ptr<Data>, std::shared_ptr<Data>>
-Producer::produce(const Name& dataName, const std::string& accessPolicy,
+Producer::produce(const Name& dataNameSuffix, const std::string& accessPolicy,
                   const uint8_t* content, size_t contentLen)
 {
   auto contentKey = ckDataGen(accessPolicy);
   if (contentKey.first == nullptr) {
     return std::make_tuple(nullptr, nullptr);
   } else {
-    auto data = produce(contentKey.first, contentKey.second->getName(), dataName, content, contentLen);
+    auto data = produce(contentKey.first, contentKey.second->getName(), dataNameSuffix, content, contentLen);
     return std::make_tuple(data, contentKey.second);
   }
 }
@@ -117,14 +117,14 @@ Producer::ckDataGen(const Policy& accessPolicy) {
 }
 
 std::tuple<std::shared_ptr<Data>, std::shared_ptr<Data>>
-Producer::produce(const Name& dataName, const std::vector<std::string>& attributes,
-        const uint8_t* content, size_t contentLen)
+Producer::produce(const Name& dataNameSuffix, const std::vector<std::string>& attributes,
+                  const uint8_t* content, size_t contentLen)
 {
   auto contentKey = ckDataGen(attributes);
   if (contentKey.first == nullptr) {
     return std::make_tuple(nullptr, nullptr);
   } else {
-    auto data = produce(contentKey.first, contentKey.second->getName(), dataName, content, contentLen);
+    auto data = produce(contentKey.first, contentKey.second->getName(), dataNameSuffix, content, contentLen);
     return std::make_tuple(data, contentKey.second);
   }
 }
@@ -170,21 +170,21 @@ Producer::ckDataGen(const std::vector<std::string>& attributes)
 }
 
 std::tuple<std::shared_ptr<Data>, std::shared_ptr<Data>>
-Producer::produce(const Name& dataName, const uint8_t* content, size_t contentLen)
+Producer::produce(const Name& dataNameSuffix, const uint8_t* content, size_t contentLen)
 {
   // Encrypt data based on data prefix.
   if (m_paramFetcher.getAbeType() == ABE_TYPE_CP_ABE) {
-    auto policy = findMatchedPolicy(dataName);
+    auto policy = findMatchedPolicy(dataNameSuffix);
     if (policy == "") {
       return std::make_tuple(nullptr, nullptr);
     }
-    return produce(dataName, policy, content, contentLen);
+    return produce(dataNameSuffix, policy, content, contentLen);
   } else if (m_paramFetcher.getAbeType() == ABE_TYPE_KP_ABE) {
-    auto attributes = findMatchedAttributes(dataName);
+    auto attributes = findMatchedAttributes(dataNameSuffix);
     if (attributes.empty()) {
       return std::make_tuple(nullptr, nullptr);
     }
-    return produce(dataName, attributes, content, contentLen);
+    return produce(dataNameSuffix, attributes, content, contentLen);
   } else {
     return std::make_tuple(nullptr, nullptr);
   }
@@ -192,10 +192,10 @@ Producer::produce(const Name& dataName, const uint8_t* content, size_t contentLe
 
 std::shared_ptr<Data>
 Producer::produce(std::shared_ptr<algo::ContentKey> key, const Name& keyName,
-        const Name& dataName, const uint8_t* content, size_t contentLen) {
-  NDN_LOG_INFO("encrypt on data:" << dataName);
+                  const Name& dataNameSuffix, const uint8_t* content, size_t contentLen) {
+  NDN_LOG_INFO("encrypt on data:" << dataNameSuffix);
   auto cipherText = algo::ABESupport::getInstance().encrypt(std::move(key), Buffer(content, contentLen));
-  return getCkEncryptedData(dataName, cipherText, keyName);
+  return getCkEncryptedData(dataNameSuffix, cipherText, keyName);
 }
 
 void
@@ -299,9 +299,9 @@ Producer::onPolicyInterest(const Interest& interest)
   m_face.put(reply);
 }
 
-shared_ptr<Data> Producer::getCkEncryptedData(const Name &dataName,const algo::CipherText &cipherText, const Name &ckName) {
+shared_ptr<Data> Producer::getCkEncryptedData(const Name &dataNameSuffix, const algo::CipherText &cipherText, const Name &ckName) {
   Name contentDataName = m_cert.getIdentity();
-  contentDataName.append(dataName);
+  contentDataName.append(dataNameSuffix);
   auto data = std::make_shared<Data>(contentDataName);
   auto dataBlock = cipherText.makeDataContent();
   dataBlock.push_back(ckName.wireEncode());
