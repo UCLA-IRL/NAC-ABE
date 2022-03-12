@@ -15,10 +15,68 @@ jobs:
     # The CMake configure and build commands are platform agnostic and should work equally well on Windows or Mac.
     # You can convert this to a matrix build if you need cross-platform coverage.
     # See: https://docs.github.com/en/free-pro-team@latest/actions/learn-github-actions/managing-complex-workflows#using-a-build-matrix
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-20.04
 
     steps:
     - uses: actions/checkout@v2
+
+    - name: Configure package dependencies
+      run: |
+        sudo apt-get update
+        sudo apt-get -y install gcc-10 g++-10 clang-12 lldb-12 lld-12 build-essential \
+                                pkg-config python3-minimal libboost-all-dev \
+                                libssl-dev libsqlite3-dev libpcap-dev \
+                                libsodium-dev libz-dev \
+                                liblog4cxx-dev libpcap-dev python-is-python3
+        sudo update-alternatives --install /usr/bin/gcc gcc /usr/bin/gcc-10 100
+        sudo update-alternatives --install /usr/bin/g++ g++ /usr/bin/g++-10 100
+        sudo update-alternatives --install /usr/bin/c++ c++ /usr/bin/g++-10 100
+        sudo update-alternatives --install /usr/bin/clang clang /usr/bin/clang-12 100
+        sudo update-alternatives --install /usr/bin/lld lld /usr/bin/lld-12 100
+        sudo update-alternatives --install /usr/bin/lldb lldb /usr/bin/lldb-12 100
+        sudo apt-get -y install libgtest-dev cmake python3-pip
+
+
+    - name: Configure ndn-cxx
+      run: |
+        git clone https://github.com/named-data/ndn-cxx
+        cd ndn-cxx
+        git checkout ndn-cxx-0.8.0
+        ./waf configure
+        ./waf
+        sudo ./waf install
+        sudo ldconfig
+        cd ..
+
+    - name: Configure NFD
+      run: |
+        git clone https://github.com/named-data/NFD
+        cd NFD
+        git checkout NFD-22.02
+        git submodule update --init
+        ./waf configure
+        ./waf
+        sudo ./waf install
+        sudo cp /usr/local/etc/ndn/nfd.conf.sample /usr/local/etc/ndn/nfd.conf
+        cd ..
+    
+    - name: Install OpenABE
+      run: |
+        git clone https://github.com/zeutro/openabe.git
+        cd openabe
+        sudo -E ./deps/install_pkgs.sh
+        . ./env
+
+        cd deps/relic
+        make
+        cd ../..
+
+        NO_DEPS=1 BISON=$(which bison) make
+        make test
+        sudo -E make install
+        cd ..
+
+
 
     - name: Configure CMake
       # Configure CMake in a 'build' subdirectory. `CMAKE_BUILD_TYPE` is only required if you are using a single-configuration generator such as make.
