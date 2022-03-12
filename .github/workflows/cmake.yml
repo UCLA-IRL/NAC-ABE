@@ -39,6 +39,7 @@ jobs:
 
     - name: Configure ndn-cxx
       run: |
+        cd ..
         git clone https://github.com/named-data/ndn-cxx
         cd ndn-cxx
         git checkout ndn-cxx-0.8.0
@@ -46,10 +47,11 @@ jobs:
         ./waf
         sudo ./waf install
         sudo ldconfig
-        cd ..
+        cd ../NAC-ABE
 
     - name: Configure NFD
       run: |
+        cd ..
         git clone https://github.com/named-data/NFD
         cd NFD
         git checkout NFD-22.02
@@ -58,10 +60,11 @@ jobs:
         ./waf
         sudo ./waf install
         sudo cp /usr/local/etc/ndn/nfd.conf.sample /usr/local/etc/ndn/nfd.conf
-        cd ..
+        cd ../NAC-ABE
     
     - name: Install OpenABE
       run: |
+        cd ..
         git clone https://github.com/zeutro/openabe.git
         cd openabe
         sudo -E ./deps/install_pkgs.sh
@@ -74,7 +77,7 @@ jobs:
         NO_DEPS=1 BISON=$(which bison) make
         make test
         sudo -E make install
-        cd ..
+        cd ../NAC-ABE
 
 
 
