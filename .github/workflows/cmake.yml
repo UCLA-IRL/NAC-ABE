@@ -27,14 +27,14 @@ jobs:
                                 pkg-config python3-minimal libboost-all-dev \
                                 libssl-dev libsqlite3-dev libpcap-dev \
                                 libsodium-dev libz-dev \
-                                liblog4cxx-dev libpcap-dev python-is-python3
+                                liblog4cxx-dev libpcap-dev python-is-python3 \
+                                libgtest-dev cmake python3-pip libfl-dev
         sudo update-alternatives --install /usr/bin/gcc gcc /usr/bin/gcc-10 100
         sudo update-alternatives --install /usr/bin/g++ g++ /usr/bin/g++-10 100
         sudo update-alternatives --install /usr/bin/c++ c++ /usr/bin/g++-10 100
         sudo update-alternatives --install /usr/bin/clang clang /usr/bin/clang-12 100
         sudo update-alternatives --install /usr/bin/lld lld /usr/bin/lld-12 100
         sudo update-alternatives --install /usr/bin/lldb lldb /usr/bin/lldb-12 100
-        sudo apt-get -y install libgtest-dev cmake python3-pip
 
 
     - name: Configure ndn-cxx
