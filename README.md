@@ -77,7 +77,7 @@ And install by
 make install
 ```
 
-##### 2.2.2.2 waf build
+##### 2.2.2.2 waf build (deprecated)
 We start by configuring:
 ```bash
 # in the root directory of NAC-ABE
@@ -98,12 +98,12 @@ And install by
 
 ### 2.3 Run Tests
 
-To run tests, you must have `--with-tests` when you config the project.
+To run tests, you must have `-DHAVE_TESTS=True` when you config the project.
 
 ```bash
 # in the root directory of NAC-ABE
 #run all the tests (including integrate test)
-./build/unit-tests
+./build/bin/unit-tests
 ```
 
 ## 3 Documentation

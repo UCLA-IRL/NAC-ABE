@@ -2,12 +2,14 @@
 
 from waflib import Utils
 import os
+import sys
 
 VERSION = "0.1.0"
 APPNAME = "libnac-abe"
 GIT_TAG_PREFIX = "nac-abe"
 
 def options(opt):
+    sys.stderr.write('\033[0;31mWAF build on this project is deprecated. Please use cmake build instead.\033[0m\n')
     opt.load(['compiler_cxx', 'gnu_dirs'])
     opt.load(['boost', 'default-compiler-flags', 'openssl', 'sanitizers'],
              tooldir=['.waf-tools'])
@@ -17,6 +19,7 @@ def options(opt):
                       help='Build unit tests')
 
 def configure(conf):
+    sys.stderr.write('\033[0;31mWAF build on this project is deprecated. Please use cmake build instead.\033[0m\n')
     conf.load(['compiler_cxx', 'gnu_dirs',
                'boost', 'default-compiler-flags', 'openssl'])
 
@@ -52,8 +55,10 @@ def configure(conf):
     conf.define('SYSCONFDIR', conf.env.SYSCONFDIR)
 
     conf.write_config_header('src/nac-abe-config.hpp')
+    sys.stderr.write('\033[0;31mWAF build on this project is deprecated. Please use cmake build instead.\033[0m\n')
 
 def build(bld):
+    sys.stderr.write('\033[0;31mWAF build on this project is deprecated. Please use cmake build instead.\033[0m\n')
     bld.shlib(target = "nac-abe",
               source = bld.path.ant_glob(['src/**/*.cpp']),
               vnum = VERSION,
