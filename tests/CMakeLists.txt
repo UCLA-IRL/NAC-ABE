@@ -19,10 +19,10 @@ if (HAVE_TESTS)
     target_link_libraries(unit-tests PUBLIC nac-abe)
     target_link_libraries(unit-tests PUBLIC ${Boost_LIBRARIES})
 
-    add_test(unit-tests COMMAND ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/unit-tests)
+    add_test(NAME unit-tests COMMAND ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/unit-tests)
 
     if (BUILD_EXAMPLES)
-        add_test(example-tests COMMAND bash ${CMAKE_SOURCE_DIR}/examples/run-examples.sh ${CMAKE_BINARY_DIR})
+        add_test(NAME example-tests COMMAND bash ${CMAKE_SOURCE_DIR}/examples/run-examples.sh ${CMAKE_BINARY_DIR})
     endif (BUILD_EXAMPLES)
 endif (HAVE_TESTS)
 
