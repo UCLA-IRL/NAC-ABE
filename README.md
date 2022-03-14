@@ -106,6 +106,24 @@ To run tests, you must have `-DHAVE_TESTS=True` when you config the project.
 ./build/bin/unit-tests
 ```
 
+### 2.3 Run Examples
+
+To run example, you must have `-DBUILD_EXAMPLES=True` when you config the project.
+
+```bash
+# in the build directory of NAC-ABE
+#run all the tests (including integrate test)
+ndnsec key-gen -t r /consumerPrefix1
+ndnsec key-gen /aaPrefix
+ndnsec key-gen /producerPrefix
+
+./examples/kp-aa-example &
+./examples/kp-producer-example &
+./examples/kp-consumer-example
+```
+
+
+
 ## 3 Documentation
 
 The library mainly provide supports for four roles in an NDN based ABE scenario.

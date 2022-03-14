@@ -10,5 +10,6 @@ if (BUILD_EXAMPLES)
 
     add_executable(kp-aa-example kp-aa-example.cpp)
     target_link_libraries(kp-aa-example PUBLIC nac-abe)
+
 endif (BUILD_EXAMPLES)
 

@@ -3,6 +3,7 @@ cmake_minimum_required(VERSION 3.5)
 
 if (HAVE_TESTS)
     enable_testing()
+
     find_package(Boost REQUIRED COMPONENTS unit_test_framework)
     include_directories(${Boost_INCLUDE_DIRS})
     link_directories(${Boost_LIBRARY_DIRS})
@@ -17,5 +18,11 @@ if (HAVE_TESTS)
     target_include_directories(unit-tests PUBLIC .)
     target_link_libraries(unit-tests PUBLIC nac-abe)
     target_link_libraries(unit-tests PUBLIC ${Boost_LIBRARIES})
+
+    add_test(unit-tests COMMAND ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/unit-tests)
+
+    if (BUILD_EXAMPLES)
+        add_test(example-tests COMMAND bash ${CMAKE_SOURCE_DIR}/examples/run-examples.sh ${CMAKE_BINARY_DIR})
+    endif (BUILD_EXAMPLES)
 endif (HAVE_TESTS)
 
