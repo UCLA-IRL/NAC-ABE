@@ -40,6 +40,7 @@ target_compile_options(nac-abe PUBLIC ${NDN_CXX_CFLAGS})
 target_link_libraries(nac-abe PUBLIC ${NDN_CXX_LIBRARIES} openabe)
 
 add_subdirectory(tests)
+add_subdirectory(examples)
 
 # install
 set(PKG_CONFIG_REQUIRES

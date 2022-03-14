@@ -92,10 +92,10 @@ AttributeAuthority::onDecryptionKeyRequest(const Interest& request)
   // verify request and generate token
   auto optionalCert = m_trustConfig.findCertificate(identityName);
   if (optionalCert) {
-    NDN_LOG_INFO("Find consumer(decryptor) certificate.");
+    NDN_LOG_INFO("Find consumer(decryptor) certificate: " << optionalCert->getName());
   }
   else {
-    NDN_LOG_INFO("DKEY Request Interest cannot be authenticated: no certificate");
+    NDN_LOG_INFO("DKEY Request Interest cannot be authenticated: no certificate for " << identityName);
     return;
   }
 

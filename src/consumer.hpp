@@ -79,11 +79,11 @@ private:
 
   void
   handleNack(const Interest& interest, const lp::Nack& nack,
-             const ErrorCallback& errorCallback);
+             const ErrorCallback& errorCallback, std::string message);
 
   void
   handleTimeout(const Interest& interest, int nRetrials,
-                const DataCallback& dataCallback, const ErrorCallback& errorCallback);
+                const DataCallback& dataCallback, const ErrorCallback& errorCallback, std::string nackMessage, std::string timeoutMessage);
 
 PUBLIC_WITH_TESTS_ELSE_PRIVATE:
   security::Certificate m_cert;
