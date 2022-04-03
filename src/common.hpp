@@ -1,6 +1,6 @@
 /* -*- Mode:C++; c-file-style:"gnu"; indent-tabs-mode:nil; -*- */
-/**
- * Copyright (c) 2017-2019, Regents of the University of California.
+/*
+ * Copyright (c) 2017-2022, Regents of the University of California.
  *
  * This file is part of NAC-ABE.
  *
@@ -56,12 +56,11 @@
 #include <ndn-cxx/lp/nack.hpp>
 #include <ndn-cxx/util/backports.hpp>
 #include <ndn-cxx/util/signal.hpp>
-#include <ndn-cxx/security/key-chain.hpp>
 #include <ndn-cxx/security/certificate.hpp>
+#include <ndn-cxx/security/key-chain.hpp>
 #include <ndn-cxx/security/validator.hpp>
 #include <ndn-cxx/util/logger.hpp>
-
-#include <iostream>
+#include <ndn-cxx/util/span.hpp>
 
 #include <boost/algorithm/string.hpp>
 #include <boost/assert.hpp>

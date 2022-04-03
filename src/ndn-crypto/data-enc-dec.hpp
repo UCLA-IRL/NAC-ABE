@@ -1,6 +1,6 @@
 /* -*- Mode:C++; c-file-style:"gnu"; indent-tabs-mode:nil; -*- */
-/**
- * Copyright (c) 2017-2019, Regents of the University of California.
+/*
+ * Copyright (c) 2017-2022, Regents of the University of California.
  *
  * This file is part of NAC-ABE.
  *
@@ -22,16 +22,15 @@
 #define NAC_DATA_ENC_DEC_HPP
 
 #include "common.hpp"
-#include <tuple>
 
 namespace ndn {
 namespace nacabe {
 
 Block
-encryptDataContentWithCK(const uint8_t* payload, size_t payloadLen, const uint8_t* rsaKey, size_t rsaKeyLen);
+encryptDataContentWithCK(span<const uint8_t> payload, span<const uint8_t> rsaKey);
 
 Buffer
-decryptDataContent(const Block& dataBlock, const uint8_t* key, size_t keyLen);
+decryptDataContent(const Block& dataBlock, span<const uint8_t> key);
 
 Buffer
 decryptDataContent(const Block& dataBlock, const security::Tpm& tpm, const Name& certName);

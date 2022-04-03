@@ -1,6 +1,6 @@
 /* -*- Mode:C++; c-file-style:"gnu"; indent-tabs-mode:nil; -*- */
-/**
- * Copyright (c) 2017-2019, Regents of the University of California.
+/*
+ * Copyright (c) 2017-2022, Regents of the University of California.
  *
  * This file is part of NAC-ABE.
  *
@@ -20,6 +20,7 @@
 
 #include "data-owner.hpp"
 
+#include <boost/range/adaptor/reversed.hpp>
 #include <ndn-cxx/encoding/block-helpers.hpp>
 #include <ndn-cxx/security/signing-helpers.hpp>
 
@@ -37,23 +38,23 @@ DataOwner::DataOwner(const security::Certificate& identityCert, Face& face,
 }
 
 void
-DataOwner::commandProducerPolicy(const Name& prefix, const Name& dataPrefix, const Block& policyBlock,
-                                 const SuccessCallback& successCb, const ErrorCallback& errorCb)
+DataOwner::commandProducerPolicyImpl(const Name& prefix, const Name& dataPrefix,
+                                     span<const uint8_t> policy,
+                                     const SuccessCallback& successCb,
+                                     const ErrorCallback& errorCb)
 {
   Name policyName = prefix;
   policyName.append(SET_POLICY);
-  policyName.append(dataPrefix.wireEncode());
-  policyName.append(policyBlock);
-  shared_ptr<Interest> interest = make_shared<Interest>(policyName);
-  interest->setCanBePrefix(false);
+  policyName.append(dataPrefix.wireEncode().begin(), dataPrefix.wireEncode().end());
+  policyName.append(policy.begin(), policy.end());
+  auto interest = std::make_shared<Interest>(policyName);
   interest->setMustBeFresh(true);
   interest->setInterestLifetime(time::seconds(1));
   m_keyChain.sign(*interest, signingByCertificate(m_cert));
 
   // prepare callback functions
-  auto validationCallback =
-    [=] (const Data& validData) {
-    //try to know if register success;
+  auto validationCallback = [=] (const Data& validData) {
+    // try to know if register success
     if (readString(validData.getContent()) != "success") {
       errorCb("register failed");
     }
@@ -79,26 +80,33 @@ DataOwner::commandProducerPolicy(const Name& prefix, const Name& dataPrefix, con
                          });
 }
 
-void DataOwner::commandProducerPolicy(const Name &producerPrefix, const Name &dataPrefix, const Policy &policy,
-                                      const DataOwner::SuccessCallback &successCb,
-                                      const DataOwner::ErrorCallback &errorCb) {
-  NDN_LOG_INFO("Set data " << dataPrefix<<" in Producer "<< producerPrefix <<" with policy "<< policy);
-  commandProducerPolicy(producerPrefix, dataPrefix, makeStringBlock(tlv::GenericNameComponent, policy), successCb, errorCb);
+void
+DataOwner::commandProducerPolicy(const Name &producerPrefix, const Name &dataPrefix,
+                                 const Policy &policy,
+                                 const DataOwner::SuccessCallback &successCb,
+                                 const DataOwner::ErrorCallback &errorCb)
+{
+  NDN_LOG_INFO("Set data " << dataPrefix << " in Producer " << producerPrefix << " with policy " << policy);
+  commandProducerPolicyImpl(producerPrefix, dataPrefix,
+                            {reinterpret_cast<const uint8_t*>(policy.data()), policy.size()},
+                            successCb, errorCb);
 }
 
-void DataOwner::commandProducerPolicy(const Name &producerPrefix, const Name &dataPrefix,
-                                      const std::vector<std::string> &attributes,
-                                      const DataOwner::SuccessCallback &successCb,
-                                      const DataOwner::ErrorCallback &errorCb) {
-  Block attributeBlock(tlv::GenericNameComponent);
-  std::stringstream ss("|");
-  for (const auto& i : attributes) {
-    attributeBlock.push_back(makeStringBlock(TLV_Attribute, i));
-    ss << i + "|";
+void
+DataOwner::commandProducerPolicy(const Name &producerPrefix, const Name &dataPrefix,
+                                 const std::vector<std::string> &attributes,
+                                 const DataOwner::SuccessCallback &successCb,
+                                 const DataOwner::ErrorCallback &errorCb)
+{
+  EncodingBuffer enc;
+  std::string s("|");
+  for (const auto& a : attributes | boost::adaptors::reversed) {
+    prependStringBlock(enc, TLV_Attribute, a);
+    s = '|' + a + s;
   }
-  attributeBlock.encode();
-  NDN_LOG_INFO("Set data " << dataPrefix<<" in Producer "<< producerPrefix <<" with attribute "<< ss.str());
-  commandProducerPolicy(producerPrefix, dataPrefix, attributeBlock, successCb, errorCb);
+
+  NDN_LOG_INFO("Set data " << dataPrefix << " in Producer " << producerPrefix << " with attributes " << s);
+  commandProducerPolicyImpl(producerPrefix, dataPrefix, enc, successCb, errorCb);
 }
 
 } // namespace nacabe

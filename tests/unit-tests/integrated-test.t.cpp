@@ -1,6 +1,6 @@
 /* -*- Mode:C++; c-file-style:"gnu"; indent-tabs-mode:nil; -*- */
-/**
- * Copyright (c) 2017-2019, Regents of the University of California.
+/*
+ * Copyright (c) 2017-2022, Regents of the University of California.
  *
  * This file is part of NAC-ABE.
  *
@@ -144,7 +144,7 @@ BOOST_AUTO_TEST_CASE(IntegratedTest)
 
   std::shared_ptr<Data> contentData, ckData;
   auto policyFound = producer.findMatchedPolicy(dataName);
-  std::tie(contentData, ckData) = producer.produce(dataName, policyFound, PLAIN_TEXT, sizeof(PLAIN_TEXT));
+  std::tie(contentData, ckData) = producer.produce(dataName, policyFound, PLAIN_TEXT);
   BOOST_CHECK(contentData != nullptr);
   BOOST_CHECK(ckData != nullptr);
   NDN_LOG_DEBUG("content data name: " << contentData->getName());
@@ -262,7 +262,7 @@ BOOST_AUTO_TEST_CASE(KpIntegratedTest)
 
   std::shared_ptr<Data> contentData, ckData;
   auto attributeFound = producer.findMatchedAttributes(dataName);
-  std::tie(contentData, ckData) = producer.produce(dataName, attributeFound, PLAIN_TEXT, sizeof(PLAIN_TEXT));
+  std::tie(contentData, ckData) = producer.produce(dataName, attributeFound, PLAIN_TEXT);
   BOOST_CHECK(contentData != nullptr);
   BOOST_CHECK(ckData != nullptr);
   NDN_LOG_DEBUG("content data name: " << contentData->getName());
@@ -381,9 +381,9 @@ BOOST_AUTO_TEST_CASE(KpCacheIntegratedTest)
   std::shared_ptr<Data> contentData, ckData;
   auto attributeFound = producer.findMatchedAttributes(dataName);
   BOOST_CHECK(producer.m_kpKeyCache.size() == 0);
-  std::tie(contentData, ckData) = producer.produce(dataName, attributeFound, PLAIN_TEXT, sizeof(PLAIN_TEXT));
+  std::tie(contentData, ckData) = producer.produce(dataName, attributeFound, PLAIN_TEXT);
   BOOST_CHECK(producer.m_kpKeyCache.size() == 1);
-  std::tie(contentData, ckData) = producer.produce(dataName, attributeFound, PLAIN_TEXT, sizeof(PLAIN_TEXT));
+  std::tie(contentData, ckData) = producer.produce(dataName, attributeFound, PLAIN_TEXT);
   BOOST_CHECK(producer.m_kpKeyCache.size() == 1);
   BOOST_CHECK(contentData != nullptr);
   BOOST_CHECK(ckData != nullptr);

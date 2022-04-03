@@ -1,6 +1,6 @@
 /* -*- Mode:C++; c-file-style:"gnu"; indent-tabs-mode:nil; -*- */
-/**
- * Copyright (c) 2017-2019, Regents of the University of California.
+/*
+ * Copyright (c) 2017-2022, Regents of the University of California.
  *
  * This file is part of NAC-ABE.
  *
@@ -66,9 +66,10 @@ public:
            const security::Certificate& attrAuthorityCertificate,
            const security::Certificate& dataOwnerCertificate);
 
-  virtual ~Producer();
+  virtual
+  ~Producer();
 
-  virtual /**
+  /**
    * @brief Produce CP-encrypted Data and corresponding encrypted CK Data
    *
    * Used when data owner is not used.
@@ -77,23 +78,17 @@ public:
    * @param dataSuffix The suffix of data.
    * @param accessPolicy The encryption policy, e.g., (ucla or mit) and professor
    * @param content The payload
-   * @param contentLen The payload length
    * @return The encrypted data and the encrypted CK data
    */
-  std::tuple<std::shared_ptr<Data>, std::shared_ptr<Data>>
-  produce(const Name& dataNameSuffix, const Policy& accessPolicy,
-          const uint8_t* content, size_t contentLen);
+  virtual std::tuple<std::shared_ptr<Data>, std::shared_ptr<Data>>
+  produce(const Name& dataNameSuffix, const Policy& accessPolicy, span<const uint8_t> content);
 
   /**
    * @brief Produce CP-encrypted CK Data
    *
    * Used when data owner is not used.
    *
-   * @param dataNameSuffix The name of data, not including producer's prefix
-   * @param dataSuffix The suffix of data.
    * @param accessPolicy The encryption policy, e.g., (ucla or mit) and professor
-   * @param content The payload
-   * @param contentLen The payload length
    * @return The content key and the encrypted CK data
    */
   std::pair<std::shared_ptr<algo::ContentKey>, std::shared_ptr<Data>>
@@ -106,25 +101,20 @@ public:
    *
    * @param dataNameSuffix The name of data, not including producer's prefix
    * @param dataSuffix The suffix of data.
-   * @param accessPolicy The encryption policy, e.g., (ucla or mit) and professor
+   * @param attributes The encryption policy, e.g., (ucla or mit) and professor
    * @param content The payload
-   * @param contentLen The payload length
    * @return The encrypted data and the encrypted CK data
    */
-  std::tuple<std::shared_ptr<Data>, std::shared_ptr<Data>>
-  virtual produce(const Name& dataNameSuffix, const std::vector<std::string>& attributes,
-          const uint8_t* content, size_t contentLen);
+  virtual std::tuple<std::shared_ptr<Data>, std::shared_ptr<Data>>
+  produce(const Name& dataNameSuffix, const std::vector<std::string>& attributes,
+          span<const uint8_t> content);
 
   /**
    * @brief Produce KP-encrypted CK Data
    *
    * Used when data owner is not used.
    *
-   * @param dataNameSuffix The name of data, not including producer's prefix
-   * @param dataSuffix The suffix of data.
-   * @param accessPolicy The encryption policy, e.g., (ucla or mit) and professor
-   * @param content The payload
-   * @param contentLen The payload length
+   * @param attributes The encryption policy, e.g., (ucla or mit) and professor
    * @return The content key and the encrypted CK data
    */
   std::pair<std::shared_ptr<algo::ContentKey>, std::shared_ptr<Data>>
@@ -137,11 +127,10 @@ public:
    *
    * @param dataNameSuffix The name of data, not including producer's prefix
    * @param content The payload
-   * @param contentLen The payload length
    * @return The encrypted data and the encrypted CK data
    */
   std::tuple<std::shared_ptr<Data>, std::shared_ptr<Data>>
-  produce(const Name& dataNameSuffix, const uint8_t* content, size_t contentLen);
+  produce(const Name& dataNameSuffix, span<const uint8_t> content);
 
   /**
    * @brief Produce encrypted Data and from CK Data
@@ -150,12 +139,11 @@ public:
    *
    * @param dataNameSuffix The name of data, not including producer's prefix
    * @param content The payload
-   * @param contentLen The payload length
    * @return The encrypted data and the encrypted CK data
    */
   std::shared_ptr<Data>
   produce(std::shared_ptr<algo::ContentKey> key, const Name& keyName,
-          const Name& dataNameSuffix, const uint8_t* content, size_t contentLen);
+          const Name& dataNameSuffix, span<const uint8_t> content);
 
 PUBLIC_WITH_TESTS_ELSE_PRIVATE:
   void

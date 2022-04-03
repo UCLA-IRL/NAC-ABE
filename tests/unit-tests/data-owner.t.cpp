@@ -1,6 +1,6 @@
 /* -*- Mode:C++; c-file-style:"gnu"; indent-tabs-mode:nil; -*- */
-/**
- * Copyright (c) 2017-2019, Regents of the University of California.
+/*
+ * Copyright (c) 2017-2022, Regents of the University of California.
  *
  * This file is part of NAC-ABE.
  *
@@ -62,8 +62,8 @@ BOOST_AUTO_TEST_CASE(CpSetPolicy)
   std::string policy = "attr1 and attr2 or attr3";
   Name interestName = producerPrefix;
   interestName.append(SET_POLICY)
-      .append(dataPrefix.wireEncode())
-      .append(policy);
+              .append(dataPrefix.wireEncode().begin(), dataPrefix.wireEncode().end())
+              .append(policy);
 
   advanceClocks(time::milliseconds(1), 10);
 
@@ -89,7 +89,7 @@ BOOST_AUTO_TEST_CASE(CpSetPolicy)
   bool getItem = false;
   dataowner.commandProducerPolicy(producerPrefix, dataPrefix, policy,
                                   [&] (const Data& data) {
-                                    BOOST_CHECK(interestName.isPrefixOf(data.getName().toUri()));
+                                    BOOST_CHECK(interestName.isPrefixOf(data.getName()));
                                     getItem = true;
                                   },
                                   [=] (const std::string&) {
@@ -201,16 +201,17 @@ BOOST_AUTO_TEST_CASE(KpSetPolicy)
 
   DataOwner dataowner(cert, c1, m_keyChain);
 
-  Name producerPrefix = Name("/producer1");
-  Name dataPrefix = Name("/data");
-  std::vector<std::string> attributes = {"attr1", "attr2", "attr3"};
-  Block attributeBlock(tlv::GenericNameComponent);
-  for (const auto& i : attributes) attributeBlock.push_back(makeStringBlock(TLV_Attribute, i));
-  attributeBlock.encode();
+  Name producerPrefix("/producer1");
+  Name dataPrefix("/data");
+  const std::vector<std::string> attributes{"attr1", "attr2", "attr3"};
+  name::Component attrComp;
+  for (const auto& i : attributes)
+    attrComp.push_back(makeStringBlock(TLV_Attribute, i));
+  attrComp.encode();
   Name interestName = producerPrefix;
   interestName.append(SET_POLICY)
-      .append(dataPrefix.wireEncode())
-      .append(attributeBlock);
+              .append(dataPrefix.wireEncode().begin(), dataPrefix.wireEncode().end())
+              .append(attrComp);
 
   advanceClocks(time::milliseconds(1), 10);
 
@@ -219,7 +220,7 @@ BOOST_AUTO_TEST_CASE(KpSetPolicy)
                          BOOST_CHECK_EQUAL(interest.getName().getSubName(0, 1), producerPrefix);
                          BOOST_CHECK_EQUAL(interest.getName().get(1).toUri(), SET_POLICY);
                          BOOST_CHECK_EQUAL(Name(interest.getName().get(2).blockFromValue()), dataPrefix);
-                         BOOST_CHECK_EQUAL(interest.getName().get(3).wireEncode(), attributeBlock);
+                         BOOST_CHECK_EQUAL(interest.getName().get(3), attrComp);
 
                          BOOST_CHECK(security::verifySignature(interest, cert));
 
@@ -236,7 +237,7 @@ BOOST_AUTO_TEST_CASE(KpSetPolicy)
   bool getItem = false;
   dataowner.commandProducerPolicy(producerPrefix, dataPrefix, attributes,
                                   [&] (const Data& data) {
-                                    BOOST_CHECK(interestName.isPrefixOf(data.getName().toUri()));
+                                    BOOST_CHECK(interestName.isPrefixOf(data.getName()));
                                     getItem = true;
                                   },
                                   [=] (const std::string&) {
@@ -253,7 +254,7 @@ BOOST_AUTO_TEST_CASE(KpSetPolicy)
                          BOOST_CHECK_EQUAL(interest.getName().getSubName(0, 1), producerPrefix);
                          BOOST_CHECK_EQUAL(interest.getName().get(1).toUri(), SET_POLICY);
                          BOOST_CHECK_EQUAL(Name(interest.getName().get(2).blockFromValue()), dataPrefix);
-                         BOOST_CHECK_EQUAL(interest.getName().get(3).wireEncode(), attributeBlock);
+                         BOOST_CHECK_EQUAL(interest.getName().get(3), attrComp);
 
                          BOOST_CHECK(security::verifySignature(interest, cert));
 
@@ -287,7 +288,7 @@ BOOST_AUTO_TEST_CASE(KpSetPolicy)
                                    BOOST_CHECK_EQUAL(interest.getName().getSubName(0, 1), producerPrefix);
                                    BOOST_CHECK_EQUAL(interest.getName().get(1).toUri(), SET_POLICY);
                                    BOOST_CHECK_EQUAL(Name(interest.getName().get(2).blockFromValue()), dataPrefix);
-                                   BOOST_CHECK_EQUAL(interest.getName().get(3).wireEncode(), attributeBlock);
+                                   BOOST_CHECK_EQUAL(interest.getName().get(3), attrComp);
 
                                    BOOST_CHECK(security::verifySignature(interest, cert));
                                  });
@@ -314,7 +315,7 @@ BOOST_AUTO_TEST_CASE(KpSetPolicy)
                                    BOOST_CHECK_EQUAL(interest.getName().getSubName(0, 1), producerPrefix);
                                    BOOST_CHECK_EQUAL(interest.getName().get(1).toUri(), SET_POLICY);
                                    BOOST_CHECK_EQUAL(Name(interest.getName().get(2).blockFromValue()), dataPrefix);
-                                   BOOST_CHECK_EQUAL(interest.getName().get(3).wireEncode(), attributeBlock);
+                                   BOOST_CHECK_EQUAL(interest.getName().get(3), attrComp);
 
                                    BOOST_CHECK(security::verifySignature(interest, cert));
 

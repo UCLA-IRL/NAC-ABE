@@ -1,6 +1,6 @@
 /* -*- Mode:C++; c-file-style:"gnu"; indent-tabs-mode:nil; -*- */
-/**
- * Copyright (c) 2017-2019, Regents of the University of California.
+/*
+ * Copyright (c) 2017-2022, Regents of the University of California.
  *
  * This file is part of NAC-ABE.
  *
@@ -47,7 +47,7 @@ ContentKey::makeCKContent()
 {
   NDN_LOG_INFO("encrypted aes key size : " << m_encAesKey.size());
   auto ckBlock = makeEmptyBlock(tlv::Content);
-  ckBlock.push_back(makeBinaryBlock(TLV_EncryptedAesKey, m_encAesKey.data(), m_encAesKey.size()));
+  ckBlock.push_back(makeBinaryBlock(TLV_EncryptedAesKey, m_encAesKey));
   ckBlock.encode();
   return ckBlock;
 }

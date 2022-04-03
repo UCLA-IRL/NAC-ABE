@@ -1,6 +1,6 @@
 /* -*- Mode:C++; c-file-style:"gnu"; indent-tabs-mode:nil; -*- */
-/**
- * Copyright (c) 2017-2019, Regents of the University of California.
+/*
+ * Copyright (c) 2017-2022, Regents of the University of California.
  *
  * This file is part of NAC-ABE.
  *
@@ -20,11 +20,12 @@
 
 #include "producer.hpp"
 #include "attribute-authority.hpp"
-#include <ndn-cxx/util/random.hpp>
-#include <ndn-cxx/security/signing-helpers.hpp>
+#include "algo/abe-support.hpp"
+
 #include <ndn-cxx/encoding/block-helpers.hpp>
-#include <utility>
+#include <ndn-cxx/security/signing-helpers.hpp>
 #include <ndn-cxx/security/verification-helpers.hpp>
+#include <ndn-cxx/util/random.hpp>
 
 namespace ndn {
 namespace nacabe {
@@ -72,13 +73,14 @@ Producer::~Producer()
 
 std::tuple<std::shared_ptr<Data>, std::shared_ptr<Data>>
 Producer::produce(const Name& dataNameSuffix, const std::string& accessPolicy,
-                  const uint8_t* content, size_t contentLen)
+                  span<const uint8_t> content)
 {
   auto contentKey = ckDataGen(accessPolicy);
   if (contentKey.first == nullptr) {
     return std::make_tuple(nullptr, nullptr);
-  } else {
-    auto data = produce(contentKey.first, contentKey.second->getName(), dataNameSuffix, content, contentLen);
+  }
+  else {
+    auto data = produce(contentKey.first, contentKey.second->getName(), dataNameSuffix, content);
     return std::make_tuple(data, contentKey.second);
   }
 }
@@ -118,13 +120,14 @@ Producer::ckDataGen(const Policy& accessPolicy) {
 
 std::tuple<std::shared_ptr<Data>, std::shared_ptr<Data>>
 Producer::produce(const Name& dataNameSuffix, const std::vector<std::string>& attributes,
-                  const uint8_t* content, size_t contentLen)
+                  span<const uint8_t> content)
 {
   auto contentKey = ckDataGen(attributes);
   if (contentKey.first == nullptr) {
     return std::make_tuple(nullptr, nullptr);
-  } else {
-    auto data = produce(contentKey.first, contentKey.second->getName(), dataNameSuffix, content, contentLen);
+  }
+  else {
+    auto data = produce(contentKey.first, contentKey.second->getName(), dataNameSuffix, content);
     return std::make_tuple(data, contentKey.second);
   }
 }
@@ -148,13 +151,15 @@ Producer::ckDataGen(const std::vector<std::string>& attributes)
     }
     auto contentKey = algo::ABESupport::getInstance().kpContentKeyGen(m_paramFetcher.getPublicParams(), attributes);
 
-    Name ckName = security::extractIdentityFromCertName(m_cert.getName());
-    ckName.append("CK").append(std::to_string(random::generateSecureWord32()));
+    name::Component nc;
+    for (const auto& a : attributes)
+      nc.push_back(makeStringBlock(TLV_Attribute, a));
+    Name ckDataName = security::extractIdentityFromCertName(m_cert.getName())
+                      .append("CK")
+                      .append(std::to_string(random::generateSecureWord32()))
+                      .append("ENC-BY")
+                      .append(nc);
 
-    Name ckDataName = ckName;
-    Block b(tlv::GenericNameComponent);
-    for (const auto& i : attributes) b.push_back(makeStringBlock(TLV_Attribute, i));
-    ckDataName.append("ENC-BY").append(b);
     auto ckData = std::make_shared<Data>(ckDataName);
     ckData->setContent(contentKey->makeCKContent());
     ckData->setFreshnessPeriod(5_s);
@@ -170,7 +175,7 @@ Producer::ckDataGen(const std::vector<std::string>& attributes)
 }
 
 std::tuple<std::shared_ptr<Data>, std::shared_ptr<Data>>
-Producer::produce(const Name& dataNameSuffix, const uint8_t* content, size_t contentLen)
+Producer::produce(const Name& dataNameSuffix, span<const uint8_t> content)
 {
   // Encrypt data based on data prefix.
   if (m_paramFetcher.getAbeType() == ABE_TYPE_CP_ABE) {
@@ -178,23 +183,27 @@ Producer::produce(const Name& dataNameSuffix, const uint8_t* content, size_t con
     if (policy == "") {
       return std::make_tuple(nullptr, nullptr);
     }
-    return produce(dataNameSuffix, policy, content, contentLen);
-  } else if (m_paramFetcher.getAbeType() == ABE_TYPE_KP_ABE) {
+    return produce(dataNameSuffix, policy, content);
+  }
+  else if (m_paramFetcher.getAbeType() == ABE_TYPE_KP_ABE) {
     auto attributes = findMatchedAttributes(dataNameSuffix);
     if (attributes.empty()) {
       return std::make_tuple(nullptr, nullptr);
     }
-    return produce(dataNameSuffix, attributes, content, contentLen);
-  } else {
+    return produce(dataNameSuffix, attributes, content);
+  }
+  else {
     return std::make_tuple(nullptr, nullptr);
   }
 }
 
 std::shared_ptr<Data>
 Producer::produce(std::shared_ptr<algo::ContentKey> key, const Name& keyName,
-                  const Name& dataNameSuffix, const uint8_t* content, size_t contentLen) {
+                  const Name& dataNameSuffix, span<const uint8_t> content)
+{
   NDN_LOG_INFO("encrypt on data:" << dataNameSuffix);
-  auto cipherText = algo::ABESupport::getInstance().encrypt(std::move(key), Buffer(content, contentLen));
+  auto cipherText = algo::ABESupport::getInstance().encrypt(std::move(key),
+                                                            Buffer(content.begin(), content.end()));
   return getCkEncryptedData(dataNameSuffix, cipherText, keyName);
 }
 

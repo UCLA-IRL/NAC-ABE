@@ -25,13 +25,15 @@ public:
   void
   run()
   {
-    std::shared_ptr<Data> contentData, ckData;
     Name dataName("randomData");
-    std::string plainText = "Hello world";
+    const std::string plainText = "Hello world";
     std::vector<std::string> attributes;
     attributes.emplace_back("attribute");
+
+    std::shared_ptr<Data> contentData, ckData;
     std::tie(contentData, ckData) = m_producer.produce(dataName, attributes,
-                                                       reinterpret_cast<const uint8_t *>(plainText.c_str()), plainText.size());
+                                                       {reinterpret_cast<const uint8_t*>(plainText.data()),
+                                                        plainText.size()});
     std::cout << "content data name: " << contentData->getName() << std::endl;
 
     m_face.setInterestFilter(producerCert.getIdentity(),

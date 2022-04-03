@@ -1,6 +1,6 @@
 /* -*- Mode:C++; c-file-style:"gnu"; indent-tabs-mode:nil; -*- */
-/**
- * Copyright (c) 2017-2019, Regents of the University of California.
+/*
+ * Copyright (c) 2017-2022, Regents of the University of California.
  *
  * This file is part of NAC-ABE.
  *
@@ -26,32 +26,28 @@ namespace ndn {
 namespace nacabe {
 
 Block
-encryptDataContentWithCK(const uint8_t* payload, size_t payloadLen,
-                         const uint8_t* rsaKey, size_t rsaKeyLen)
+encryptDataContentWithCK(span<const uint8_t> payload, span<const uint8_t> rsaKey)
 {
   // first create AES key and cpEncrypt the payload
-  AesKeyParams param;
-  auto aesKey = Aes::generateKey(param);
+  AesKeyParams params;
+  auto aesKey = Aes::generateKey(params);
   auto iv = Aes::generateIV();
-  auto encryptedPayload = Aes::encrypt(aesKey.data(), aesKey.size(), payload, payloadLen, iv);
+  auto encryptedPayload = Aes::encrypt(aesKey, payload, iv);
 
   // second use RSA key to cpEncrypt the AES key
-  auto encryptedAesKey = Rsa::encrypt(rsaKey, rsaKeyLen, aesKey.data(), aesKey.size());
+  auto encryptedAesKey = Rsa::encrypt(rsaKey, aesKey);
 
   // create the content block
   auto content = makeEmptyBlock(tlv::Content);
-  content.push_back(makeBinaryBlock(TLV_EncryptedContent,
-                                    encryptedPayload.data(), encryptedPayload.size()));
-  content.push_back(makeBinaryBlock(TLV_EncryptedAesKey,
-                                    encryptedAesKey.data(), encryptedAesKey.size()));
-  content.push_back(makeBinaryBlock(TLV_InitialVector, iv.data(), iv.size()));
+  content.push_back(makeBinaryBlock(TLV_EncryptedContent, encryptedPayload));
+  content.push_back(makeBinaryBlock(TLV_EncryptedAesKey, encryptedAesKey));
+  content.push_back(makeBinaryBlock(TLV_InitialVector, iv));
   content.encode();
   return content;
 }
 
 Buffer
-decryptDataContent(const Block& dataBlock,
-                   const uint8_t* key, size_t keyLen)
+decryptDataContent(const Block& dataBlock, span<const uint8_t> key)
 {
   dataBlock.parse();
   Buffer iv(dataBlock.get(TLV_InitialVector).value(),
@@ -61,9 +57,8 @@ decryptDataContent(const Block& dataBlock,
   Buffer encryptedPayload(dataBlock.get(TLV_EncryptedContent).value(),
                           dataBlock.get(TLV_EncryptedContent).value_size());
 
-  auto aesKey = Rsa::decrypt(key, keyLen, encryptedAesKey.data(), encryptedAesKey.size());
-  auto payload = Aes::decrypt(aesKey.data(), aesKey.size(),
-                                      encryptedPayload.data(), encryptedPayload.size(), iv);
+  auto aesKey = Rsa::decrypt(key, encryptedAesKey);
+  auto payload = Aes::decrypt(aesKey, encryptedPayload, iv);
   return payload;
 }
 
@@ -79,10 +74,8 @@ decryptDataContent(const Block& dataBlock, const security::Tpm& tpm, const Name&
                           dataBlock.get(TLV_EncryptedContent).value_size());
 
   // auto aesKey = Rsa::cpDecrypt(key, keyLen, encryptedAesKey.data(), encryptedAesKey.size());
-  auto aesKey = tpm.decrypt(encryptedAesKey.data(), encryptedAesKey.size(),
-                            security::extractKeyNameFromCertName(certName));
-  auto payload = Aes::decrypt(aesKey->data(), aesKey->size(),
-                              encryptedPayload.data(), encryptedPayload.size(), iv);
+  auto aesKey = tpm.decrypt(encryptedAesKey, security::extractKeyNameFromCertName(certName));
+  auto payload = Aes::decrypt(*aesKey, encryptedPayload, iv);
   return payload;
 }
 
