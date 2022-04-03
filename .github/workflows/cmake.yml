@@ -23,16 +23,9 @@ jobs:
         sudo apt-get -qy install software-properties-common
         sudo add-apt-repository ppa:named-data/ppa -y
         sudo apt-get -qq update
-        sudo apt-get -y install gcc-10 g++-10 clang-12 lldb-12 lld-12 build-essential \
-                                pkg-config cmake python3-pip doxygen libz-dev \
-                                libndn-cxx-dev nfd libssl-dev libsodium-dev \
+        sudo apt-get -y install build-essential pkg-config cmake doxygen python3-pip \
+                                libndn-cxx-dev nfd libssl-dev libsodium-dev libz-dev \
                                 liblog4cxx-dev libgtest-dev libfl-dev
-        sudo update-alternatives --install /usr/bin/gcc gcc /usr/bin/gcc-10 100
-        sudo update-alternatives --install /usr/bin/g++ g++ /usr/bin/g++-10 100
-        sudo update-alternatives --install /usr/bin/c++ c++ /usr/bin/g++-10 100
-        sudo update-alternatives --install /usr/bin/clang clang /usr/bin/clang-12 100
-        sudo update-alternatives --install /usr/bin/lld lld /usr/bin/lld-12 100
-        sudo update-alternatives --install /usr/bin/lldb lldb /usr/bin/lldb-12 100
 
     - name: Install OpenABE
       run: |
