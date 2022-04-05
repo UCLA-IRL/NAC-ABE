@@ -30,7 +30,7 @@
 namespace ndn {
 namespace nacabe {
 
-NDN_LOG_INIT(nacabe.producer);
+NDN_LOG_INIT(nacabe.Producer);
 
 Producer::Producer(Face& face,
                    security::KeyChain& keyChain,

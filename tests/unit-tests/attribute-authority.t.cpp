@@ -19,16 +19,16 @@
  */
 
 #include "attribute-authority.hpp"
+
 #include "test-common.hpp"
-#include <ndn-cxx/security/verification-helpers.hpp>
+
 #include <ndn-cxx/security/signing-helpers.hpp>
+#include <ndn-cxx/security/verification-helpers.hpp>
 #include <ndn-cxx/util/dummy-client-face.hpp>
 
 namespace ndn {
 namespace nacabe {
 namespace tests {
-
-namespace fs = boost::filesystem;
 
 class TestAttributeAuthorityFixture : public IdentityManagementTimeFixture
 {
@@ -156,7 +156,6 @@ BOOST_AUTO_TEST_CASE(onKpPrvKey)
   advanceClocks(time::milliseconds(20), 60);
   BOOST_CHECK_EQUAL(count, 1);
 }
-
 
 BOOST_AUTO_TEST_SUITE_END()
 

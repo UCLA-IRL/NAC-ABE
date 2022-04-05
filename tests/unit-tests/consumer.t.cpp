@@ -1,6 +1,6 @@
 /* -*- Mode:C++; c-file-style:"gnu"; indent-tabs-mode:nil; -*- */
-/**
- * Copyright (c) 2017-2019, Regents of the University of California.
+/*
+ * Copyright (c) 2017-2022, Regents of the University of California.
  *
  * This file is part of NAC-ABE.
  *
@@ -19,17 +19,14 @@
  */
 
 #include "consumer.hpp"
+
 #include "test-common.hpp"
-#include "algo/abe-support.hpp"
+
 #include <ndn-cxx/util/dummy-client-face.hpp>
 
 namespace ndn {
 namespace nacabe {
 namespace tests {
-
-namespace fs = boost::filesystem;
-
-NDN_LOG_INIT(Test.Consumer);
 
 class TestConsumerFixture : public IdentityManagementTimeFixture
 {

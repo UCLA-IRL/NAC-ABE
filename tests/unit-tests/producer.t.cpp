@@ -18,17 +18,17 @@
  * See AUTHORS.md for complete list of NAC-ABE authors and contributors.
  */
 
-#include <ndn-cxx/util/dummy-client-face.hpp>
-
-#include "algo/abe-support.hpp"
 #include "producer.hpp"
+#include "algo/abe-support.hpp"
+
 #include "test-common.hpp"
+
+#include <ndn-cxx/security/verification-helpers.hpp>
+#include <ndn-cxx/util/dummy-client-face.hpp>
 
 namespace ndn {
 namespace nacabe {
 namespace tests {
-
-namespace fs = boost::filesystem;
 
 const uint8_t PLAIN_TEXT[1024] = {1};
 

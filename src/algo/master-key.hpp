@@ -1,6 +1,6 @@
 /* -*- Mode:C++; c-file-style:"gnu"; indent-tabs-mode:nil; -*- */
-/**
- * Copyright (c) 2017-2019, Regents of the University of California.
+/*
+ * Copyright (c) 2017-2022, Regents of the University of California.
  *
  * This file is part of NAC-ABE.
  *
@@ -18,10 +18,10 @@
  * See AUTHORS.md for complete list of NAC-ABE authors and contributors.
  */
 
-#ifndef NDNABAC_ALGO_MASKER_KEY_HPP
-#define NDNABAC_ALGO_MASKER_KEY_HPP
+#ifndef NAC_ABE_ALGO_MASTER_KEY_HPP
+#define NAC_ABE_ALGO_MASTER_KEY_HPP
 
-#include "algo-common.hpp"
+#include "common.hpp"
 
 namespace ndn {
 namespace nacabe {
@@ -37,4 +37,4 @@ public:
 } // namespace nacabe
 } // namespace ndn
 
-#endif // NDNABAC_ALGO_MASKER_KEY_HPP
+#endif // NAC_ABE_ALGO_MASTER_KEY_HPP

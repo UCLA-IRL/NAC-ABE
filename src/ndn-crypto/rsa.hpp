@@ -18,8 +18,8 @@
  * See AUTHORS.md for complete list of NAC-ABE authors and contributors.
  */
 
-#ifndef NAC_CRYPTO_RSA_HPP
-#define NAC_CRYPTO_RSA_HPP
+#ifndef NAC_ABE_CRYPTO_RSA_HPP
+#define NAC_ABE_CRYPTO_RSA_HPP
 
 #include <ndn-cxx/security/key-params.hpp>
 
@@ -45,4 +45,4 @@ public:
 } // namespace nacabe
 } // namespace ndn
 
-#endif // NAC_CRYPTO_RSA_HPP
+#endif // NAC_ABE_CRYPTO_RSA_HPP

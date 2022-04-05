@@ -19,13 +19,10 @@
  */
 
 #include "content-key.hpp"
-#include <ndn-cxx/util/concepts.hpp>
 
 namespace ndn {
 namespace nacabe {
 namespace algo {
-
-NDN_LOG_INIT(nacabe.contentKey);
 
 ContentKey::ContentKey(std::string aesKey, Buffer encAesKey) :
     m_aesKey(std::move(aesKey)),
@@ -45,7 +42,6 @@ Buffer& ContentKey::getEncAesKey() {
 Block
 ContentKey::makeCKContent()
 {
-  NDN_LOG_INFO("encrypted aes key size : " << m_encAesKey.size());
   auto ckBlock = makeEmptyBlock(tlv::Content);
   ckBlock.push_back(makeBinaryBlock(TLV_EncryptedAesKey, m_encAesKey));
   ckBlock.encode();

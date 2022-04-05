@@ -1,6 +1,6 @@
 /* -*- Mode:C++; c-file-style:"gnu"; indent-tabs-mode:nil; -*- */
-/**
- * Copyright (c) 2017-2019, Regents of the University of California.
+/*
+ * Copyright (c) 2017-2022, Regents of the University of California.
  *
  * This file is part of NAC-ABE.
  *
@@ -20,8 +20,6 @@
 
 #include "abe-support.hpp"
 #include "../ndn-crypto/error.hpp"
-#include <ndn-cxx/util/logger.hpp>
-#include <utility>
 
 using namespace oabe;
 using namespace oabe::crypto;
@@ -30,10 +28,8 @@ namespace ndn {
 namespace nacabe {
 namespace algo {
 
-NDN_LOG_INIT(nacabe.abesupport);
-
-const char *ABESupport::SCHEMA_CPABE = "CP-ABE";
-const char *ABESupport::SCHEMA_KPABE = "KP-ABE";
+const char* ABESupport::SCHEMA_CPABE = "CP-ABE";
+const char* ABESupport::SCHEMA_KPABE = "KP-ABE";
 
 ABESupport&
 ABESupport::getInstance()

@@ -1,6 +1,6 @@
 /* -*- Mode:C++; c-file-style:"gnu"; indent-tabs-mode:nil; -*- */
-/**
- * Copyright (c) 2017-2019, Regents of the University of California.
+/*
+ * Copyright (c) 2017-2022, Regents of the University of California.
  *
  * This file is part of NAC-ABE.
  *
@@ -21,27 +21,22 @@
 #ifndef NAC_ABE_ALGO_ABE_SUPPORT_HPP
 #define NAC_ABE_ALGO_ABE_SUPPORT_HPP
 
-#include "algo-common.hpp"
 #include "public-params.hpp"
 #include "master-key.hpp"
 #include "private-key.hpp"
 #include "cipher-text.hpp"
 
+#include <openabe/openabe.h>
+#include <openabe/zsymcrypto.h>
 #include <openssl/aes.h>
 #include <openssl/sha.h>
 
 namespace ndn {
 namespace nacabe {
-
-   /**
-   * The policy is specified as a simple string which encodes a inorder
-   * traversal of threshold tree defining the access policy.
-   */
-   typedef std::string Policy;
-
 namespace algo {
 
-class ABESupport {
+class ABESupport
+{
 public:
   static ABESupport &
   getInstance();

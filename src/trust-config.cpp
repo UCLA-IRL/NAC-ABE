@@ -1,6 +1,6 @@
 /* -*- Mode:C++; c-file-style:"gnu"; indent-tabs-mode:nil; -*- */
-/**
- * Copyright (c) 2017-2019, Regents of the University of California.
+/*
+ * Copyright (c) 2017-2022, Regents of the University of California.
  *
  * This file is part of NAC-ABE.
  *
@@ -19,6 +19,8 @@
  */
 
 #include "trust-config.hpp"
+
+#include <boost/property_tree/json_parser.hpp>
 #include <ndn-cxx/util/io.hpp>
 
 namespace ndn {
@@ -31,9 +33,9 @@ TrustConfig::load(const std::string& fileName)
   try {
     boost::property_tree::read_json(fileName, jsonConfig);
   }
-  catch (const boost::property_tree::info_parser_error& error) {
+  catch (const boost::property_tree::file_parser_error& error) {
     NDN_THROW(std::runtime_error("Failed to parse configuration file " + fileName +
-                                " " + error.message() + " line " + std::to_string(error.line())));
+                                 " " + error.message() + " line " + std::to_string(error.line())));
   }
   if (jsonConfig.begin() == jsonConfig.end()) {
     NDN_THROW(std::runtime_error("Error processing configuration file: " + fileName + " no data"));
@@ -49,7 +51,7 @@ TrustConfig::parse(const JsonSection& jsonConfig)
   auto it = caList.begin();
   for (; it != caList.end(); it++) {
     std::istringstream ss(it->second.get<std::string>("certificate"));
-    auto certItem = *(io::load<security::Certificate>(ss));
+    auto certItem = *io::load<security::Certificate>(ss);
     m_knownIdentities.insert(std::make_pair(certItem.getIdentity(), certItem));
   }
 }

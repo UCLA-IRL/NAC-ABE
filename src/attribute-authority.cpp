@@ -20,16 +20,16 @@
 
 #include "attribute-authority.hpp"
 #include "json-helper.hpp"
+#include "algo/abe-support.hpp"
 #include "ndn-crypto/data-enc-dec.hpp"
 
-#include <ndn-cxx/security/transform/public-key.hpp>
 #include <ndn-cxx/security/signing-helpers.hpp>
 #include <ndn-cxx/security/verification-helpers.hpp>
 
 namespace ndn {
 namespace nacabe {
 
-NDN_LOG_INIT(nacabe.attribute-authority);
+NDN_LOG_INIT(nacabe.AttributeAuthority);
 
 //public
 AttributeAuthority::AttributeAuthority(const security::Certificate& identityCert, Face& face,
@@ -195,7 +195,6 @@ algo::PrivateKey KpAttributeAuthority::getPrivateKey(Name identityName) {
   // generate ABE private key and do encryption
   return algo::ABESupport::getInstance().kpPrvKeyGen(m_pubParams, m_masterKey, policy);
 }
-
 
 } // namespace nacabe
 } // namespace ndn

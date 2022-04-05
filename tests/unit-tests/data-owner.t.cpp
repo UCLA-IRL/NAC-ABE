@@ -19,18 +19,17 @@
  */
 
 #include "data-owner.hpp"
-#include "test-common.hpp"
 #include "producer.hpp"
+
+#include "test-common.hpp"
+
 #include <ndn-cxx/security/signing-helpers.hpp>
+#include <ndn-cxx/security/verification-helpers.hpp>
 #include <ndn-cxx/util/dummy-client-face.hpp>
 
 namespace ndn {
 namespace nacabe {
 namespace tests {
-
-namespace fs = boost::filesystem;
-
-NDN_LOG_INIT(Test.DataOwner);
 
 class TestDataOwnerFixture : public IdentityManagementTimeFixture
 {
