@@ -22,7 +22,6 @@ jobs:
     runs-on: ${{ matrix.os }}
     env:
       CXX: ${{ matrix.compiler }}
-      NODE_LABELS: Linux Ubuntu
 
     steps:
     - name: Checkout
@@ -75,3 +74,94 @@ jobs:
       # Execute tests defined by the CMake configuration.
       # See https://cmake.org/cmake/help/latest/manual/ctest.1.html for more detail
       run: ctest
+
+  macos-build:
+    name: Xcode ${{ matrix.xcode }} on ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        xcode: [ '11.3', '11.7', '12.4' ]
+        os: [ macos-10.15 ]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - name: Set up Xcode
+        uses: maxim-lobanov/setup-xcode@v1
+        with:
+          xcode-version: ${{ matrix.xcode }}
+      - name: Checkout
+        uses: actions/checkout@v3
+      - name: Install dependencies
+        run: |
+          FORMULAE=(boost openssl pkg-config bison googletest gsed)
+      
+          # GitHub Actions runners have a large number of pre-installed
+          # Homebrew packages. Don't waste time upgrading all of them.
+          brew list --versions "${FORMULAE[@]}" || brew update
+          for FORMULA in "${FORMULAE[@]}"; do
+            brew list --versions "$FORMULA" || brew install "$FORMULA"
+          done
+          # Ensure /usr/local/opt/openssl exists
+          brew reinstall openssl openssl@1.1
+
+      - name: Install OpenABE
+        run: |
+          cd ..
+          git clone https://github.com/zeutro/openabe.git
+          cd openabe
+          sudo -E ./deps/install_pkgs.sh
+          . ./env
+          
+          cd deps/relic
+          PATH="$(brew --prefix)/opt/gnu-sed/libexec/gnubin:$PATH" make
+          cd ../..
+          
+          ln -sf /usr/local/opt/openssl@1.1/include/openssl /usr/local/include
+          ln -sf /usr/local/opt/openssl@1.1/lib/lib* /usr/local/lib
+          NO_DEPS=1 BISON="$(brew --prefix bison)/bin/bison" make
+          make test
+          sudo -E make install
+          cd ../NAC-ABE
+        env:
+          LDFLAGS: "-L/usr/local/opt/openssl@1.1/lib"
+
+      - name: Configure ndn-cxx
+        run: |
+          cd ..
+          git clone https://github.com/named-data/ndn-cxx
+          cd ndn-cxx
+          git checkout ndn-cxx-0.8.0
+          ./waf --color=yes configure --disable-static --enable-shared --without-osx-keychain
+          ./waf --color=yes build
+          sudo ./waf install
+          cd ../NAC-ABE
+      - name: Configure NFD
+        run: |
+          cd ..
+          git clone https://github.com/named-data/NFD
+          cd NFD
+          git checkout NFD-22.02
+          git submodule update --init
+          ./waf --color=yes configure
+          ./waf --color=yes build
+          sudo ./waf install
+          sudo cp /usr/local/etc/ndn/nfd.conf.sample /usr/local/etc/ndn/nfd.conf
+          cd ../NAC-ABE
+          nfd-start
+
+      - name: Configure CMake
+        # Configure CMake in a 'build' subdirectory. `CMAKE_BUILD_TYPE` is only required if you are using a single-configuration generator such as make.
+        # See https://cmake.org/cmake/help/latest/variable/CMAKE_BUILD_TYPE.html?highlight=cmake_build_type
+        run: cmake -B ${{github.workspace}}/build -DCMAKE_BUILD_TYPE=${{env.BUILD_TYPE}} -DHAVE_TESTS=True -DBUILD_EXAMPLES=True
+
+      - name: Build
+        # Build your program with the given configuration
+        run: cmake --build ${{github.workspace}}/build --config ${{env.BUILD_TYPE}}
+
+      - name: Test
+        working-directory: ${{github.workspace}}/build/tests
+        env:
+          LD_LIBRARY_PATH: /usr/local/lib:$LD_LIBRARY_PATH
+          CTEST_OUTPUT_ON_FAILURE: 1
+        # Execute tests defined by the CMake configuration.
+        # See https://cmake.org/cmake/help/latest/manual/ctest.1.html for more detail
+        run: ctest
