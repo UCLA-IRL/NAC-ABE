@@ -8,61 +8,25 @@ on:
 
 env:
   # Customize the CMake build type here (Release, Debug, RelWithDebInfo, etc.)
-  BUILD_TYPE: Release
+  BUILD_TYPE: RelWithDebInfo
 
 jobs:
   build:
-    # The CMake configure and build commands are platform agnostic and should work equally well on Windows or Mac.
-    # You can convert this to a matrix build if you need cross-platform coverage.
-    # See: https://docs.github.com/en/free-pro-team@latest/actions/learn-github-actions/managing-complex-workflows#using-a-build-matrix
     runs-on: ubuntu-20.04
 
     steps:
-    - uses: actions/checkout@v2
+    - name: Checkout
+      uses: actions/checkout@v3
 
-    - name: Configure package dependencies
+    - name: Install dependencies
       run: |
-        sudo apt-get update
-        sudo apt-get -y install gcc-10 g++-10 clang-12 lldb-12 lld-12 build-essential \
-                                pkg-config python3-minimal libboost-all-dev \
-                                libssl-dev libsqlite3-dev libpcap-dev \
-                                libsodium-dev libz-dev \
-                                liblog4cxx-dev libpcap-dev python-is-python3 \
-                                libgtest-dev cmake python3-pip libfl-dev
-        sudo update-alternatives --install /usr/bin/gcc gcc /usr/bin/gcc-10 100
-        sudo update-alternatives --install /usr/bin/g++ g++ /usr/bin/g++-10 100
-        sudo update-alternatives --install /usr/bin/c++ c++ /usr/bin/g++-10 100
-        sudo update-alternatives --install /usr/bin/clang clang /usr/bin/clang-12 100
-        sudo update-alternatives --install /usr/bin/lld lld /usr/bin/lld-12 100
-        sudo update-alternatives --install /usr/bin/lldb lldb /usr/bin/lldb-12 100
+        sudo apt-get -qy install software-properties-common
+        sudo add-apt-repository ppa:named-data/ppa -y
+        sudo apt-get -qq update
+        sudo apt-get -y install build-essential pkg-config cmake doxygen python3-pip \
+                                libndn-cxx-dev nfd libssl-dev libsodium-dev libz-dev \
+                                liblog4cxx-dev libgtest-dev libfl-dev
 
-
-    - name: Configure ndn-cxx
-      run: |
-        cd ..
-        git clone https://github.com/named-data/ndn-cxx
-        cd ndn-cxx
-        git checkout ndn-cxx-0.8.0
-        ./waf configure
-        ./waf
-        sudo ./waf install
-        sudo ldconfig
-        cd ../NAC-ABE
-
-    - name: Configure NFD
-      run: |
-        cd ..
-        git clone https://github.com/named-data/NFD
-        cd NFD
-        git checkout NFD-22.02
-        git submodule update --init
-        ./waf configure
-        ./waf
-        sudo ./waf install
-        sudo cp /usr/local/etc/ndn/nfd.conf.sample /usr/local/etc/ndn/nfd.conf
-        cd ../NAC-ABE
-        nfd-start
-    
     - name: Install OpenABE
       run: |
         cd ..
@@ -80,8 +44,6 @@ jobs:
         sudo -E make install
         cd ../NAC-ABE
 
-
-
     - name: Configure CMake
       # Configure CMake in a 'build' subdirectory. `CMAKE_BUILD_TYPE` is only required if you are using a single-configuration generator such as make.
       # See https://cmake.org/cmake/help/latest/variable/CMAKE_BUILD_TYPE.html?highlight=cmake_build_type
@@ -91,12 +53,14 @@ jobs:
       # Build your program with the given configuration
       run: cmake --build ${{github.workspace}}/build --config ${{env.BUILD_TYPE}}
 
+    - name: Start NFD
+      run: sudo systemctl start nfd.service
+
     - name: Test
       working-directory: ${{github.workspace}}/build/tests
       env:
         LD_LIBRARY_PATH: /usr/local/lib:$LD_LIBRARY_PATH
         CTEST_OUTPUT_ON_FAILURE: 1
-      # Execute tests defined by the CMake configuration.  
+      # Execute tests defined by the CMake configuration.
       # See https://cmake.org/cmake/help/latest/manual/ctest.1.html for more detail
       run: ctest
-      

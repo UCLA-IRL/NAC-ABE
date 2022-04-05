@@ -1,6 +1,6 @@
 /* -*- Mode:C++; c-file-style:"gnu"; indent-tabs-mode:nil; -*- */
 /*
- * Copyright (c) 2013-2019 Regents of the University of California.
+ * Copyright (c) 2013-2022 Regents of the University of California.
  *
  * This file is part of ndn-cxx library (NDN C++ library with eXperimental eXtensions).
  *
@@ -20,15 +20,15 @@
  */
 
 #include "identity-management-fixture.hpp"
+
 #include <ndn-cxx/security/additional-description.hpp>
 #include <ndn-cxx/util/io.hpp>
+
 #include <boost/filesystem.hpp>
 
 namespace ndn {
 namespace nacabe {
 namespace tests {
-
-namespace v2 = security::v2;
 
 IdentityManagementBaseFixture::~IdentityManagementBaseFixture()
 {
@@ -82,7 +82,7 @@ IdentityManagementFixture::addSubCertificate(const Name& subIdentityName,
 {
   auto subIdentity = addIdentity(subIdentityName, params);
 
-  v2::Certificate request = subIdentity.getDefaultKey().getDefaultCertificate();
+  security::Certificate request = subIdentity.getDefaultKey().getDefaultCertificate();
 
   request.setName(request.getKeyName().append("parent").appendVersion());
 
@@ -90,7 +90,7 @@ IdentityManagementFixture::addSubCertificate(const Name& subIdentityName,
   auto now = time::system_clock::now();
   info.setValidityPeriod(security::ValidityPeriod(now, now + 7300_days));
 
-  v2::AdditionalDescription description;
+  security::AdditionalDescription description;
   description.set("type", "sub-certificate");
   info.addCustomTlv(description.wireEncode());
 
@@ -100,14 +100,14 @@ IdentityManagementFixture::addSubCertificate(const Name& subIdentityName,
   return subIdentity;
 }
 
-v2::Certificate
+security::Certificate
 IdentityManagementFixture::addCertificate(const security::Key& key, const std::string& issuer)
 {
   Name certificateName = key.getName();
   certificateName
     .append(issuer)
     .appendVersion();
-  v2::Certificate certificate;
+  security::Certificate certificate;
   certificate.setName(certificateName);
 
   // set metainfo
@@ -115,7 +115,7 @@ IdentityManagementFixture::addCertificate(const security::Key& key, const std::s
   certificate.setFreshnessPeriod(1_h);
 
   // set content
-  certificate.setContent(key.getPublicKey().data(), key.getPublicKey().size());
+  certificate.setContent(key.getPublicKey());
 
   // set signature-info
   SignatureInfo info;

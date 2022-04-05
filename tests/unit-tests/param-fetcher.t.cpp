@@ -1,6 +1,6 @@
 /* -*- Mode:C++; c-file-style:"gnu"; indent-tabs-mode:nil; -*- */
-/**
- * Copyright (c) 2017-2019, Regents of the University of California.
+/*
+ * Copyright (c) 2017-2022, Regents of the University of California.
  *
  * This file is part of NAC-ABE.
  *
@@ -70,8 +70,7 @@ BOOST_AUTO_TEST_CASE(Constructor)
                          result.setName(dataName);
                          result.setFreshnessPeriod(10_s);
                          const auto& contentBuf = m_pubParams.toBuffer();
-                         result.setContent(makeBinaryBlock(ndn::tlv::Content,
-                                                           contentBuf.data(), contentBuf.size()));
+                         result.setContent(contentBuf);
                          m_keyChain.sign(result, signingByCertificate(authorityCert));
 
                          NDN_LOG_TRACE("Reply public params request.");

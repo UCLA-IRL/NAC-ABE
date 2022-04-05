@@ -1,6 +1,6 @@
 /* -*- Mode:C++; c-file-style:"gnu"; indent-tabs-mode:nil; -*- */
-/**
- * Copyright (c) 2017-2019, Regents of the University of California.
+/*
+ * Copyright (c) 2017-2022, Regents of the University of California.
  *
  * This file is part of NAC-ABE.
  *
@@ -79,8 +79,9 @@ private:
    * @param errorCb The failure callback.
    */
   void
-  commandProducerPolicy(const Name& producerPrefix, const Name& dataPrefix, const Block& policyBlock,
-                        const SuccessCallback& successCb, const ErrorCallback& errorCb);
+  commandProducerPolicyImpl(const Name& producerPrefix, const Name& dataPrefix,
+                            span<const uint8_t> policy,
+                            const SuccessCallback& successCb, const ErrorCallback& errorCb);
 
 private:
   security::Certificate m_cert;

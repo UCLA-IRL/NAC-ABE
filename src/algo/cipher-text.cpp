@@ -1,6 +1,6 @@
 /* -*- Mode:C++; c-file-style:"gnu"; indent-tabs-mode:nil; -*- */
-/**
- * Copyright (c) 2017-2019, Regents of the University of California.
+/*
+ * Copyright (c) 2017-2022, Regents of the University of California.
  *
  * This file is part of NAC-ABE.
  *
@@ -19,21 +19,16 @@
  */
 
 #include "cipher-text.hpp"
-#include <ndn-cxx/util/concepts.hpp>
 
 namespace ndn {
 namespace nacabe {
 namespace algo {
 
-NDN_LOG_INIT(nacabe.ciphertext);
-
 Block
 CipherText::makeDataContent() const
 {
-  NDN_LOG_INFO("plaintext size : " << m_plainTextSize);
   auto content = makeEmptyBlock(tlv::Content);
-  content.push_back(makeBinaryBlock(TLV_EncryptedContent,
-                                        m_content.data(), m_content.size()));
+  content.push_back(makeBinaryBlock(TLV_EncryptedContent, m_content));
   content.push_back(makeNonNegativeIntegerBlock(TLV_PlainTextSize, m_plainTextSize));
   return content;
 }

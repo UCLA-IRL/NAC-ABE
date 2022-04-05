@@ -1,6 +1,6 @@
 /* -*- Mode:C++; c-file-style:"gnu"; indent-tabs-mode:nil; -*- */
-/**
- * Copyright (c) 2017-2019, Regents of the University of California.
+/*
+ * Copyright (c) 2017-2022, Regents of the University of California.
  *
  * This file is part of NAC-ABE.
  *
@@ -36,12 +36,10 @@ public:
   deriveEncryptKey(const Buffer& keyBits);
 
   static Buffer
-  decrypt(const uint8_t* key, size_t keyLen,
-          const uint8_t* payload, size_t payloadLen);
+  decrypt(span<const uint8_t> key, span<const uint8_t> payload);
 
   static Buffer
-  encrypt(const uint8_t* key, size_t keyLen,
-          const uint8_t* payload, size_t payloadLen);
+  encrypt(span<const uint8_t> key, span<const uint8_t> payload);
 };
 
 } // namespace nacabe

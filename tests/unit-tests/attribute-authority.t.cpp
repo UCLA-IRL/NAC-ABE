@@ -1,6 +1,6 @@
 /* -*- Mode:C++; c-file-style:"gnu"; indent-tabs-mode:nil; -*- */
-/**
- * Copyright (c) 2017-2019, Regents of the University of California.
+/*
+ * Copyright (c) 2017-2022, Regents of the University of California.
  *
  * This file is part of NAC-ABE.
  *
@@ -99,7 +99,8 @@ BOOST_AUTO_TEST_CASE(onPrvKey)
   aa.addNewPolicy(consumerCert, attrList);
 
   Name interestName = attrAuthorityPrefix;
-  interestName.append("DKEY").append(consumerName.wireEncode());
+  interestName.append("DKEY")
+              .append(consumerName.wireEncode().begin(), consumerName.wireEncode().end());
   Interest interest(interestName);
   interest.setCanBePrefix(true);
   m_keyChain.sign(interest, security::signingByCertificate(consumerCert));
@@ -132,7 +133,8 @@ BOOST_AUTO_TEST_CASE(onKpPrvKey)
   aa.addNewPolicy(consumerCert, policy);
 
   Name interestName = attrAuthorityPrefix;
-  interestName.append("DKEY").append(consumerName.wireEncode());
+  interestName.append("DKEY")
+              .append(consumerName.wireEncode().begin(), consumerName.wireEncode().end());
   Interest interest(interestName);
   interest.setCanBePrefix(true);
   m_keyChain.sign(interest, security::signingByCertificate(consumerCert));

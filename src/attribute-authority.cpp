@@ -1,6 +1,6 @@
 /* -*- Mode:C++; c-file-style:"gnu"; indent-tabs-mode:nil; -*- */
-/**
- * Copyright (c) 2017-2019, Regents of the University of California.
+/*
+ * Copyright (c) 2017-2022, Regents of the University of California.
  *
  * This file is part of NAC-ABE.
  *
@@ -106,9 +106,7 @@ AttributeAuthority::onDecryptionKeyRequest(const Interest& request)
   Data result;
   result.setName(request.getName());
   result.setFreshnessPeriod(5_s);
-  result.setContent(encryptDataContentWithCK(prvBuffer.data(), prvBuffer.size(),
-                                             optionalCert->getPublicKey().data(),
-                                             optionalCert->getPublicKey().size()));
+  result.setContent(encryptDataContentWithCK(prvBuffer, optionalCert->getPublicKey()));
   m_keyChain.sign(result, signingByCertificate(m_cert));
   m_face.put(result);
 }
@@ -123,10 +121,9 @@ AttributeAuthority::onPublicParamsRequest(const Interest& interest)
   dataName.append(m_abeType);
   dataName.appendTimestamp();
   result.setName(dataName);
-  const auto& contentBuf = m_pubParams.toBuffer();
   result.setFreshnessPeriod(5_s);
-  result.setContent(makeBinaryBlock(ndn::tlv::Content,
-                                    contentBuf.data(), contentBuf.size()));
+  const auto& contentBuf = m_pubParams.toBuffer();
+  result.setContent(contentBuf);
   NDN_LOG_DEBUG("before sign");
   m_keyChain.sign(result, signingByCertificate(m_cert));
 

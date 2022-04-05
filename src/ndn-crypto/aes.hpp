@@ -1,6 +1,6 @@
 /* -*- Mode:C++; c-file-style:"gnu"; indent-tabs-mode:nil; -*- */
-/**
- * Copyright (c) 2018,  Regents of the University of California
+/*
+ * Copyright (c) 2018-2022,  Regents of the University of California
  *
  * This file is part of NAC-ABE.
  * See AUTHORS.md for complete list of NAC authors and contributors.
@@ -23,6 +23,7 @@
 #define NAC_ABE_CRYPTO_AES_HPP
 
 #include "crypto-common.hpp"
+
 #include <ndn-cxx/security/transform/block-cipher.hpp>
 #include <ndn-cxx/security/key-params.hpp>
 
@@ -36,20 +37,22 @@ public:
   generateKey(const AesKeyParams& keyParams);
 
   static Buffer
-  generateIV(const uint8_t& ivLength = 16);
+  generateIV(uint8_t ivLength = 16);
 
   static Buffer
   deriveEncryptKey(const Buffer& keyBits);
 
   static Buffer
-  decrypt(const uint8_t* key, size_t keyLen,
-          const uint8_t* payload, size_t payloadLen,
-          const Buffer& iv, const AES_BLOCK_CIPHER_MODE& mode = AES_CBC);
+  decrypt(span<const uint8_t> key,
+          span<const uint8_t> payload,
+          const Buffer& iv,
+          AES_BLOCK_CIPHER_MODE mode = AES_CBC);
 
   static Buffer
-  encrypt(const uint8_t* key, size_t keyLen,
-          const uint8_t* payload, size_t payloadLen,
-          const Buffer& iv, const AES_BLOCK_CIPHER_MODE& mode = AES_CBC);
+  encrypt(span<const uint8_t> key,
+          span<const uint8_t> payload,
+          const Buffer& iv,
+          AES_BLOCK_CIPHER_MODE mode = AES_CBC);
 };
 
 } // namespace nacabe

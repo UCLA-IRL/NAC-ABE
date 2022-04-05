@@ -1,6 +1,6 @@
 /* -*- Mode:C++; c-file-style:"gnu"; indent-tabs-mode:nil; -*- */
-/**
- * Copyright (c) 2017-2019, Regents of the University of California.
+/*
+ * Copyright (c) 2017-2022, Regents of the University of California.
  *
  * This file is part of NAC-ABE.
  *
@@ -42,37 +42,34 @@ Buffer
 Rsa::deriveEncryptKey(const Buffer& keyBits)
 {
   security::transform::PrivateKey sKey;
-  sKey.loadPkcs1(keyBits.get<uint8_t>(), keyBits.size());
+  sKey.loadPkcs1(keyBits);
 
-  ConstBufferPtr pKeyBits = sKey.derivePublicKey();
+  auto pKeyBits = sKey.derivePublicKey();
   security::transform::PublicKey pKey;
-  pKey.loadPkcs8(pKeyBits->data(), pKeyBits->size());
+  pKey.loadPkcs8(*pKeyBits);
 
   OBufferStream os;
   pKey.savePkcs8(os);
-
   return *os.buf();
 }
 
 Buffer
-Rsa::decrypt(const uint8_t* key, size_t keyLen,
-             const uint8_t* payload, size_t payloadLen)
+Rsa::decrypt(span<const uint8_t> key, span<const uint8_t> payload)
 {
   security::transform::PrivateKey sKey;
-  sKey.loadPkcs1(key, keyLen);
+  sKey.loadPkcs1(key);
 
-  auto decrypted = sKey.decrypt(payload, payloadLen);
+  auto decrypted = sKey.decrypt(payload);
   return *decrypted;
 }
 
 Buffer
-Rsa::encrypt(const uint8_t* key, size_t keyLen,
-             const uint8_t* payload, size_t payloadLen)
+Rsa::encrypt(span<const uint8_t> key, span<const uint8_t> payload)
 {
   security::transform::PublicKey pKey;
-  pKey.loadPkcs8(key, keyLen);
+  pKey.loadPkcs8(key);
 
-  auto cipherText = pKey.encrypt(payload, payloadLen);
+  auto cipherText = pKey.encrypt(payload);
   return *cipherText;
 }
 

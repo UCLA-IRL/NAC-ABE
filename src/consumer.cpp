@@ -1,6 +1,6 @@
 /* -*- Mode:C++; c-file-style:"gnu"; indent-tabs-mode:nil; -*- */
-/**
- * Copyright (c) 2017-2019, Regents of the University of California.
+/*
+ * Copyright (c) 2017-2022, Regents of the University of California.
  *
  * This file is part of NAC-ABE.
  *
@@ -48,11 +48,12 @@ Consumer::Consumer(Face& face, security::KeyChain& keyChain,
 void
 Consumer::obtainDecryptionKey()
 {
+  auto identity = m_cert.getIdentity();
+  NDN_LOG_INFO(identity << " Fetch private key");
   // /<attribute authority prefix>/DKEY/<decryptor name block>
-  NDN_LOG_INFO(m_cert.getIdentity() << " Fetch private key");
   Name interestName = m_attrAuthorityPrefix;
-  interestName.append("DKEY");
-  interestName.append(m_cert.getIdentity().wireEncode());
+  interestName.append(DECRYPT_KEY);
+  interestName.append(identity.wireEncode().begin(), identity.wireEncode().end());
   Interest interest(interestName);
   interest.setMustBeFresh(true);
   interest.setCanBePrefix(true);

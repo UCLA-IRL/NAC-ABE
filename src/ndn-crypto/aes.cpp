@@ -1,6 +1,6 @@
 /* -*- Mode:C++; c-file-style:"gnu"; indent-tabs-mode:nil; -*- */
-/**
- * Copyright (c) 2018-2019,  Regents of the University of California
+/*
+ * Copyright (c) 2018-2022,  Regents of the University of California
  *
  * This file is part of NAC-ABE.
  * See AUTHORS.md for complete list of NAC-ABE authors and contributors.
@@ -21,10 +21,11 @@
 
 #include "aes.hpp"
 #include "error.hpp"
-#include <ndn-cxx/util/random.hpp>
+
 #include <ndn-cxx/encoding/buffer-stream.hpp>
 #include <ndn-cxx/security/transform/buffer-source.hpp>
 #include <ndn-cxx/security/transform/stream-sink.hpp>
+#include <ndn-cxx/util/random.hpp>
 
 namespace ndn {
 namespace nacabe {
@@ -32,31 +33,29 @@ namespace nacabe {
 Buffer
 Aes::generateKey(const AesKeyParams& keyParams)
 {
-  int length = keyParams.getKeySize() / 8;
-  uint8_t key[length];
-
+  size_t length = keyParams.getKeySize() / 8;
+  Buffer key(length);
   try {
-    random::generateSecureBytes(key, sizeof(key));
+    random::generateSecureBytes(key);
   }
-  catch (const std::runtime_error& e) {
+  catch (const std::runtime_error&) {
     BOOST_THROW_EXCEPTION(NacAlgoError("Cannot generate random AES key of length " + std::to_string(length)));
   }
-  return Buffer(key, sizeof(key));
+  return key;
 }
 
 Buffer
-Aes::generateIV(const uint8_t& ivLength)
+Aes::generateIV(uint8_t ivLength)
 {
   if (ivLength == 0) {
     BOOST_THROW_EXCEPTION(NacAlgoError("IV length cannot be zero"));
   }
 
-  Buffer iv;
-  iv.resize(ivLength);
+  Buffer iv(ivLength);
   try {
-    random::generateSecureBytes(iv.data(), iv.size());
+    random::generateSecureBytes(iv);
   }
-  catch (const std::runtime_error& e) {
+  catch (const std::runtime_error&) {
     BOOST_THROW_EXCEPTION(NacAlgoError("Cannot generate random IV of length " + std::to_string(ivLength)));
   }
   return iv;
@@ -70,19 +69,17 @@ Aes::deriveEncryptKey(const Buffer& keyBits)
 }
 
 Buffer
-Aes::decrypt(const uint8_t* key, size_t keyLen,
-             const uint8_t* payload, size_t payloadLen,
-             const Buffer& iv, const AES_BLOCK_CIPHER_MODE& mode)
+Aes::decrypt(span<const uint8_t> key, span<const uint8_t> payload,
+             const Buffer& iv, AES_BLOCK_CIPHER_MODE mode)
 {
   if (mode != AES_CBC) {
     BOOST_THROW_EXCEPTION(NacAlgoError("unsupported AES decryption mode"));
   }
 
   OBufferStream os;
-  security::transform::bufferSource(payload, payloadLen)
+  security::transform::bufferSource(payload)
     >> security::transform::blockCipher(BlockCipherAlgorithm::AES_CBC,
-                                        CipherOperator::DECRYPT,
-                                        key, keyLen, iv.data(), iv.size())
+                                        CipherOperator::DECRYPT, key, iv)
     >> security::transform::streamSink(os);
 
   auto result = os.buf();
@@ -90,19 +87,17 @@ Aes::decrypt(const uint8_t* key, size_t keyLen,
 }
 
 Buffer
-Aes::encrypt(const uint8_t* key, size_t keyLen,
-             const uint8_t* payload, size_t payloadLen,
-             const Buffer& iv, const AES_BLOCK_CIPHER_MODE& mode)
+Aes::encrypt(span<const uint8_t> key, span<const uint8_t> payload,
+             const Buffer& iv, AES_BLOCK_CIPHER_MODE mode)
 {
   if (mode != AES_CBC) {
     BOOST_THROW_EXCEPTION(NacAlgoError("unsupported AES decryption mode"));
   }
 
   OBufferStream os;
-  security::transform::bufferSource(payload, payloadLen)
+  security::transform::bufferSource(payload)
     >> security::transform::blockCipher(BlockCipherAlgorithm::AES_CBC,
-                                        CipherOperator::ENCRYPT,
-                                        key, keyLen, iv.data(), iv.size())
+                                        CipherOperator::ENCRYPT, key, iv)
     >> security::transform::streamSink(os);
 
   auto result = os.buf();
