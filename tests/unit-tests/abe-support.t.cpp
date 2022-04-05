@@ -93,7 +93,7 @@ BOOST_AUTO_TEST_CASE(CpEncryptionDecryption)
 
   // encryption/decryption test case 2
   uint8_t random32[32];
-  random::generateSecureBytes(random32, sizeof(random32));
+  random::generateSecureBytes({random32, sizeof(random32)});
   auto cipherText2 = algo::ABESupport::getInstance().cpEncrypt(pubParams, "ucla and professor",
                                                                Buffer(random32, sizeof(random32)));
   auto result2 = algo::ABESupport::getInstance().cpDecrypt(pubParams, prvKey, cipherText2);
@@ -101,7 +101,7 @@ BOOST_AUTO_TEST_CASE(CpEncryptionDecryption)
 
   // encryption/decryption test case 3
   uint8_t random64[64];
-  random::generateSecureBytes(random64, sizeof(random64));
+  random::generateSecureBytes({random64, sizeof(random64)});
   auto cipherText3 = algo::ABESupport::getInstance().cpEncrypt(pubParams, "ucla or mit",
                                                                Buffer(random64, sizeof(random64)));
   auto result3 = algo::ABESupport::getInstance().cpDecrypt(pubParams, prvKey, cipherText3);
@@ -109,7 +109,7 @@ BOOST_AUTO_TEST_CASE(CpEncryptionDecryption)
 
   // encryption/decryption test case 4
   uint8_t random1024[1024];
-  random::generateSecureBytes(random1024, sizeof(random1024));
+  random::generateSecureBytes({random1024, sizeof(random1024)});
   auto cipherText4 = algo::ABESupport::getInstance().cpEncrypt(pubParams, "ucla or professor",
                                                                Buffer(random1024, sizeof(random1024)));
   auto result4 = algo::ABESupport::getInstance().cpDecrypt(pubParams, prvKey, cipherText4);
@@ -152,7 +152,7 @@ BOOST_AUTO_TEST_CASE(KpEncryptionDecryption)
   auto prvKey = algo::ABESupport::getInstance().kpPrvKeyGen(pubParams, masterKey, "(cs or math) and homework");
 
   // encryption/decryption test case 1
-  random::generateSecureBytes(random32, sizeof(random32));
+  random::generateSecureBytes({random32, sizeof(random32)});
   std::vector<std::string> attrList = { "cs", "homework" };
   auto cipherText1 = algo::ABESupport::getInstance().kpEncrypt(pubParams, attrList,
                                                                Buffer(random32, sizeof(random32)));
@@ -160,7 +160,7 @@ BOOST_AUTO_TEST_CASE(KpEncryptionDecryption)
   BOOST_CHECK_EQUAL_COLLECTIONS(result1.begin(), result1.end(), random32, random32 + sizeof(random32));
 
   // encryption/decryption test case 2
-  random::generateSecureBytes(random32, sizeof(random32));
+  random::generateSecureBytes({random32, sizeof(random32)});
   attrList = { "math", "homework" };
   auto cipherText2 = algo::ABESupport::getInstance().kpEncrypt(pubParams, attrList,
                                                                Buffer(random32, sizeof(random32)));
@@ -168,7 +168,7 @@ BOOST_AUTO_TEST_CASE(KpEncryptionDecryption)
   BOOST_CHECK_EQUAL_COLLECTIONS(result2.begin(), result2.end(), random32, random32 + sizeof(random32));
 
   // encryption/decryption test case 3
-  random::generateSecureBytes(random32, sizeof(random32));
+  random::generateSecureBytes({random32, sizeof(random32)});
   attrList = { "math", "cs", "homework" };
   auto cipherText3 = algo::ABESupport::getInstance().kpEncrypt(pubParams, attrList,
                                                                Buffer(random32, sizeof(random32)));
@@ -176,7 +176,7 @@ BOOST_AUTO_TEST_CASE(KpEncryptionDecryption)
   BOOST_CHECK_EQUAL_COLLECTIONS(result3.begin(), result3.end(), random32, random32 + sizeof(random32));
 
   // encryption/decryption test case 4
-  random::generateSecureBytes(random32, sizeof(random32));
+  random::generateSecureBytes({random32, sizeof(random32)});
   attrList = { "cs", "cs118", "homework" };
   auto cipherText4 = algo::ABESupport::getInstance().kpEncrypt(pubParams, attrList,
                                                                Buffer(random32, sizeof(random32)));

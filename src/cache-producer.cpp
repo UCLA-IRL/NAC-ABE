@@ -39,7 +39,7 @@ CacheProducer::produce(const Name& dataName, const Policy& accessPolicy,
   }
   auto& key = m_cpKeyCache.at(accessPolicy);
   auto data = Producer::produce(key.first, key.second->getName(), dataName, content);
-  return std::make_tuple(key.second, data);
+  return std::make_tuple(data, key.second);
 }
 
 std::tuple<std::shared_ptr<Data>, std::shared_ptr<Data>>
@@ -58,7 +58,7 @@ CacheProducer::produce(const Name& dataName, const std::vector<std::string>& att
   }
   auto& key = m_kpKeyCache.at(attStr);
   auto data = Producer::produce(key.first, key.second->getName(), dataName, content);
-  return std::make_tuple(key.second, data);
+  return std::make_tuple(data, key.second);
 }
 
 }
