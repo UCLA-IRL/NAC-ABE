@@ -12,7 +12,22 @@ env:
 
 jobs:
   build:
-    runs-on: ubuntu-20.04
+    name: ${{ matrix.compiler }} on ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        compiler: [g++-8, g++-9, g++-10, g++-11,
+                   clang++-7, clang++-8, clang++-9, clang++-10, clang++-11, clang++-12]
+        os: [ubuntu-20.04]
+        include:
+          - compiler: g++-7
+            os: ubuntu-18.04
+          - compiler: clang++-6.0
+            os: ubuntu-18.04
+    runs-on: ${{ matrix.os }}
+    env:
+      CXX: ${{ matrix.compiler }}
+      NODE_LABELS: Linux Ubuntu
 
     steps:
     - name: Checkout
