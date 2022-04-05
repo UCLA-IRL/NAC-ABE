@@ -30,12 +30,11 @@ jobs:
     - name: Install dependencies
       run: |
         sudo apt-get -qy install software-properties-common
-        sudo add-apt-repository ppa:named-data/ppa -y
+        sudo add-apt-repository -ny ppa:named-data/ppa
         sudo apt-get -qq update
         sudo apt-get -y install build-essential pkg-config cmake doxygen python3-pip \
                                 libndn-cxx-dev nfd libssl-dev libsodium-dev libz-dev \
-                                liblog4cxx-dev libgtest-dev libfl-dev
-        sudo apt-get -y install $CXX
+                                liblog4cxx-dev libgtest-dev libfl-dev $CXX
 
     - name: Install OpenABE
       run: |
@@ -80,8 +79,8 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        xcode: [ '11.3', '11.7', '12.4' ]
-        os: [ macos-10.15 ]
+        xcode: ['11.3', '11.7', '12.4']
+        os: [macos-10.15]
     runs-on: ${{ matrix.os }}
     steps:
       - name: Set up Xcode
@@ -90,10 +89,10 @@ jobs:
           xcode-version: ${{ matrix.xcode }}
       - name: Checkout
         uses: actions/checkout@v3
+
       - name: Install dependencies
         run: |
           FORMULAE=(boost openssl pkg-config bison googletest gsed)
-      
           # GitHub Actions runners have a large number of pre-installed
           # Homebrew packages. Don't waste time upgrading all of them.
           brew list --versions "${FORMULAE[@]}" || brew update
@@ -110,11 +109,11 @@ jobs:
           cd openabe
           sudo -E ./deps/install_pkgs.sh
           . ./env
-          
+
           cd deps/relic
           PATH="$(brew --prefix)/opt/gnu-sed/libexec/gnubin:$PATH" make
           cd ../..
-          
+
           ln -sf /usr/local/opt/openssl@1.1/include/openssl /usr/local/include
           ln -sf /usr/local/opt/openssl@1.1/lib/lib* /usr/local/lib
           NO_DEPS=1 BISON="$(brew --prefix bison)/bin/bison" make

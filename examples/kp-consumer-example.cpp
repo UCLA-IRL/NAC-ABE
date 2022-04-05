@@ -1,68 +1,64 @@
 #include <ndn-cxx/face.hpp>
-#include <ndn-cxx/security/validator-config.hpp>
+#include <ndn-cxx/security/certificate.hpp>
+#include <ndn-cxx/security/key-chain.hpp>
+
+#include <consumer.hpp> // or <nac-abe/consumer.hpp>
 
 #include <iostream>
-#include "consumer.hpp"
 
-// Enclosing code in ndn simplifies coding (can also use `using namespace ndn`)
-namespace ndn {
-// Additional nested namespaces should be used to prevent/limit name conflicts
 namespace examples {
 
 class Consumer
 {
 public:
-  Consumer(KeyChain& keyChain) :
-      m_keyChain(keyChain),
-      consumerCert1(keyChain.getPib().getIdentity("/consumerPrefix1").getDefaultKey().getDefaultCertificate()),
-      consumer1(m_face, keyChain, consumerCert1, keyChain.getPib().getIdentity("/aaPrefix").getDefaultKey().getDefaultCertificate()) {
-    producerCert = m_keyChain.getPib().getIdentity("/producerPrefix").getDefaultKey().getDefaultCertificate();
-    consumer1.obtainDecryptionKey();
+  Consumer()
+    : m_producerCert(m_keyChain.getPib().getIdentity("/producerPrefix").getDefaultKey().getDefaultCertificate())
+    , m_consumerCert(m_keyChain.getPib().getIdentity("/consumerPrefix1").getDefaultKey().getDefaultCertificate())
+    , m_consumer(m_face, m_keyChain, m_consumerCert,
+                 m_keyChain.getPib().getIdentity("/aaPrefix").getDefaultKey().getDefaultCertificate())
+  {
+    m_consumer.obtainDecryptionKey();
   }
 
   void
   run()
   {
-    Name dataName("/randomData");
-    consumer1.consume(producerCert.getIdentity().append(dataName),
-                        [&] (const Buffer& result) {
-                        std::cout << "Received Data " << std::string(result.begin(), result.end()) << std::endl;
-                        },
-                        [&] (const auto& result) {
-                          std::cout << "Error: " << result << std::endl;
-                        }
-  );
+    ndn::Name dataName("/randomData");
+    m_consumer.consume(m_producerCert.getIdentity().append(dataName),
+                       [] (const auto& result) {
+                         std::cout << "Received data: " << std::string(result.begin(), result.end()) << std::endl;
+                       },
+                       [] (const auto& error) {
+                         std::cout << "Error: " << error << std::endl;
+                       });
 
-  }
-
-  void processEvents() {
     m_face.processEvents();
   }
 
-  void processEvents(boost::chrono::duration<int_least64_t, boost::milli> s) {
-    m_face.processEvents(s);
+  void processEvents(ndn::time::milliseconds ms)
+  {
+    m_face.processEvents(ms);
   }
 
 private:
-  Face m_face;
-  security::Certificate consumerCert1;
-  security::Certificate producerCert;
-  ndn::nacabe::Consumer consumer1;
-  KeyChain& m_keyChain;
+  ndn::Face m_face;
+  ndn::KeyChain m_keyChain;
+  ndn::security::Certificate m_producerCert;
+  ndn::security::Certificate m_consumerCert;
+  ndn::nacabe::Consumer m_consumer;
 };
 
 } // namespace examples
-} // namespace ndn
 
 int
 main(int argc, char** argv)
 {
+  using namespace ndn::time_literals;
+
   try {
-    ndn::KeyChain keyChain;
-    ndn::examples::Consumer consumer(keyChain);
-    consumer.processEvents(ndn::time::milliseconds(5000));
+    examples::Consumer consumer;
+    consumer.processEvents(5_s);
     consumer.run();
-    consumer.processEvents();
     return 0;
   }
   catch (const std::exception& e) {
