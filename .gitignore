@@ -1,22 +1,3 @@
-.DS*
-.waf-1*
-.waf3-*
-.lock*
-**/*.pyc
-build/
-VERSION
-FinalReport/*.pdf
-FinalReport/*.bbl
-FinalReport/*.out
-FinalReport/*.cls
-FinalReport/*.log
-FinalReport/*.glo
-FinalReport/*.idx
-FinalReport/*.toc
-FinalReport/*.blg
-FinalReport/*.lot
-FinalReport/*.aux
-
 # Emacs
 *~
 \#*\#
@@ -45,7 +26,5 @@ __pycache__/
 *.py[cod]
 
 # Other
-/VERSION
-
 .idea/
 cmake-build-*/
