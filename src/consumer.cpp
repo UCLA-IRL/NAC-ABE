@@ -20,16 +20,16 @@
 
 #include "consumer.hpp"
 #include "attribute-authority.hpp"
+#include "algo/abe-support.hpp"
 #include "ndn-crypto/data-enc-dec.hpp"
 
 #include <ndn-cxx/security/signing-helpers.hpp>
 #include <ndn-cxx/security/verification-helpers.hpp>
-#include <ndn-cxx/security/certificate.hpp>
 
 namespace ndn {
 namespace nacabe {
 
-NDN_LOG_INIT(nacabe.consumer);
+NDN_LOG_INIT(nacabe.Consumer);
 
 // public
 Consumer::Consumer(Face& face, security::KeyChain& keyChain,

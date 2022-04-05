@@ -22,15 +22,15 @@
 #include "consumer.hpp"
 #include "data-owner.hpp"
 #include "producer.hpp"
-#include "test-common.hpp"
 #include "cache-producer.hpp"
+
+#include "test-common.hpp"
+
 #include <ndn-cxx/util/dummy-client-face.hpp>
 
 namespace ndn {
 namespace nacabe {
 namespace tests {
-
-namespace fs = boost::filesystem;
 
 const uint8_t PLAIN_TEXT[1024] = {1};
 

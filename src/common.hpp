@@ -40,12 +40,11 @@
 #include <cstddef>
 #include <cstdint>
 #include <functional>
-#include <list>
+#include <iosfwd>
 #include <map>
 #include <memory>
-#include <set>
+#include <stdexcept>
 #include <string>
-#include <unordered_map>
 #include <utility>
 
 #include <ndn-cxx/interest.hpp>
@@ -66,8 +65,6 @@
 #include <boost/assert.hpp>
 #include <boost/noncopyable.hpp>
 #include <boost/property_tree/ptree.hpp>
-#include <boost/property_tree/json_parser.hpp>
-#include <boost/property_tree/info_parser.hpp>
 #include <boost/throw_exception.hpp>
 
 namespace ndn {
@@ -79,7 +76,6 @@ using boost::noncopyable;
 
 using std::shared_ptr;
 using std::unique_ptr;
-using std::weak_ptr;
 using std::make_shared;
 using ndn::make_unique;
 using std::enable_shared_from_this;
@@ -92,8 +88,6 @@ using ndn::Data;
 using ndn::Name;
 using ndn::PartialName;
 using ndn::Block;
-using ndn::time::system_clock;
-using ndn::time::toUnixTimestamp;
 
 const uint32_t TLV_EncryptedAesKey = 601;
 const uint32_t TLV_EncryptedContent = 602;
@@ -106,9 +100,15 @@ static const std::string PUBLIC_PARAMS = "PUBPARAMS";
 static const std::string DECRYPT_KEY = "DKEY";
 static const std::string SET_POLICY = "SET_POLICY";
 
-typedef std::string AbeType;
+using AbeType = std::string;
 static const std::string ABE_TYPE_CP_ABE = "CP-ABE";
 static const std::string ABE_TYPE_KP_ABE = "KP-ABE";
+
+/**
+ * The policy is specified as a simple string which encodes an in-order
+ * traversal of threshold tree defining the access policy.
+ */
+using Policy = std::string;
 
 } // namespace nacabe
 } // namespace ndn

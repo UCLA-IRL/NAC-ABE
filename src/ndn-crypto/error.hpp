@@ -1,6 +1,6 @@
 /* -*- Mode:C++; c-file-style:"gnu"; indent-tabs-mode:nil; -*- */
-/**
- * Copyright (c) 2017-2019, Regents of the University of California.
+/*
+ * Copyright (c) 2017-2022, Regents of the University of California.
  *
  * This file is part of NAC-ABE.
  *
@@ -18,8 +18,8 @@
  * See AUTHORS.md for complete list of NAC-ABE authors and contributors.
  */
 
-#ifndef NAC_CRYPTO_ERROR_HPP
-#define NAC_CRYPTO_ERROR_HPP
+#ifndef NAC_ABE_CRYPTO_ERROR_HPP
+#define NAC_ABE_CRYPTO_ERROR_HPP
 
 #include <stdexcept>
 
@@ -29,14 +29,10 @@ namespace nacabe {
 class NacAlgoError : public std::runtime_error
 {
 public:
-  explicit
-  NacAlgoError(const std::string& what)
-    : std::runtime_error(what)
-  {
-  }
+  using std::runtime_error::runtime_error;
 };
 
 } // namespace nacabe
 } // namespace ndn
 
-#endif // NAC_CRYPTO_ERROR_HPP
+#endif // NAC_ABE_CRYPTO_ERROR_HPP

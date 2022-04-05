@@ -21,12 +21,10 @@
 #ifndef NAC_ABE_PRODUCER_HPP
 #define NAC_ABE_PRODUCER_HPP
 
-#include "trust-config.hpp"
-#include "algo/public-params.hpp"
+#include "algo/cipher-text.hpp"
+#include "algo/content-key.hpp"
 #include "param-fetcher.hpp"
-
-#include <ndn-cxx/security/verification-helpers.hpp>
-#include "algo/abe-support.hpp"
+#include "trust-config.hpp"
 
 namespace ndn {
 namespace nacabe {

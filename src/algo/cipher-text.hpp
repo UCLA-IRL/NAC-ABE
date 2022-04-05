@@ -1,6 +1,6 @@
 /* -*- Mode:C++; c-file-style:"gnu"; indent-tabs-mode:nil; -*- */
-/**
- * Copyright (c) 2017-2019, Regents of the University of California.
+/*
+ * Copyright (c) 2017-2022, Regents of the University of California.
  *
  * This file is part of NAC-ABE.
  *
@@ -22,8 +22,6 @@
 #define NAC_ABE_ALGO_CIPHER_TEXT_HPP
 
 #include "content-key.hpp"
-#include "algo-common.hpp"
-#include "public-params.hpp"
 
 namespace ndn {
 namespace nacabe {

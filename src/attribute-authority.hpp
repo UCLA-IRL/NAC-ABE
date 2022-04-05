@@ -1,6 +1,6 @@
 /* -*- Mode:C++; c-file-style:"gnu"; indent-tabs-mode:nil; -*- */
-/**
- * Copyright (c) 2017-2019, Regents of the University of California.
+/*
+ * Copyright (c) 2017-2022, Regents of the University of California.
  *
  * This file is part of NAC-ABE.
  *
@@ -21,9 +21,12 @@
 #ifndef NAC_ABE_ATTRIBUTE_AUTHORITY_HPP
 #define NAC_ABE_ATTRIBUTE_AUTHORITY_HPP
 
-#include "common.hpp"
+#include "algo/master-key.hpp"
+#include "algo/private-key.hpp"
+#include "algo/public-params.hpp"
 #include "trust-config.hpp"
-#include "algo/abe-support.hpp"
+
+#include <list>
 
 namespace ndn {
 namespace nacabe {
@@ -134,7 +137,6 @@ public:
 PUBLIC_WITH_TESTS_ELSE_PRIVATE:
   std::map<Name/* Consumer Identity */, Policy> m_tokens;
 };
-
 
 } // namespace nacabe
 } // namespace ndn
