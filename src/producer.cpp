@@ -55,7 +55,7 @@ Producer::Producer(Face& face, KeyChain& keyChain,
   m_trustConfig.addOrUpdateCertificate(dataOwnerCertificate);
 
   // prefix registration
-  m_registeredPrefixHandle = m_face.setInterestFilter(Name(m_cert.getIdentity()).append(SET_POLICY),
+  m_registeredPrefix = m_face.setInterestFilter(Name(m_cert.getIdentity()).append(SET_POLICY),
     [this] (auto&&, const auto& interest) {
       onPolicyInterest(interest);
     },
@@ -65,10 +65,7 @@ Producer::Producer(Face& face, KeyChain& keyChain,
   NDN_LOG_DEBUG("set prefix:" << m_cert.getIdentity());
 }
 
-Producer::~Producer()
-{
-  m_registeredPrefixHandle.unregister();
-}
+Producer::~Producer() = default;
 
 std::tuple<std::shared_ptr<Data>, std::shared_ptr<Data>>
 Producer::produce(const Name& dataNameSuffix, const std::string& accessPolicy,

@@ -51,9 +51,6 @@ private:
   void
   onPublicParamsRequest(const Interest& interest);
 
-  void
-  onRegisterFailed(const std::string& reason);
-
 protected:
   security::Certificate m_cert;
   Face& m_face;
@@ -66,8 +63,8 @@ PUBLIC_WITH_TESTS_ELSE_PROTECTED:
   algo::MasterKey m_masterKey;
 
 private:
-  std::list<RegisteredPrefixHandle> m_registeredPrefixIds;
-  std::list<InterestFilterHandle> m_interestFilterIds;
+  ScopedRegisteredPrefixHandle m_registeredPrefix;
+  std::vector<ScopedInterestFilterHandle> m_interestFilters;
 };
 
 class CpAttributeAuthority: public AttributeAuthority
