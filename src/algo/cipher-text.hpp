@@ -34,11 +34,9 @@ public:
   makeDataContent() const;
 
 public:
-  std::shared_ptr<ContentKey> m_contentKey; // content key
-  Buffer m_content; // encrypted content
-  uint32_t m_plainTextSize; // plain text length
-
-  mutable Block m_wire;
+  std::shared_ptr<ContentKey> m_contentKey; ///< content key
+  Buffer m_content; ///< encrypted content
+  uint32_t m_plainTextSize; ///< plain text length
 };
 
 } // namespace algo
