@@ -23,7 +23,6 @@
 #include "algo/abe-support.hpp"
 #include "ndn-crypto/data-enc-dec.hpp"
 
-#include <ndn-cxx/security/signing-helpers.hpp>
 #include <ndn-cxx/security/verification-helpers.hpp>
 
 namespace ndn {
@@ -79,6 +78,17 @@ Consumer::consume(const Name& dataName,
                   const ConsumptionCallback& consumptionCb,
                   const ErrorCallback& errorCallback)
 {
+  Interest interest(dataName);
+  interest.setMustBeFresh(true);
+  interest.setCanBePrefix(true);
+  consume(interest, consumptionCb, errorCallback);
+}
+
+void
+Consumer::consume(const Interest& dataInterest,
+                  const ConsumptionCallback& consumptionCb,
+                  const ErrorCallback& errorCallback)
+{
   // ready for decryption
   if (m_paramFetcher.getPublicParams().m_pub == "") {
     NDN_LOG_INFO("public parameters doesn't exist");
@@ -90,20 +100,16 @@ Consumer::consume(const Name& dataName,
     return;
   }
 
-  Interest interest(dataName);
-  interest.setMustBeFresh(true);
-  interest.setCanBePrefix(true);
+  std::string nackMessage = "nack for " + dataInterest.getName().toUri() + " data fetch with reason ";
 
-  std::string nackMessage = "nack for " + dataName.toUri() + " data fetch with reason ";
-
-  std::string timeoutMessage = "timeout for " + dataName.toUri() + " data fetch";
+  std::string timeoutMessage = "timeout for " + dataInterest.getName().toUri() + " data fetch";
 
   auto dataCallback = [=] (const Interest&, const Data& data) {
     decryptContent(data, consumptionCb, errorCallback);
   };
 
-  NDN_LOG_INFO(m_cert.getIdentity() << " Ask for data " << interest.getName() );
-  m_face.expressInterest(interest,
+  NDN_LOG_INFO(m_cert.getIdentity() << " Ask for data " << dataInterest.getName() );
+  m_face.expressInterest(dataInterest,
                          dataCallback,
                          std::bind(&Consumer::handleNack, this, _1, _2, errorCallback, nackMessage),
                          std::bind(&Consumer::handleTimeout, this, _1, 3,
