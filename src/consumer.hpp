@@ -72,7 +72,7 @@ public:
    * The function will first fetch the encrypted data packet with the given interest, then fetch the CK data packet.
    * After decrypting CK with cached DKEY, the CK will be used to cpDecrypt the data packet.
    *
-   * @param dataName The packet name.
+   * @param dataInterest The packet fetch Interest.
    * @param consumptionCb The success callback.
    * @param errorCallback The failure callback.
    */
