@@ -41,11 +41,10 @@ protected:
   virtual
   ~AttributeAuthority();
 
-protected:
   virtual algo::PrivateKey
   getPrivateKey(Name identityName) = 0;
 
-PUBLIC_WITH_TESTS_ELSE_PRIVATE:
+private:
   void
   onDecryptionKeyRequest(const Interest& interest);
 
@@ -55,16 +54,16 @@ PUBLIC_WITH_TESTS_ELSE_PRIVATE:
   void
   onRegisterFailed(const std::string& reason);
 
-PUBLIC_WITH_TESTS_ELSE_PROTECTED:
+protected:
   security::Certificate m_cert;
   Face& m_face;
   KeyChain& m_keyChain;
+  TrustConfig m_trustConfig;
 
+PUBLIC_WITH_TESTS_ELSE_PROTECTED:
   AbeType m_abeType;
   algo::PublicParams m_pubParams;
   algo::MasterKey m_masterKey;
-
-  TrustConfig m_trustConfig;
 
 private:
   std::list<RegisteredPrefixHandle> m_registeredPrefixIds;
@@ -131,6 +130,7 @@ public:
   void
   addNewPolicy(const Name& decryptorIdentityName, const Policy& policy);
 
+protected:
   algo::PrivateKey
   getPrivateKey(Name identityName) override;
 

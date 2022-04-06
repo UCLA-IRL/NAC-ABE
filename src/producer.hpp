@@ -132,7 +132,7 @@ public:
   produce(std::shared_ptr<algo::ContentKey> key, const Name& keyName,
           const Name& dataNameSuffix, span<const uint8_t> content);
 
-PUBLIC_WITH_TESTS_ELSE_PRIVATE:
+private:
   void
   onPolicyInterest(const Interest& interest);
 
@@ -142,26 +142,28 @@ PUBLIC_WITH_TESTS_ELSE_PRIVATE:
   void
   addNewAttributes(const Name& dataPrefix, const std::vector<std::string>& attributes);
 
+  shared_ptr<Data>
+  getCkEncryptedData(const Name& dataNameSuffix, const algo::CipherText& cipherText, const Name& ckName);
+
+PUBLIC_WITH_TESTS_ELSE_PRIVATE:
   std::string
   findMatchedPolicy(const Name& dataNameSuffix);
 
   std::vector<std::string>
   findMatchedAttributes(const Name& dataNameSuffix);
 
-  shared_ptr<Data>
-  getCkEncryptedData(const Name &dataNameSuffix, const algo::CipherText &cipherText, const Name &ckName);
-
-PUBLIC_WITH_TESTS_ELSE_PRIVATE:
+private:
   security::Certificate m_cert;
   Face& m_face;
   KeyChain& m_keyChain;
   Name m_attrAuthorityPrefix;
   Name m_dataOwnerPrefix;
-
-  std::vector<PolicyTuple> m_policies; //for CP-ABE
-  std::vector<AttributeTuple> m_attributes; //for KP-ABE
-  RegisteredPrefixHandle m_registeredPrefixHandle;
   TrustConfig m_trustConfig;
+
+PUBLIC_WITH_TESTS_ELSE_PRIVATE:
+  std::vector<PolicyTuple> m_policies; // for CP-ABE
+  std::vector<AttributeTuple> m_attributes; // for KP-ABE
+  RegisteredPrefixHandle m_registeredPrefixHandle;
   ParamFetcher m_paramFetcher;
 };
 
