@@ -25,17 +25,23 @@ namespace nacabe {
 namespace algo {
 
 ContentKey::ContentKey(std::string aesKey, Buffer encAesKey) :
-    m_aesKey(std::move(aesKey)),
-    m_encAesKey(std::move(encAesKey))
+  m_aesKey(std::move(aesKey)),
+  m_encAesKey(std::move(encAesKey))
 {}
 
 ContentKey::ContentKey() :
-    ContentKey("", Buffer()) {}
+  ContentKey("", {})
+{}
 
-std::string& ContentKey::getAesKey() {
+std::string&
+ContentKey::getAesKey()
+{
   return m_aesKey;
 }
-Buffer& ContentKey::getEncAesKey() {
+
+Buffer&
+ContentKey::getEncAesKey()
+{
   return m_encAesKey;
 }
 

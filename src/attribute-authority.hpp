@@ -27,19 +27,23 @@
 #include "trust-config.hpp"
 
 #include <list>
+#include <map>
 
 namespace ndn {
 namespace nacabe {
 
-class AttributeAuthority
+class AttributeAuthority : noncopyable
 {
 protected:
   AttributeAuthority(const security::Certificate& identityCert, Face& m_face,
-                       security::KeyChain& keyChain, const AbeType& abeType);
+                     KeyChain& keyChain, const AbeType& abeType);
 
-  virtual ~AttributeAuthority();
+  virtual
+  ~AttributeAuthority();
+
 protected:
-  virtual algo::PrivateKey getPrivateKey(Name identityName) = 0;
+  virtual algo::PrivateKey
+  getPrivateKey(Name identityName) = 0;
 
 PUBLIC_WITH_TESTS_ELSE_PRIVATE:
   void
@@ -54,7 +58,7 @@ PUBLIC_WITH_TESTS_ELSE_PRIVATE:
 PUBLIC_WITH_TESTS_ELSE_PROTECTED:
   security::Certificate m_cert;
   Face& m_face;
-  security::KeyChain& m_keyChain;
+  KeyChain& m_keyChain;
 
   AbeType m_abeType;
   algo::PublicParams m_pubParams;
@@ -62,7 +66,7 @@ PUBLIC_WITH_TESTS_ELSE_PROTECTED:
 
   TrustConfig m_trustConfig;
 
-PUBLIC_WITH_TESTS_ELSE_PRIVATE:
+private:
   std::list<RegisteredPrefixHandle> m_registeredPrefixIds;
   std::list<InterestFilterHandle> m_interestFilterIds;
 };
@@ -70,10 +74,7 @@ PUBLIC_WITH_TESTS_ELSE_PRIVATE:
 class CpAttributeAuthority: public AttributeAuthority
 {
 public:
-  CpAttributeAuthority(const security::Certificate& identityCert, Face& m_face,
-                       security::KeyChain& keyChain);
-
-  ~CpAttributeAuthority();
+  CpAttributeAuthority(const security::Certificate& identityCert, Face& m_face, KeyChain& keyChain);
 
   /**
    * @brief Add a new policy <decryptor name, decryptor attributes> into the state.
@@ -97,7 +98,8 @@ public:
   addNewPolicy(const Name& decryptorIdentityName, const std::list<std::string>& attributes);
 
 protected:
-  algo::PrivateKey getPrivateKey(Name identityName) override;
+  algo::PrivateKey
+  getPrivateKey(Name identityName) override;
 
 PUBLIC_WITH_TESTS_ELSE_PRIVATE:
   std::map<Name/* Consumer Identity */, std::list<std::string>/* Attr */> m_tokens;
@@ -106,10 +108,7 @@ PUBLIC_WITH_TESTS_ELSE_PRIVATE:
 class KpAttributeAuthority: public AttributeAuthority
 {
 public:
-  KpAttributeAuthority(const security::Certificate& identityCert, Face& m_face,
-                       security::KeyChain& keyChain);
-
-  ~KpAttributeAuthority();
+  KpAttributeAuthority(const security::Certificate& identityCert, Face& m_face, KeyChain& keyChain);
 
   /**
    * @brief Add a new policy <decryptor name, decryptor attributes> into the state.
@@ -132,7 +131,8 @@ public:
   void
   addNewPolicy(const Name& decryptorIdentityName, const Policy& policy);
 
-  algo::PrivateKey getPrivateKey(Name identityName) override;
+  algo::PrivateKey
+  getPrivateKey(Name identityName) override;
 
 PUBLIC_WITH_TESTS_ELSE_PRIVATE:
   std::map<Name/* Consumer Identity */, Policy> m_tokens;

@@ -40,7 +40,7 @@ public:
     authorityCert = addIdentity("/authority").getDefaultKey().getDefaultCertificate();
   }
 
-public:
+protected:
   Name attrAuthorityPrefix;
   security::Certificate consumerCert;
   security::Certificate authorityCert;
@@ -52,11 +52,11 @@ BOOST_AUTO_TEST_CASE(Constructor)
 {
   util::DummyClientFace face(io, {true, true});
   CpAttributeAuthority aa(authorityCert, face, m_keyChain);
-  BOOST_CHECK(aa.m_pubParams.m_pub != "");
-  BOOST_CHECK(aa.m_masterKey.m_msk != "");
+  BOOST_CHECK(!aa.m_pubParams.m_pub.empty());
+  BOOST_CHECK(!aa.m_masterKey.m_msk.empty());
 }
 
-BOOST_AUTO_TEST_CASE(onPublicParams)
+BOOST_AUTO_TEST_CASE(OnPublicParams)
 {
   util::DummyClientFace face(io, {true, true});
   CpAttributeAuthority aa(authorityCert, face, m_keyChain);
@@ -88,7 +88,7 @@ BOOST_AUTO_TEST_CASE(onPublicParams)
   BOOST_CHECK_EQUAL(count, 1);
 }
 
-BOOST_AUTO_TEST_CASE(onPrvKey)
+BOOST_AUTO_TEST_CASE(OnPrvKey)
 {
   Name consumerName("/consumer");
   std::list<std::string> attrList = {"attr1", "attr2", "attr3", "attr4", "attr5",
@@ -109,21 +109,16 @@ BOOST_AUTO_TEST_CASE(onPrvKey)
 
   int count = 0;
   face.onSendData.connect([&] (const Data& response) {
-      count++;
-      BOOST_CHECK(security::verifySignature(response, authorityCert));
-
-      std::cout << response;
-      std::cout << "dkey Data length: " << response.wireEncode().size() << std::endl;
-      std::cout << "dkey Name length: " << response.getName().wireEncode().size() << std::endl;
-      std::cout << "=================================\n";
-    });
+    count++;
+    BOOST_CHECK(security::verifySignature(response, authorityCert));
+  });
   face.receive(interest);
 
   advanceClocks(time::milliseconds(20), 60);
   BOOST_CHECK_EQUAL(count, 1);
 }
 
-BOOST_AUTO_TEST_CASE(onKpPrvKey)
+BOOST_AUTO_TEST_CASE(OnKpPrvKey)
 {
   Name consumerName("/consumer");
   Policy policy = "(a or b) and (c or d)";
@@ -145,11 +140,6 @@ BOOST_AUTO_TEST_CASE(onKpPrvKey)
   face.onSendData.connect([&] (const Data& response) {
     count++;
     BOOST_CHECK(security::verifySignature(response, authorityCert));
-
-    std::cout << response;
-    std::cout << "dkey Data length: " << response.wireEncode().size() << std::endl;
-    std::cout << "dkey Name length: " << response.getName().wireEncode().size() << std::endl;
-    std::cout << "=================================\n";
   });
   face.receive(interest);
 

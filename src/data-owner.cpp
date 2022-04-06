@@ -29,8 +29,7 @@ namespace nacabe {
 
 NDN_LOG_INIT(nacabe.DataOwner);
 
-DataOwner::DataOwner(const security::Certificate& identityCert, Face& face,
-                     security::KeyChain& keyChain)
+DataOwner::DataOwner(const security::Certificate& identityCert, Face& face, KeyChain& keyChain)
   : m_cert(identityCert)
   , m_face(face)
   , m_keyChain(keyChain)

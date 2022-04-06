@@ -1,27 +1,31 @@
-//
-// Created by Tyler on 8/14/21.
-//
+/* -*- Mode:C++; c-file-style:"gnu"; indent-tabs-mode:nil; -*- */
+/*
+ * Copyright (c) 2017-2022, Regents of the University of California.
+ *
+ * This file is part of NAC-ABE.
+ *
+ * NAC-ABE is free software: you can redistribute it and/or modify it under the terms
+ * of the GNU General Public License as published by the Free Software Foundation, either
+ * version 3 of the License, or (at your option) any later version.
+ *
+ * NAC-ABE is distributed in the hope that it will be useful, but WITHOUT ANY
+ * WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A
+ * PARTICULAR PURPOSE.  See the GNU General Public License for more details.
+ *
+ * You should have received copies of the GNU General Public License along with
+ * NAC-ABE, e.g., in COPYING.md file.  If not, see <http://www.gnu.org/licenses/>.
+ *
+ * See AUTHORS.md for complete list of NAC-ABE authors and contributors.
+ */
 
 #include "cache-producer.hpp"
 
 namespace ndn {
 namespace nacabe {
 
-CacheProducer::CacheProducer(Face
-                             &face,
-                             security::KeyChain &keyChain,
-                             const security::Certificate &identityCert,
-                             const security::Certificate &attrAuthorityCertificate) :
-    Producer(face, keyChain, identityCert, attrAuthorityCertificate) {}
-
-CacheProducer::CacheProducer(Face &face,
-                             security::KeyChain &keyChain,
-                             const security::Certificate &identityCert,
-                             const security::Certificate &attrAuthorityCertificate,
-                             const security::Certificate &dataOwnerCertificate) :
-    Producer(face, keyChain, identityCert, attrAuthorityCertificate, dataOwnerCertificate) {}
-
-void CacheProducer::clearCache() {
+void
+CacheProducer::clearCache()
+{
   m_cpKeyCache.clear();
   m_kpKeyCache.clear();
 }
@@ -61,5 +65,5 @@ CacheProducer::produce(const Name& dataName, const std::vector<std::string>& att
   return std::make_tuple(data, key.second);
 }
 
-}
-}
+} // namespace nacabe
+} // namespace ndn

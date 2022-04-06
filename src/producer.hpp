@@ -29,37 +29,26 @@
 namespace ndn {
 namespace nacabe {
 
-class Producer
+class Producer : noncopyable
 {
 public:
-  using ErrorCallback = function<void (const std::string&)>;
-  using SuccessCallback = function<void (const Data&, const Data&)>;
+  using ErrorCallback = std::function<void (const std::string&)>;
+  using SuccessCallback = std::function<void (const Data&, const Data&)>;
   using PolicyTuple = std::pair<Name, std::string>;
   using AttributeTuple = std::pair<Name, std::vector<std::string>>;
 
 public:
   /**
-   * Initialize a producer. Use when no data owner defined.
-   * @param face
-   * @param keyChain
-   * @param identityCert
-   * @param attrAuthorityCertificate
-   * @param repeatAttempts
+   * @brief Initialize a producer. Use when no data owner defined.
    */
-  Producer(Face& face,
-           security::KeyChain& keyChain,
+  Producer(Face& face, KeyChain& keyChain,
            const security::Certificate& identityCert,
            const security::Certificate& attrAuthorityCertificate);
 
   /**
-   * Initialize a producer. Use when a data owner defined.
-   * @param face
-   * @param keyChain
-   * @param identityCert
-   * @param attrAuthorityCertificate
+   * @brief Initialize a producer. Use when a data owner is defined.
    */
-  Producer(Face& face,
-           security::KeyChain& keyChain,
+  Producer(Face& face, KeyChain& keyChain,
            const security::Certificate& identityCert,
            const security::Certificate& attrAuthorityCertificate,
            const security::Certificate& dataOwnerCertificate);
@@ -159,12 +148,13 @@ PUBLIC_WITH_TESTS_ELSE_PRIVATE:
   std::vector<std::string>
   findMatchedAttributes(const Name& dataNameSuffix);
 
-  shared_ptr <Data> getCkEncryptedData(const Name &dataNameSuffix, const algo::CipherText &cipherText, const Name &ckName);
+  shared_ptr<Data>
+  getCkEncryptedData(const Name &dataNameSuffix, const algo::CipherText &cipherText, const Name &ckName);
 
 PUBLIC_WITH_TESTS_ELSE_PRIVATE:
   security::Certificate m_cert;
   Face& m_face;
-  security::KeyChain& m_keyChain;
+  KeyChain& m_keyChain;
   Name m_attrAuthorityPrefix;
   Name m_dataOwnerPrefix;
 

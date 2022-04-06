@@ -41,7 +41,7 @@ public:
     authorityCert = addIdentity("/authority").getDefaultKey().getDefaultCertificate();
   }
 
-public:
+protected:
   util::DummyClientFace c1;
   util::DummyClientFace c2;
   Name attrAuthorityPrefix;
@@ -55,9 +55,7 @@ BOOST_AUTO_TEST_CASE(Constructor)
 {
   bool commandReceived = false;
   c2.setInterestFilter(Name(attrAuthorityPrefix).append("PUBPARAMS"),
-                     [&] (const ndn::InterestFilter&, const ndn::Interest& interest) {
-                        commandReceived = true;
-                     });
+                       [&] (auto&&...) { commandReceived = true; });
 
   advanceClocks(time::milliseconds(20), 60);
 

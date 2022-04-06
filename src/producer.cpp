@@ -32,37 +32,36 @@ namespace nacabe {
 
 NDN_LOG_INIT(nacabe.Producer);
 
-Producer::Producer(Face& face,
-                   security::KeyChain& keyChain,
+Producer::Producer(Face& face, KeyChain& keyChain,
                    const security::Certificate& identityCert,
                    const security::Certificate& attrAuthorityCertificate)
   : m_cert(identityCert)
-    , m_face(face)
-    , m_keyChain(keyChain)
-    , m_attrAuthorityPrefix(attrAuthorityCertificate.getIdentity())
-    , m_paramFetcher(m_face, m_attrAuthorityPrefix, m_trustConfig)
+  , m_face(face)
+  , m_keyChain(keyChain)
+  , m_attrAuthorityPrefix(attrAuthorityCertificate.getIdentity())
+  , m_paramFetcher(m_face, m_attrAuthorityPrefix, m_trustConfig)
 {
   m_trustConfig.addOrUpdateCertificate(attrAuthorityCertificate);
   m_paramFetcher.fetchPublicParams();
 }
 
-//public
-Producer::Producer(Face& face,
-                   security::KeyChain& keyChain,
+Producer::Producer(Face& face, KeyChain& keyChain,
                    const security::Certificate& identityCert,
                    const security::Certificate& attrAuthorityCertificate,
                    const security::Certificate& dataOwnerCertificate)
-    : Producer(face, keyChain, identityCert, attrAuthorityCertificate)
+  : Producer(face, keyChain, identityCert, attrAuthorityCertificate)
 {
   m_dataOwnerPrefix = dataOwnerCertificate.getIdentity();
   m_trustConfig.addOrUpdateCertificate(dataOwnerCertificate);
 
   // prefix registration
   m_registeredPrefixHandle = m_face.setInterestFilter(Name(m_cert.getIdentity()).append(SET_POLICY),
-                                                      [this](auto &&, auto && PH2) { onPolicyInterest(std::forward<decltype(PH2)>(PH2)); },
-                                                      [](const Name&, const std::string&) {
-                                                        NDN_THROW(std::runtime_error("Cannot register the prefix to the local NFD"));
-                                                      });
+    [this] (auto&&, const auto& interest) {
+      onPolicyInterest(interest);
+    },
+    [] (auto&&...) {
+      NDN_THROW(std::runtime_error("Cannot register the prefix to the local NFD"));
+    });
   NDN_LOG_DEBUG("set prefix:" << m_cert.getIdentity());
 }
 
@@ -86,12 +85,14 @@ Producer::produce(const Name& dataNameSuffix, const std::string& accessPolicy,
 }
 
 std::pair<std::shared_ptr<algo::ContentKey>, std::shared_ptr<Data>>
-Producer::ckDataGen(const Policy& accessPolicy) {
+Producer::ckDataGen(const Policy& accessPolicy)
+{
   // do encryption
   if (m_paramFetcher.getPublicParams().m_pub == "") {
     NDN_LOG_INFO("public parameters doesn't exist" );
     return std::make_pair(nullptr, nullptr);
-  } else if (m_paramFetcher.getAbeType() != ABE_TYPE_CP_ABE) {
+  }
+  else if (m_paramFetcher.getAbeType() != ABE_TYPE_CP_ABE) {
     NDN_LOG_INFO("Not a CP-ABE encrypted data" );
     return std::make_pair(nullptr, nullptr);
   }
@@ -139,16 +140,16 @@ Producer::ckDataGen(const std::vector<std::string>& attributes)
   if (m_paramFetcher.getPublicParams().m_pub == "") {
     NDN_LOG_INFO("public parameters doesn't exist" );
     return std::make_pair(nullptr, nullptr);
-  } else if (m_paramFetcher.getAbeType() != ABE_TYPE_KP_ABE) {
+  }
+  else if (m_paramFetcher.getAbeType() != ABE_TYPE_KP_ABE) {
     NDN_LOG_INFO("Not a KP-ABE encrypted data" );
     return std::make_pair(nullptr, nullptr);
   }
   else {
-    {
-      std::stringstream ss;
-      for (const auto &i: attributes) ss << i << "|";
-      NDN_LOG_INFO("Generate CK data: |" << ss.str());
-    }
+    std::string s("|");
+    for (const auto& a : attributes)
+      s += a + '|';
+    NDN_LOG_INFO("Generate CK data: " << s);
     auto contentKey = algo::ABESupport::getInstance().kpContentKeyGen(m_paramFetcher.getPublicParams(), attributes);
 
     name::Component nc;
@@ -223,9 +224,10 @@ Producer::addNewPolicy(const Name& dataPrefix, const std::string& policy)
 void
 Producer::addNewAttributes(const Name& dataPrefix, const std::vector<std::string>& attributes)
 {
-  std::stringstream ss("|");
-  for (const auto& i : attributes) ss << i << "|";
-  NDN_LOG_INFO("insert data prefix " << dataPrefix << " with attributes " << ss.str());
+  std::string s("|");
+  for (const auto& a : attributes)
+    s += a + '|';
+  NDN_LOG_INFO("insert data prefix " << dataPrefix << " with attributes " << s);
   for (auto& item : m_attributes) {
     if (std::get<0>(item) == dataPrefix) {
       std::get<1>(item) = attributes;
@@ -236,12 +238,13 @@ Producer::addNewAttributes(const Name& dataPrefix, const std::vector<std::string
 }
 
 std::string
-Producer::findMatchedPolicy(const Name& dataName) {
+Producer::findMatchedPolicy(const Name& dataName)
+{
   std::string s;
   std::string &index = s;
   size_t maxMatchedComponents = 0;
-  for (const auto &item : m_policies) {
-    const auto &prefix = item.first;
+  for (const auto& item : m_policies) {
+    const auto& prefix = item.first;
     if (prefix.isPrefixOf(dataName) && prefix.size() > maxMatchedComponents) {
       index = item.second;
       maxMatchedComponents = prefix.size();
@@ -256,8 +259,8 @@ Producer::findMatchedAttributes(const Name& dataName)
   std::vector<std::string> s;
   std::vector<std::string> &index = s;
   size_t maxMatchedComponents = 0;
-  for (const auto &item : m_attributes) {
-    const auto &prefix = item.first;
+  for (const auto& item : m_attributes) {
+    const auto& prefix = item.first;
     if (prefix.isPrefixOf(dataName) && prefix.size() > maxMatchedComponents) {
       index = item.second;
       maxMatchedComponents = prefix.size();
@@ -288,8 +291,9 @@ Producer::onPolicyInterest(const Interest& interest)
   if (m_paramFetcher.getAbeType() == ABE_TYPE_CP_ABE) {
     addNewPolicy(dataPrefix, encoding::readString(interest.getName().at(m_cert.getIdentity().size() + 2)));
     success = true;
-  } else if (m_paramFetcher.getAbeType() == ABE_TYPE_KP_ABE) {
-    auto &attrBlock = interest.getName().at(m_cert.getIdentity().size() + 2);
+  }
+  else if (m_paramFetcher.getAbeType() == ABE_TYPE_KP_ABE) {
+    auto& attrBlock = interest.getName().at(m_cert.getIdentity().size() + 2);
     attrBlock.parse();
     std::vector<std::string> attrs;
     for (const auto& e: attrBlock.elements()) {
@@ -308,7 +312,10 @@ Producer::onPolicyInterest(const Interest& interest)
   m_face.put(reply);
 }
 
-shared_ptr<Data> Producer::getCkEncryptedData(const Name &dataNameSuffix, const algo::CipherText &cipherText, const Name &ckName) {
+shared_ptr<Data>
+Producer::getCkEncryptedData(const Name& dataNameSuffix, const algo::CipherText& cipherText,
+                             const Name& ckName)
+{
   Name contentDataName = m_cert.getIdentity();
   contentDataName.append(dataNameSuffix);
   auto data = std::make_shared<Data>(contentDataName);

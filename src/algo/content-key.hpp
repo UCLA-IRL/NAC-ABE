@@ -30,16 +30,22 @@ namespace algo {
 class ContentKey
 {
 public:
-  ContentKey(std::string aesKey, Buffer encAesKey);
   ContentKey();
-  std::string& getAesKey();
-  Buffer& getEncAesKey();
+
+  ContentKey(std::string aesKey, Buffer encAesKey);
+
+  std::string&
+  getAesKey();
+
+  Buffer&
+  getEncAesKey();
 
   Block
   makeCKContent();
+
 public:
-  std::string m_aesKey; // raw AES key
-  Buffer m_encAesKey; // encrypted AES key
+  std::string m_aesKey; ///< raw AES key
+  Buffer m_encAesKey; ///< encrypted AES key
 };
 
 } // namespace algo

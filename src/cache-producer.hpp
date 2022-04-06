@@ -1,50 +1,43 @@
-//
-// Created by Tyler on 8/14/21.
-//
+/* -*- Mode:C++; c-file-style:"gnu"; indent-tabs-mode:nil; -*- */
+/*
+ * Copyright (c) 2017-2022, Regents of the University of California.
+ *
+ * This file is part of NAC-ABE.
+ *
+ * NAC-ABE is free software: you can redistribute it and/or modify it under the terms
+ * of the GNU General Public License as published by the Free Software Foundation, either
+ * version 3 of the License, or (at your option) any later version.
+ *
+ * NAC-ABE is distributed in the hope that it will be useful, but WITHOUT ANY
+ * WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A
+ * PARTICULAR PURPOSE.  See the GNU General Public License for more details.
+ *
+ * You should have received copies of the GNU General Public License along with
+ * NAC-ABE, e.g., in COPYING.md file.  If not, see <http://www.gnu.org/licenses/>.
+ *
+ * See AUTHORS.md for complete list of NAC-ABE authors and contributors.
+ */
 
 #ifndef NAC_ABE_CACHE_PRODUCER_HPP
 #define NAC_ABE_CACHE_PRODUCER_HPP
 
 #include "producer.hpp"
 
+#include <map>
+
 namespace ndn {
 namespace nacabe {
 
 /**
- * A producer that automatically reuses same key for same attributes
+ * @brief A producer that automatically reuses the same key for the same attributes.
  */
 class CacheProducer : public Producer
 {
 public:
-  /**
-   * Initialize a producer. Use when no data owner defined.
-   * @param face
-   * @param keyChain
-   * @param identityCert
-   * @param attrAuthorityCertificate
-   * @param repeatAttempts
-   */
-  CacheProducer(Face &face,
-                security::KeyChain &keyChain,
-                const security::Certificate &identityCert,
-                const security::Certificate &attrAuthorityCertificate);
+  using Producer::Producer;
 
-  /**
-   * Initialize a producer. Use when a data owner defined.
-   * @param face
-   * @param keyChain
-   * @param identityCert
-   * @param attrAuthorityCertificate
-   */
-  CacheProducer(Face &face,
-                security::KeyChain &keyChain,
-                const security::Certificate &identityCert,
-                const security::Certificate &attrAuthorityCertificate,
-                const security::Certificate &dataOwnerCertificate);
-
-  ~CacheProducer() {};
-
-  void clearCache();
+  void
+  clearCache();
 
   /**
    * @brief Produce CP-encrypted Data and corresponding encrypted CK Data
@@ -80,7 +73,7 @@ PUBLIC_WITH_TESTS_ELSE_PRIVATE:
   std::map<std::string, std::pair<std::shared_ptr<algo::ContentKey>, std::shared_ptr<Data>>> m_kpKeyCache;
 };
 
-}
-}
+} // namespace nacabe
+} // namespace ndn
 
 #endif // NAC_ABE_CACHE_PRODUCER_HPP

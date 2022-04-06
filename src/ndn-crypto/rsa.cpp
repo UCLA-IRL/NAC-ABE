@@ -28,13 +28,11 @@ namespace ndn {
 namespace nacabe {
 
 Buffer
-Rsa::generateKey(RsaKeyParams& params)
+Rsa::generateKey(const RsaKeyParams& params)
 {
   auto privateKey = security::transform::generatePrivateKey(params);
-
   OBufferStream os;
   privateKey->savePkcs1(os);
-
   return *os.buf();
 }
 
