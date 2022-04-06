@@ -85,8 +85,7 @@ private:
 private:
   security::Certificate m_cert;
   Face& m_face;
-  security::KeyChain& m_keyChain;
-  unique_ptr<security::Validator> m_validator;
+  KeyChain& m_keyChain;
 };
 
 } // namespace nacabe
