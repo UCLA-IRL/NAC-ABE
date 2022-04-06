@@ -66,6 +66,21 @@ public:
           const ConsumptionCallback& consumptionCb,
           const ErrorCallback& errorCallback);
 
+  /**
+   * @brief Consume an encrypted data packet
+   *
+   * The function will first fetch the encrypted data packet with the given interest, then fetch the CK data packet.
+   * After decrypting CK with cached DKEY, the CK will be used to cpDecrypt the data packet.
+   *
+   * @param dataName The packet name.
+   * @param consumptionCb The success callback.
+   * @param errorCallback The failure callback.
+   */
+  void
+  consume(const Interest& dataInterest,
+          const ConsumptionCallback& consumptionCb,
+          const ErrorCallback& errorCallback);
+
 private:
   void
   decryptContent(const Data& data,
