@@ -100,7 +100,7 @@ private:
                 const DataCallback& dataCallback, const ErrorCallback& errorCallback,
                 std::string nackMessage, std::string timeoutMessage);
 
-PUBLIC_WITH_TESTS_ELSE_PRIVATE:
+private:
   security::Certificate m_cert;
   Face& m_face;
   KeyChain& m_keyChain;
@@ -108,6 +108,8 @@ PUBLIC_WITH_TESTS_ELSE_PRIVATE:
 
   TrustConfig m_trustConfig;
   algo::PrivateKey m_keyCache;
+
+PUBLIC_WITH_TESTS_ELSE_PRIVATE:
   ParamFetcher m_paramFetcher;
 };
 

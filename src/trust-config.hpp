@@ -44,7 +44,7 @@ private:
   void
   parse(const JsonSection& jsonConfig);
 
-public:
+private:
   std::map<Name, security::Certificate> m_knownIdentities;
 };
 
