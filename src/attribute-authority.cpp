@@ -51,35 +51,28 @@ AttributeAuthority::AttributeAuthority(const security::Certificate& identityCert
   }
 
   // prefix registration
-  auto prefixId = m_face.registerPrefix(m_cert.getIdentity(),
-    [&] (const Name& name) {
-      NDN_LOG_TRACE("Prefix " << name << " got registered");
+  m_registeredPrefix = m_face.registerPrefix(m_cert.getIdentity(),
+    [this] (const Name& name) {
+      NDN_LOG_TRACE("Prefix " << name << " registered successfully");
 
-      // public parameter filter
-      auto filterId = m_face.setInterestFilter(Name(name).append(PUBLIC_PARAMS),
-                                          bind(&CpAttributeAuthority::onPublicParamsRequest, this, _2));
-      m_interestFilterIds.push_back(filterId);
-      NDN_LOG_TRACE("InterestFilter " << Name(name).append(PUBLIC_PARAMS) << " got set");
+      // public parameters filter
+      auto hdl1 = m_face.setInterestFilter(Name(name).append(PUBLIC_PARAMS),
+                                           std::bind(&CpAttributeAuthority::onPublicParamsRequest, this, _2));
+      m_interestFilters.emplace_back(hdl1);
+      NDN_LOG_TRACE("InterestFilter " << Name(name).append(PUBLIC_PARAMS) << " set");
 
       // decryption key filter
-      filterId = m_face.setInterestFilter(Name(name).append(DECRYPT_KEY),
-                                          bind(&CpAttributeAuthority::onDecryptionKeyRequest, this, _2));
-      m_interestFilterIds.push_back(filterId);
-      NDN_LOG_TRACE("InterestFilter " << Name(name).append(DECRYPT_KEY) << " got set");
+      auto hdl2 = m_face.setInterestFilter(Name(name).append(DECRYPT_KEY),
+                                           std::bind(&CpAttributeAuthority::onDecryptionKeyRequest, this, _2));
+      m_interestFilters.emplace_back(hdl2);
+      NDN_LOG_TRACE("InterestFilter " << Name(name).append(DECRYPT_KEY) << " set");
     },
-    bind(&CpAttributeAuthority::onRegisterFailed, this, _2));
-  m_registeredPrefixIds.push_back(prefixId);
+    [] (const Name&, const auto& reason) {
+      NDN_LOG_ERROR("Failed to register prefix: " << reason);
+    });
 }
 
-AttributeAuthority::~AttributeAuthority()
-{
-  for (const auto& prefixId : m_interestFilterIds) {
-    prefixId.cancel();
-  }
-  for (auto& prefixId : m_registeredPrefixIds) {
-    prefixId.unregister();
-  }
-}
+AttributeAuthority::~AttributeAuthority() = default;
 
 void
 AttributeAuthority::onDecryptionKeyRequest(const Interest& request)
@@ -128,12 +121,6 @@ AttributeAuthority::onPublicParamsRequest(const Interest& interest)
   NDN_LOG_TRACE("Pub params size: " << contentBuf.size());
 
   m_face.put(result);
-}
-
-void
-AttributeAuthority::onRegisterFailed(const std::string& reason)
-{
-  NDN_LOG_TRACE("Error: failed to register prefix in local hub's daemon, REASON: " << reason);
 }
 
 CpAttributeAuthority::CpAttributeAuthority(const security::Certificate& identityCert,

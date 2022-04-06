@@ -159,11 +159,11 @@ private:
   Name m_attrAuthorityPrefix;
   Name m_dataOwnerPrefix;
   TrustConfig m_trustConfig;
+  ScopedRegisteredPrefixHandle m_registeredPrefix;
 
 PUBLIC_WITH_TESTS_ELSE_PRIVATE:
   std::vector<PolicyTuple> m_policies; // for CP-ABE
   std::vector<AttributeTuple> m_attributes; // for KP-ABE
-  RegisteredPrefixHandle m_registeredPrefixHandle;
   ParamFetcher m_paramFetcher;
 };
 
