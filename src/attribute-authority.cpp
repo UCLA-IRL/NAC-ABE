@@ -31,9 +31,8 @@ namespace nacabe {
 
 NDN_LOG_INIT(nacabe.AttributeAuthority);
 
-//public
 AttributeAuthority::AttributeAuthority(const security::Certificate& identityCert, Face& face,
-                                           security::KeyChain& keyChain, const AbeType &abeType)
+                                       KeyChain& keyChain, const AbeType& abeType)
   : m_cert(identityCert)
   , m_face(face)
   , m_keyChain(keyChain)
@@ -41,14 +40,14 @@ AttributeAuthority::AttributeAuthority(const security::Certificate& identityCert
 {
   // ABE setup
   if (m_abeType == ABE_TYPE_CP_ABE) {
-    NDN_LOG_INFO("Using CP-ABE. Set up public parameters and master key.");
+    NDN_LOG_INFO("Using CP-ABE");
     algo::ABESupport::getInstance().cpInit(m_pubParams, m_masterKey);
   } else if (m_abeType == ABE_TYPE_KP_ABE) {
-    NDN_LOG_INFO("Using KP-ABE. Set up public parameters and master key.");
+    NDN_LOG_INFO("Using KP-ABE");
     algo::ABESupport::getInstance().kpInit(m_pubParams, m_masterKey);
   } else {
-    NDN_LOG_ERROR("Unsupported ABE type.");
-    NDN_THROW(std::runtime_error("Unsupported ABE type."));
+    NDN_LOG_ERROR("Unsupported ABE type: " << m_abeType);
+    NDN_THROW(std::runtime_error("Unsupported ABE type: " + m_abeType));
   }
 
   // prefix registration
@@ -86,18 +85,16 @@ void
 AttributeAuthority::onDecryptionKeyRequest(const Interest& request)
 {
   // naming: /AA-prefix/DKEY/<identity name block>
-  NDN_LOG_INFO("get DKEY request:"<<request.getName());
+  NDN_LOG_INFO("Got DKEY request: " << request.getName());
   Name identityName(request.getName().at(m_cert.getIdentity().size() + 1).blockFromValue());
 
   // verify request and generate token
   auto optionalCert = m_trustConfig.findCertificate(identityName);
-  if (optionalCert) {
-    NDN_LOG_INFO("Find consumer(decryptor) certificate: " << optionalCert->getName());
-  }
-  else {
+  if (!optionalCert) {
     NDN_LOG_INFO("DKEY Request Interest cannot be authenticated: no certificate for " << identityName);
     return;
   }
+  NDN_LOG_INFO("Find consumer(decryptor) certificate: " << optionalCert->getName());
 
   auto ABEPrvKey = getPrivateKey(identityName);
   auto prvBuffer = ABEPrvKey.toBuffer();
@@ -115,7 +112,7 @@ void
 AttributeAuthority::onPublicParamsRequest(const Interest& interest)
 {
   // naming: /AA-prefix/PUBPARAMS
-  NDN_LOG_INFO("on public Params request:"<<interest.getName());
+  NDN_LOG_INFO("on public params request: " << interest.getName());
   Data result;
   Name dataName = interest.getName();
   dataName.append(m_abeType);
@@ -139,28 +136,30 @@ AttributeAuthority::onRegisterFailed(const std::string& reason)
   NDN_LOG_TRACE("Error: failed to register prefix in local hub's daemon, REASON: " << reason);
 }
 
-CpAttributeAuthority::CpAttributeAuthority(const security::Certificate& identityCert, Face& m_face,
-                                           security::KeyChain& keyChain)
-    : AttributeAuthority(identityCert, m_face, keyChain, ABE_TYPE_CP_ABE){
-
+CpAttributeAuthority::CpAttributeAuthority(const security::Certificate& identityCert,
+                                           Face& face, KeyChain& keyChain)
+  : AttributeAuthority(identityCert, face, keyChain, ABE_TYPE_CP_ABE)
+{
 }
 
-CpAttributeAuthority::~CpAttributeAuthority() {};
-
 void
-CpAttributeAuthority::addNewPolicy(const Name& decryptorIdentityName, const std::list<std::string>& attributes)
+CpAttributeAuthority::addNewPolicy(const Name& decryptorIdentityName,
+                                   const std::list<std::string>& attributes)
 {
   m_tokens.insert(std::make_pair(decryptorIdentityName, attributes));
 }
 
 void
-CpAttributeAuthority::addNewPolicy(const security::Certificate& decryptorCert, const std::list<std::string>& attributes)
+CpAttributeAuthority::addNewPolicy(const security::Certificate& decryptorCert,
+                                   const std::list<std::string>& attributes)
 {
   m_trustConfig.addOrUpdateCertificate(decryptorCert);
   addNewPolicy(decryptorCert.getIdentity(), attributes);
 }
 
-algo::PrivateKey CpAttributeAuthority::getPrivateKey(Name identityName) {
+algo::PrivateKey
+CpAttributeAuthority::getPrivateKey(Name identityName)
+{
   const auto& attributes = m_tokens.at(identityName);
   std::vector<std::string> attrs(attributes.begin(), attributes.end());
 
@@ -168,13 +167,11 @@ algo::PrivateKey CpAttributeAuthority::getPrivateKey(Name identityName) {
   return algo::ABESupport::getInstance().cpPrvKeyGen(m_pubParams, m_masterKey, attrs);
 }
 
-KpAttributeAuthority::KpAttributeAuthority(const security::Certificate& identityCert, Face& m_face,
-                                           security::KeyChain& keyChain)
-    : AttributeAuthority(identityCert, m_face, keyChain, ABE_TYPE_KP_ABE){
-
+KpAttributeAuthority::KpAttributeAuthority(const security::Certificate& identityCert,
+                                           Face& face, KeyChain& keyChain)
+  : AttributeAuthority(identityCert, face, keyChain, ABE_TYPE_KP_ABE)
+{
 }
-
-KpAttributeAuthority::~KpAttributeAuthority() {};
 
 void
 KpAttributeAuthority::addNewPolicy(const Name& decryptorIdentityName, const Policy& policy)
@@ -189,7 +186,9 @@ KpAttributeAuthority::addNewPolicy(const security::Certificate& decryptorCert, c
   addNewPolicy(decryptorCert.getIdentity(), policy);
 }
 
-algo::PrivateKey KpAttributeAuthority::getPrivateKey(Name identityName) {
+algo::PrivateKey
+KpAttributeAuthority::getPrivateKey(Name identityName)
+{
   const auto& policy = m_tokens.at(identityName);
 
   // generate ABE private key and do encryption

@@ -1,6 +1,6 @@
 /* -*- Mode:C++; c-file-style:"gnu"; indent-tabs-mode:nil; -*- */
-/**
- * Copyright (c) 2017-2019, Regents of the University of California.
+/*
+ * Copyright (c) 2017-2022, Regents of the University of California.
  *
  * This file is part of NAC-ABE.
  *
@@ -22,6 +22,8 @@
 #define NAC_ABE_TRUST_CONFIG_HPP
 
 #include "json-helper.hpp"
+
+#include <map>
 
 namespace ndn {
 namespace nacabe {

@@ -30,7 +30,7 @@ class Rsa
 {
 public:
   static Buffer
-  generateKey(RsaKeyParams& params);
+  generateKey(const RsaKeyParams& params);
 
   static Buffer
   deriveEncryptKey(const Buffer& keyBits);

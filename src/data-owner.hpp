@@ -29,12 +29,11 @@ namespace nacabe {
 class DataOwner
 {
 public:
-  using ErrorCallback = function<void (const std::string&)>;
-  using SuccessCallback = function<void (const Data&)>;
+  using ErrorCallback = std::function<void (const std::string&)>;
+  using SuccessCallback = std::function<void (const Data&)>;
 
 public:
-  DataOwner(const security::Certificate& identityCert, Face& face,
-            security::KeyChain& keyChain);
+  DataOwner(const security::Certificate& identityCert, Face& face, KeyChain& keyChain);
 
   /**
    * @brief For CP-ABE, Notice a producer the encryption policy for data produced under a specific data prefix.
@@ -65,12 +64,13 @@ public:
    * @param errorCb The failure callback.
    */
   void
-  commandProducerPolicy(const Name& producerPrefix, const Name& dataPrefix, const std::vector<std::string>& attributes,
+  commandProducerPolicy(const Name& producerPrefix, const Name& dataPrefix,
+                        const std::vector<std::string>& attributes,
                         const SuccessCallback& successCb, const ErrorCallback& errorCb);
 
 private:
   /**
-   * Generic method for commanding the producer.
+   * @brief Generic method for commanding the producer.
    * @param producerPrefix Producer's prefix.
    * @param dataPrefix Data prefix. Do not contain producer's prefix.
    * @param policy The policy for the data produced under the @p producerPrefix and @p dataPrefix

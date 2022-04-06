@@ -33,19 +33,20 @@ const uint8_t PLAIN_TEXT[1024] = {1};
 
 NDN_LOG_INIT(Test.ParamFetcher);
 
-class TestParamFetcherFixture : public IdentityManagementTimeFixture {
+class TestParamFetcherFixture : public IdentityManagementTimeFixture
+{
 public:
   TestParamFetcherFixture()
-      : c1(io, m_keyChain, util::DummyClientFace::Options{true, true})
-      , c2(io, m_keyChain, util::DummyClientFace::Options{true, true})
-      , attrAuthorityPrefix("/authority")
+    : c1(io, m_keyChain, {true, true})
+    , c2(io, m_keyChain, {true, true})
+    , attrAuthorityPrefix("/authority")
   {
     c1.linkTo(c2);
     authorityCert = addIdentity("/authority").getDefaultKey().getDefaultCertificate();
     trustConfig.addOrUpdateCertificate(authorityCert);
   }
 
-public:
+protected:
   util::DummyClientFace c1;
   util::DummyClientFace c2;
   Name attrAuthorityPrefix;

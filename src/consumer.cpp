@@ -30,8 +30,7 @@ namespace nacabe {
 
 NDN_LOG_INIT(nacabe.Consumer);
 
-// public
-Consumer::Consumer(Face& face, security::KeyChain& keyChain,
+Consumer::Consumer(Face& face, KeyChain& keyChain,
                    const security::Certificate& identityCert,
                    const security::Certificate& attrAuthorityCertificate)
   : m_cert(identityCert)
@@ -58,19 +57,19 @@ Consumer::obtainDecryptionKey()
   interest.setCanBePrefix(true);
 
   m_face.expressInterest(interest,
-                         [&](const Interest&, const Data& keyData) {
-                           NDN_LOG_INFO(m_cert.getIdentity() << " get decrypt key data");
-                           const auto& tpm = m_keyChain.getTpm();
-                            const auto& block = keyData.getContent();
-                            auto prvBlock = decryptDataContent(block, tpm, m_cert.getName());
-                            algo::PrivateKey prv;
-                            prv.fromBuffer(Buffer(prvBlock.data(), prvBlock.size()));
-                            m_keyCache = prv;
-                         }, [&] (const Interest&, const ndn::lp::Nack& reason) {
-                            NDN_LOG_INFO("nack for " << m_cert.getIdentity() << " decrypt key data with reason " << reason.getReason());
-                         }, [&] (const Interest&) {
-                            NDN_LOG_INFO("timeout for " << m_cert.getIdentity() << " decrypt key data");
-                         });
+    [this] (auto&&, const Data& keyData) {
+      NDN_LOG_INFO(m_cert.getIdentity() << " get decrypt key data");
+      auto prvBlock = decryptDataContent(keyData.getContent(), m_keyChain.getTpm(), m_cert.getName());
+      algo::PrivateKey prv;
+      prv.fromBuffer(Buffer(prvBlock.data(), prvBlock.size()));
+      m_keyCache = prv;
+    },
+    [this] (auto&&, const auto& nack) {
+      NDN_LOG_INFO("nack for " << m_cert.getIdentity() << " decrypt key data with reason " << nack.getReason());
+    },
+    [this] (auto&&) {
+      NDN_LOG_INFO("timeout for " << m_cert.getIdentity() << " decrypt key data");
+    });
 }
 
 void
@@ -90,7 +89,7 @@ Consumer::consume(const Interest& dataInterest,
                   const ErrorCallback& errorCallback)
 {
   // ready for decryption
-  if (m_paramFetcher.getPublicParams().m_pub == "") {
+  if (m_paramFetcher.getPublicParams().m_pub.empty()) {
     NDN_LOG_INFO("public parameters doesn't exist");
     errorCallback("public parameters doesn't exist");
     return;
@@ -101,7 +100,6 @@ Consumer::consume(const Interest& dataInterest,
   }
 
   std::string nackMessage = "nack for " + dataInterest.getName().toUri() + " data fetch with reason ";
-
   std::string timeoutMessage = "timeout for " + dataInterest.getName().toUri() + " data fetch";
 
   auto dataCallback = [=] (const Interest&, const Data& data) {
@@ -201,7 +199,8 @@ Consumer::handleNack(const Interest& interest, const lp::Nack& nack,
 
 void
 Consumer::handleTimeout(const Interest& interest, int nRetrials,
-                        const DataCallback& dataCallback, const ErrorCallback& errorCallback, std::string nackMessage, std::string timeoutMessage)
+                        const DataCallback& dataCallback, const ErrorCallback& errorCallback,
+                        std::string nackMessage, std::string timeoutMessage)
 {
   if (nRetrials > 0) {
     NDN_LOG_INFO("timeout for: " << interest << ", retrying");

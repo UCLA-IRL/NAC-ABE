@@ -40,12 +40,12 @@ class TestIntegratedFixture : public IdentityManagementTimeFixture
 {
 public:
   TestIntegratedFixture()
-    : producerFace(io, m_keyChain, util::DummyClientFace::Options{true, true})
-    , aaFace(io, m_keyChain, util::DummyClientFace::Options{true, true})
-    , tokenIssuerFace(io, m_keyChain, util::DummyClientFace::Options{true, true})
-    , consumerFace1(io, m_keyChain, util::DummyClientFace::Options{true, true})
-    , consumerFace2(io, m_keyChain, util::DummyClientFace::Options{true, true})
-    , dataOwnerFace(io, m_keyChain, util::DummyClientFace::Options{true, true})
+    : producerFace(io, m_keyChain, {false, true})
+    , aaFace(io, m_keyChain, {false, true})
+    , tokenIssuerFace(io, m_keyChain, {false, true})
+    , consumerFace1(io, m_keyChain, {false, true})
+    , consumerFace2(io, m_keyChain, {false, true})
+    , dataOwnerFace(io, m_keyChain, {false, true})
   {
     producerFace.linkTo(aaFace);
     producerFace.linkTo(tokenIssuerFace);
@@ -61,7 +61,7 @@ public:
     dataOwnerCert = addIdentity("/dataOwnerPrefix").getDefaultKey().getDefaultCertificate();
   }
 
-public:
+protected:
   util::DummyClientFace producerFace;
   util::DummyClientFace aaFace;
   util::DummyClientFace tokenIssuerFace;
@@ -79,11 +79,11 @@ public:
 
 BOOST_FIXTURE_TEST_SUITE(TestIntegrated, TestIntegratedFixture)
 
-BOOST_AUTO_TEST_CASE(IntegratedTest)
+BOOST_AUTO_TEST_CASE(Cp)
 {
   // set up AA
   NDN_LOG_INFO("Create Attribute Authority. AA prefix: " << aaCert.getIdentity());
-  CpAttributeAuthority aa = CpAttributeAuthority(aaCert, aaFace, m_keyChain);
+  CpAttributeAuthority aa(aaCert, aaFace, m_keyChain);
   advanceClocks(time::milliseconds(20), 60);
 
   // define attr list for consumer rights
@@ -99,25 +99,25 @@ BOOST_AUTO_TEST_CASE(IntegratedTest)
 
   // set up consumer
   NDN_LOG_INFO("Create Consumer 1. Consumer 1 prefix:"<<consumerCert1.getIdentity());
-  Consumer consumer1 = Consumer(consumerFace1, m_keyChain, consumerCert1, aaCert);
+  Consumer consumer1(consumerFace1, m_keyChain, consumerCert1, aaCert);
   advanceClocks(time::milliseconds(20), 60);
   BOOST_CHECK(consumer1.m_paramFetcher.getPublicParams().m_pub != "");
 
   // set up consumer
   NDN_LOG_INFO("Create Consumer 2. Consumer 2 prefix:"<<consumerCert2.getIdentity());
-  Consumer consumer2 = Consumer(consumerFace2, m_keyChain, consumerCert2, aaCert);
+  Consumer consumer2(consumerFace2, m_keyChain, consumerCert2, aaCert);
   advanceClocks(time::milliseconds(20), 60);
   BOOST_CHECK(consumer2.m_paramFetcher.getPublicParams().m_pub != "");
 
   // set up producer
   NDN_LOG_INFO("Create Producer. Producer prefix:"<<producerCert.getIdentity());
-  Producer producer = Producer(producerFace, m_keyChain, producerCert, aaCert, dataOwnerCert);
+  Producer producer(producerFace, m_keyChain, producerCert, aaCert, dataOwnerCert);
   advanceClocks(time::milliseconds(20), 60);
   BOOST_CHECK(producer.m_paramFetcher.getPublicParams().m_pub != "");
 
   // set up data owner
   NDN_LOG_INFO("Create Data Owner. Data Owner prefix:"<<dataOwnerCert.getIdentity());
-  DataOwner dataOwner = DataOwner(dataOwnerCert, dataOwnerFace, m_keyChain);
+  DataOwner dataOwner(dataOwnerCert, dataOwnerFace, m_keyChain);
   advanceClocks(time::milliseconds(20), 60);
 
   NDN_LOG_INFO("\n=================== start work flow ==================\n");
@@ -134,7 +134,7 @@ BOOST_AUTO_TEST_CASE(IntegratedTest)
                                      auto policyFound = producer.findMatchedPolicy(dataName);
                                      BOOST_CHECK(policyFound == policy);
                                    },
-                                   [=] (const std::string& err) {
+                                   [] (const std::string&) {
                                      BOOST_CHECK(false);
                                    });
 
@@ -169,13 +169,8 @@ BOOST_AUTO_TEST_CASE(IntegratedTest)
       isConsumeCbCalled = true;
       BOOST_CHECK_EQUAL_COLLECTIONS(result.begin(), result.end(),
                                     PLAIN_TEXT, PLAIN_TEXT + sizeof(PLAIN_TEXT));
-      std::string str;
-      for(int i =0; i < sizeof(PLAIN_TEXT); ++i) {
-        str.push_back(result[i]);
-      }
-      NDN_LOG_INFO("result:" << str);
     },
-    [&] (const std::string& err) {
+    [] (const std::string&) {
       BOOST_CHECK(false);
     }
   );
@@ -186,10 +181,10 @@ BOOST_AUTO_TEST_CASE(IntegratedTest)
   consumer2.obtainDecryptionKey();
   advanceClocks(time::milliseconds(20), 60);
   consumer2.consume(producerCert.getIdentity().append(dataName),
-    [&] (const Buffer& result) {
+    [] (const Buffer&) {
       BOOST_CHECK(false);
     },
-    [&] (const std::string& err) {
+    [&] (const std::string&) {
       isConsumeCbCalled = true;
     }
   );
@@ -197,11 +192,11 @@ BOOST_AUTO_TEST_CASE(IntegratedTest)
   BOOST_CHECK(isConsumeCbCalled);
 }
 
-BOOST_AUTO_TEST_CASE(KpIntegratedTest)
+BOOST_AUTO_TEST_CASE(Kp)
 {
   // set up AA
   NDN_LOG_INFO("Create Attribute Authority. AA prefix: " << aaCert.getIdentity());
-  KpAttributeAuthority aa = KpAttributeAuthority(aaCert, aaFace, m_keyChain);
+  KpAttributeAuthority aa(aaCert, aaFace, m_keyChain);
   advanceClocks(time::milliseconds(20), 60);
 
   // define attr list for consumer rights
@@ -217,25 +212,25 @@ BOOST_AUTO_TEST_CASE(KpIntegratedTest)
 
   // set up consumer
   NDN_LOG_INFO("Create Consumer 1. Consumer 1 prefix:"<<consumerCert1.getIdentity());
-  Consumer consumer1 = Consumer(consumerFace1, m_keyChain, consumerCert1, aaCert);
+  Consumer consumer1(consumerFace1, m_keyChain, consumerCert1, aaCert);
   advanceClocks(time::milliseconds(20), 60);
   BOOST_CHECK(consumer1.m_paramFetcher.getPublicParams().m_pub != "");
 
   // set up consumer
   NDN_LOG_INFO("Create Consumer 2. Consumer 2 prefix:"<<consumerCert2.getIdentity());
-  Consumer consumer2 = Consumer(consumerFace2, m_keyChain, consumerCert2, aaCert);
+  Consumer consumer2(consumerFace2, m_keyChain, consumerCert2, aaCert);
   advanceClocks(time::milliseconds(20), 60);
   BOOST_CHECK(consumer2.m_paramFetcher.getPublicParams().m_pub != "");
 
   // set up producer
   NDN_LOG_INFO("Create Producer. Producer prefix:"<<producerCert.getIdentity());
-  Producer producer = Producer(producerFace, m_keyChain, producerCert, aaCert, dataOwnerCert);
+  Producer producer(producerFace, m_keyChain, producerCert, aaCert, dataOwnerCert);
   advanceClocks(time::milliseconds(20), 60);
   BOOST_CHECK(producer.m_paramFetcher.getPublicParams().m_pub != "");
 
   // set up data owner
   NDN_LOG_INFO("Create Data Owner. Data Owner prefix:"<<dataOwnerCert.getIdentity());
-  DataOwner dataOwner = DataOwner(dataOwnerCert, dataOwnerFace, m_keyChain);
+  DataOwner dataOwner(dataOwnerCert, dataOwnerFace, m_keyChain);
   advanceClocks(time::milliseconds(20), 60);
 
   NDN_LOG_INFO("\n=================== start work flow ==================\n");
@@ -252,7 +247,7 @@ BOOST_AUTO_TEST_CASE(KpIntegratedTest)
                                     auto attrFound = producer.findMatchedAttributes(dataName);
                                     BOOST_CHECK_EQUAL_COLLECTIONS(attrFound.begin(), attrFound.end(), attr.begin(), attr.end());
                                   },
-                                  [=] (const std::string& err) {
+                                  [] (const std::string&) {
                                     BOOST_CHECK(false);
                                   });
 
@@ -287,13 +282,8 @@ BOOST_AUTO_TEST_CASE(KpIntegratedTest)
                       isConsumeCbCalled = true;
                       BOOST_CHECK_EQUAL_COLLECTIONS(result.begin(), result.end(),
                                                     PLAIN_TEXT, PLAIN_TEXT + sizeof(PLAIN_TEXT));
-                      std::string str;
-                      for(int i =0; i < sizeof(PLAIN_TEXT); ++i) {
-                        str.push_back(result[i]);
-                      }
-                      NDN_LOG_INFO("result:" << str);
                     },
-                    [&] (const std::string& err) {
+                    [] (const std::string&) {
                       BOOST_CHECK(false);
                     }
   );
@@ -304,10 +294,10 @@ BOOST_AUTO_TEST_CASE(KpIntegratedTest)
   consumer2.obtainDecryptionKey();
   advanceClocks(time::milliseconds(20), 60);
   consumer2.consume(producerCert.getIdentity().append(dataName),
-                    [&] (const Buffer& result) {
+                    [] (const Buffer&) {
                       BOOST_CHECK(false);
                     },
-                    [&] (const std::string& err) {
+                    [&] (const std::string&) {
                       isConsumeCbCalled = true;
                     }
   );
@@ -315,11 +305,11 @@ BOOST_AUTO_TEST_CASE(KpIntegratedTest)
   BOOST_CHECK(isConsumeCbCalled);
 }
 
-BOOST_AUTO_TEST_CASE(KpCacheIntegratedTest)
+BOOST_AUTO_TEST_CASE(KpCache)
 {
   // set up AA
   NDN_LOG_INFO("Create Attribute Authority. AA prefix: " << aaCert.getIdentity());
-  KpAttributeAuthority aa = KpAttributeAuthority(aaCert, aaFace, m_keyChain);
+  KpAttributeAuthority aa(aaCert, aaFace, m_keyChain);
   advanceClocks(time::milliseconds(20), 60);
 
   // define attr list for consumer rights
@@ -335,25 +325,25 @@ BOOST_AUTO_TEST_CASE(KpCacheIntegratedTest)
 
   // set up consumer
   NDN_LOG_INFO("Create Consumer 1. Consumer 1 prefix:"<<consumerCert1.getIdentity());
-  Consumer consumer1 = Consumer(consumerFace1, m_keyChain, consumerCert1, aaCert);
+  Consumer consumer1(consumerFace1, m_keyChain, consumerCert1, aaCert);
   advanceClocks(time::milliseconds(20), 60);
   BOOST_CHECK(consumer1.m_paramFetcher.getPublicParams().m_pub != "");
 
   // set up consumer
   NDN_LOG_INFO("Create Consumer 2. Consumer 2 prefix:"<<consumerCert2.getIdentity());
-  Consumer consumer2 = Consumer(consumerFace2, m_keyChain, consumerCert2, aaCert);
+  Consumer consumer2(consumerFace2, m_keyChain, consumerCert2, aaCert);
   advanceClocks(time::milliseconds(20), 60);
   BOOST_CHECK(consumer2.m_paramFetcher.getPublicParams().m_pub != "");
 
   // set up producer
   NDN_LOG_INFO("Create Producer. Producer prefix:"<<producerCert.getIdentity());
-  CacheProducer producer = CacheProducer(producerFace, m_keyChain, producerCert, aaCert, dataOwnerCert);
+  CacheProducer producer(producerFace, m_keyChain, producerCert, aaCert, dataOwnerCert);
   advanceClocks(time::milliseconds(20), 60);
   BOOST_CHECK(producer.m_paramFetcher.getPublicParams().m_pub != "");
 
   // set up data owner
   NDN_LOG_INFO("Create Data Owner. Data Owner prefix:"<<dataOwnerCert.getIdentity());
-  DataOwner dataOwner = DataOwner(dataOwnerCert, dataOwnerFace, m_keyChain);
+  DataOwner dataOwner(dataOwnerCert, dataOwnerFace, m_keyChain);
   advanceClocks(time::milliseconds(20), 60);
 
   NDN_LOG_INFO("\n=================== start work flow ==================\n");
@@ -370,7 +360,7 @@ BOOST_AUTO_TEST_CASE(KpCacheIntegratedTest)
                                     auto attrFound = producer.findMatchedAttributes(dataName);
                                     BOOST_CHECK_EQUAL_COLLECTIONS(attrFound.begin(), attrFound.end(), attr.begin(), attr.end());
                                   },
-                                  [=] (const std::string& err) {
+                                  [] (const std::string&) {
                                     BOOST_CHECK(false);
                                   });
 
@@ -409,13 +399,8 @@ BOOST_AUTO_TEST_CASE(KpCacheIntegratedTest)
                       isConsumeCbCalled = true;
                       BOOST_CHECK_EQUAL_COLLECTIONS(result.begin(), result.end(),
                                                     PLAIN_TEXT, PLAIN_TEXT + sizeof(PLAIN_TEXT));
-                      std::string str;
-                      for(int i =0; i < sizeof(PLAIN_TEXT); ++i) {
-                        str.push_back(result[i]);
-                      }
-                      NDN_LOG_INFO("result:" << str);
                     },
-                    [&] (const std::string& err) {
+                    [] (const std::string&) {
                       BOOST_CHECK(false);
                     }
   );
@@ -426,10 +411,10 @@ BOOST_AUTO_TEST_CASE(KpCacheIntegratedTest)
   consumer2.obtainDecryptionKey();
   advanceClocks(time::milliseconds(20), 60);
   consumer2.consume(producerCert.getIdentity().append(dataName),
-                    [&] (const Buffer& result) {
+                    [] (const Buffer&) {
                       BOOST_CHECK(false);
                     },
-                    [&] (const std::string& err) {
+                    [&] (const std::string&) {
                       isConsumeCbCalled = true;
                     }
   );

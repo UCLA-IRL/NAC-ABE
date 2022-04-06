@@ -41,7 +41,6 @@
 #include <cstdint>
 #include <functional>
 #include <iosfwd>
-#include <map>
 #include <memory>
 #include <stdexcept>
 #include <string>
@@ -77,11 +76,7 @@ using boost::noncopyable;
 using std::shared_ptr;
 using std::unique_ptr;
 using std::make_shared;
-using ndn::make_unique;
-using std::enable_shared_from_this;
-
-using std::function;
-using std::bind;
+using std::make_unique;
 
 using ndn::Interest;
 using ndn::Data;

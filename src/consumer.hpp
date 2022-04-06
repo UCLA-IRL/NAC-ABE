@@ -1,6 +1,6 @@
 /* -*- Mode:C++; c-file-style:"gnu"; indent-tabs-mode:nil; -*- */
-/**
- * Copyright (c) 2017-2019, Regents of the University of California.
+/*
+ * Copyright (c) 2017-2022, Regents of the University of California.
  *
  * This file is part of NAC-ABE.
  *
@@ -33,13 +33,12 @@ namespace nacabe {
 class Consumer
 {
 public:
-  using OnDataCallback = function<void (const Interest&, const Data&)>;
-  using ErrorCallback = function<void (const std::string&)>;
-  using ConsumptionCallback = function<void (const Buffer&)>;
+  using OnDataCallback = std::function<void (const Interest&, const Data&)>;
+  using ErrorCallback = std::function<void (const std::string&)>;
+  using ConsumptionCallback = std::function<void (const Buffer&)>;
 
 public:
-  Consumer(Face& face,
-           security::KeyChain& keyChain,
+  Consumer(Face& face, KeyChain& keyChain,
            const security::Certificate& identityCert,
            const security::Certificate& attrAuthorityCertificate);
 
@@ -89,8 +88,8 @@ private:
 
   void
   onCkeyData(const Data& data, std::shared_ptr<algo::CipherText> cipherText,
-                         const ConsumptionCallback& successCallBack,
-                         const ErrorCallback& errorCallback);
+             const ConsumptionCallback& successCallBack,
+             const ErrorCallback& errorCallback);
 
   void
   handleNack(const Interest& interest, const lp::Nack& nack,
@@ -98,12 +97,13 @@ private:
 
   void
   handleTimeout(const Interest& interest, int nRetrials,
-                const DataCallback& dataCallback, const ErrorCallback& errorCallback, std::string nackMessage, std::string timeoutMessage);
+                const DataCallback& dataCallback, const ErrorCallback& errorCallback,
+                std::string nackMessage, std::string timeoutMessage);
 
 PUBLIC_WITH_TESTS_ELSE_PRIVATE:
   security::Certificate m_cert;
   Face& m_face;
-  security::KeyChain& m_keyChain;
+  KeyChain& m_keyChain;
   Name m_attrAuthorityPrefix;
 
   TrustConfig m_trustConfig;

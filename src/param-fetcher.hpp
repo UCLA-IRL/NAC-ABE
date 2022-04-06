@@ -28,26 +28,40 @@ namespace ndn {
 namespace nacabe {
 
 /**
- * Internal class for fetching parameters
+ * @brief Internal class for fetching parameters.
  */
-class ParamFetcher {
+class ParamFetcher
+{
 public:
+  ParamFetcher(Face& face, const Name& attrAuthorityPrefix, const TrustConfig& trustConfig);
 
-  ParamFetcher(Face& face, const Name &attrAuthorityPrefix, const TrustConfig &trustConfig);
+  void
+  fetchPublicParams();
 
-  void onAttributePubParams(const Data &pubParamData);
+  AbeType
+  getAbeType() const
+  {
+    return m_abeType;
+  }
 
-  void fetchPublicParams();
+  algo::PublicParams
+  getPublicParams() const
+  {
+    return m_pubParamsCache;
+  }
 
-  algo::PublicParams getPublicParams();
+private:
+  void
+  onAttributePubParams(const Data& pubParamData);
 
-  AbeType getAbeType();
+private:
+  Face& m_face;
+  const Name& m_attrAuthorityPrefix;
+  const TrustConfig& m_trustConfig;
+
 PUBLIC_WITH_TESTS_ELSE_PRIVATE:
-  algo::PublicParams m_pubParamsCache;
   AbeType m_abeType;
-  Face &m_face;
-  const Name &m_attrAuthorityPrefix;
-  const TrustConfig &m_trustConfig;
+  algo::PublicParams m_pubParamsCache;
 };
 
 } // namespace nacabe

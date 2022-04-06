@@ -41,7 +41,7 @@ public:
     c1.linkTo(c2);
   }
 
-public:
+protected:
   util::DummyClientFace c1;
   util::DummyClientFace c2;
 };
@@ -56,9 +56,9 @@ BOOST_AUTO_TEST_CASE(CpSetPolicy)
 
   DataOwner dataowner(cert, c1, m_keyChain);
 
-  Name producerPrefix = Name("/producer1");
-  Name dataPrefix = Name("/data");
-  std::string policy = "attr1 and attr2 or attr3";
+  Name producerPrefix("/producer1");
+  Name dataPrefix("/data");
+  const std::string policy = "attr1 and attr2 or attr3";
   Name interestName = producerPrefix;
   interestName.append(SET_POLICY)
               .append(dataPrefix.wireEncode().begin(), dataPrefix.wireEncode().end())
@@ -67,7 +67,7 @@ BOOST_AUTO_TEST_CASE(CpSetPolicy)
   advanceClocks(time::milliseconds(1), 10);
 
   auto f1 = c2.setInterestFilter(Name("/producer1"),
-                                 [&] (const ndn::InterestFilter&, const ndn::Interest& interest) {
+                                 [&] (auto&&, const auto& interest) {
                                    BOOST_CHECK_EQUAL(interest.getName().getSubName(0, 1), producerPrefix);
                                    BOOST_CHECK_EQUAL(interest.getName().get(1).toUri(), SET_POLICY);
                                    BOOST_CHECK_EQUAL(Name(interest.getName().get(2).blockFromValue()), dataPrefix);
@@ -91,7 +91,7 @@ BOOST_AUTO_TEST_CASE(CpSetPolicy)
                                     BOOST_CHECK(interestName.isPrefixOf(data.getName()));
                                     getItem = true;
                                   },
-                                  [=] (const std::string&) {
+                                  [] (auto&&) {
                                     BOOST_CHECK(false);
                                   });
 
@@ -101,7 +101,7 @@ BOOST_AUTO_TEST_CASE(CpSetPolicy)
 
   // bad reply check
   auto f2 = c2.setInterestFilter(Name("/producer1"),
-                                 [&] (const ndn::InterestFilter&, const ndn::Interest& interest) {
+                                 [&] (auto&&, const auto& interest) {
                                    BOOST_CHECK_EQUAL(interest.getName().getSubName(0, 1), producerPrefix);
                                    BOOST_CHECK_EQUAL(interest.getName().get(1).toUri(), SET_POLICY);
                                    BOOST_CHECK_EQUAL(Name(interest.getName().get(2).blockFromValue()), dataPrefix);
@@ -121,7 +121,7 @@ BOOST_AUTO_TEST_CASE(CpSetPolicy)
 
   getItem = false;
   dataowner.commandProducerPolicy(producerPrefix, dataPrefix, policy,
-                                  [=] (const Data& data) {
+                                  [] (auto&&) {
                                     BOOST_CHECK(false);
                                   },
                                   [&] (const std::string& s) {
@@ -135,7 +135,7 @@ BOOST_AUTO_TEST_CASE(CpSetPolicy)
 
   // timeout check
   auto f3 = c2.setInterestFilter(Name("/producer1"),
-                                 [&] (const ndn::InterestFilter&, const ndn::Interest& interest) {
+                                 [&] (auto&&, const auto& interest) {
                                    BOOST_CHECK_EQUAL(interest.getName().getSubName(0, 1), producerPrefix);
                                    BOOST_CHECK_EQUAL(interest.getName().get(1).toUri(), SET_POLICY);
                                    BOOST_CHECK_EQUAL(Name(interest.getName().get(2).blockFromValue()), dataPrefix);
@@ -148,7 +148,7 @@ BOOST_AUTO_TEST_CASE(CpSetPolicy)
 
   getItem = false;
   dataowner.commandProducerPolicy(producerPrefix, dataPrefix, policy,
-                                  [=] (const Data& data) {
+                                  [] (auto&&) {
                                     BOOST_CHECK(false);
                                   },
                                   [&] (const std::string& s) {
@@ -162,7 +162,7 @@ BOOST_AUTO_TEST_CASE(CpSetPolicy)
 
   // nack check
   auto f4 = c2.setInterestFilter(Name("/producer1"),
-                                 [&] (const ndn::InterestFilter&, const ndn::Interest& interest) {
+                                 [&] (auto&&, const auto& interest) {
                                    BOOST_CHECK_EQUAL(interest.getName().getSubName(0, 1), producerPrefix);
                                    BOOST_CHECK_EQUAL(interest.getName().get(1).toUri(), SET_POLICY);
                                    BOOST_CHECK_EQUAL(Name(interest.getName().get(2).blockFromValue()), dataPrefix);
@@ -179,7 +179,7 @@ BOOST_AUTO_TEST_CASE(CpSetPolicy)
 
   getItem = false;
   dataowner.commandProducerPolicy(producerPrefix, dataPrefix, policy,
-                                  [=] (const Data& data) {
+                                  [] (auto&&) {
                                     BOOST_CHECK(false);
                                   },
                                   [&] (const std::string& s) {
@@ -215,7 +215,7 @@ BOOST_AUTO_TEST_CASE(KpSetPolicy)
   advanceClocks(time::milliseconds(1), 10);
 
   auto f1 = c2.setInterestFilter(Name("/producer1"),
-                       [&] (const ndn::InterestFilter&, const ndn::Interest& interest) {
+                       [&] (auto&&, const auto& interest) {
                          BOOST_CHECK_EQUAL(interest.getName().getSubName(0, 1), producerPrefix);
                          BOOST_CHECK_EQUAL(interest.getName().get(1).toUri(), SET_POLICY);
                          BOOST_CHECK_EQUAL(Name(interest.getName().get(2).blockFromValue()), dataPrefix);
@@ -239,7 +239,7 @@ BOOST_AUTO_TEST_CASE(KpSetPolicy)
                                     BOOST_CHECK(interestName.isPrefixOf(data.getName()));
                                     getItem = true;
                                   },
-                                  [=] (const std::string&) {
+                                  [] (auto&&) {
                                     BOOST_CHECK(false);
                                   });
 
@@ -249,7 +249,7 @@ BOOST_AUTO_TEST_CASE(KpSetPolicy)
 
   // bad reply check
   auto f2 = c2.setInterestFilter(Name("/producer1"),
-                       [&] (const ndn::InterestFilter&, const ndn::Interest& interest) {
+                       [&] (auto&&, const auto& interest) {
                          BOOST_CHECK_EQUAL(interest.getName().getSubName(0, 1), producerPrefix);
                          BOOST_CHECK_EQUAL(interest.getName().get(1).toUri(), SET_POLICY);
                          BOOST_CHECK_EQUAL(Name(interest.getName().get(2).blockFromValue()), dataPrefix);
@@ -269,7 +269,7 @@ BOOST_AUTO_TEST_CASE(KpSetPolicy)
 
   getItem = false;
   dataowner.commandProducerPolicy(producerPrefix, dataPrefix, attributes,
-                                  [=] (const Data& data) {
+                                  [] (auto&&) {
                                     BOOST_CHECK(false);
                                   },
                                   [&] (const std::string& s) {
@@ -283,7 +283,7 @@ BOOST_AUTO_TEST_CASE(KpSetPolicy)
 
   // timeout check
   auto f3 = c2.setInterestFilter(Name("/producer1"),
-                                 [&] (const ndn::InterestFilter&, const ndn::Interest& interest) {
+                                 [&] (auto&&, const auto& interest) {
                                    BOOST_CHECK_EQUAL(interest.getName().getSubName(0, 1), producerPrefix);
                                    BOOST_CHECK_EQUAL(interest.getName().get(1).toUri(), SET_POLICY);
                                    BOOST_CHECK_EQUAL(Name(interest.getName().get(2).blockFromValue()), dataPrefix);
@@ -296,7 +296,7 @@ BOOST_AUTO_TEST_CASE(KpSetPolicy)
 
   getItem = false;
   dataowner.commandProducerPolicy(producerPrefix, dataPrefix, attributes,
-                                  [=] (const Data& data) {
+                                  [] (auto&&) {
                                     BOOST_CHECK(false);
                                   },
                                   [&] (const std::string& s) {
@@ -310,7 +310,7 @@ BOOST_AUTO_TEST_CASE(KpSetPolicy)
 
   // nack check
   auto f4 = c2.setInterestFilter(Name("/producer1"),
-                                 [&] (const ndn::InterestFilter&, const ndn::Interest& interest) {
+                                 [&] (auto&&, const auto& interest) {
                                    BOOST_CHECK_EQUAL(interest.getName().getSubName(0, 1), producerPrefix);
                                    BOOST_CHECK_EQUAL(interest.getName().get(1).toUri(), SET_POLICY);
                                    BOOST_CHECK_EQUAL(Name(interest.getName().get(2).blockFromValue()), dataPrefix);
@@ -327,7 +327,7 @@ BOOST_AUTO_TEST_CASE(KpSetPolicy)
 
   getItem = false;
   dataowner.commandProducerPolicy(producerPrefix, dataPrefix, attributes,
-                                  [=] (const Data& data) {
+                                  [] (auto&&) {
                                     BOOST_CHECK(false);
                                   },
                                   [&] (const std::string& s) {
