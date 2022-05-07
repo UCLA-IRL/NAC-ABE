@@ -40,7 +40,7 @@ ParamFetcher::fetchPublicParams()
   Name interestName = m_attrAuthorityPrefix;
   interestName.append(PUBLIC_PARAMS);
   Interest interest(interestName);
-  interest.setMustBeFresh(true);
+  // interest.setMustBeFresh(true);
   interest.setCanBePrefix(true);
 
   NDN_LOG_INFO("Request public parameters: " << interest.getName());

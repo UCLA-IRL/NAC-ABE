@@ -50,6 +50,12 @@ public:
   void
   obtainDecryptionKey();
 
+  /*
+   check if keys and public params are ready
+  */
+  bool
+  readyForDecryption();
+
   /**
    * @brief Consume an encrypted data packet
    *

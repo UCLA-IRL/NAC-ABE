@@ -105,7 +105,7 @@ Producer::ckDataGen(const Policy& accessPolicy)
     auto ckData = std::make_shared<Data>(ckDataName);
     ckData->setContent(contentKey->makeCKContent());
     ckData->setFreshnessPeriod(5_s);
-    m_keyChain.sign(*ckData, signingByCertificate(m_cert));
+    m_keyChain.sign(*ckData, signingWithSha256());
 
     NDN_LOG_TRACE(*ckData);
     NDN_LOG_TRACE("CK Data length: " << ckData->wireEncode().size());
@@ -161,7 +161,7 @@ Producer::ckDataGen(const std::vector<std::string>& attributes)
     auto ckData = std::make_shared<Data>(ckDataName);
     ckData->setContent(contentKey->makeCKContent());
     ckData->setFreshnessPeriod(5_s);
-    m_keyChain.sign(*ckData, signingByCertificate(m_cert));
+    m_keyChain.sign(*ckData, signingWithSha256());
 
     NDN_LOG_TRACE(*ckData);
     NDN_LOG_TRACE("CK Data length: " << ckData->wireEncode().size());
@@ -321,7 +321,7 @@ Producer::getCkEncryptedData(const Name& dataNameSuffix, const algo::CipherText&
   dataBlock.encode();
   data->setContent(dataBlock);
   data->setFreshnessPeriod(5_s);
-  m_keyChain.sign(*data, security::signingByCertificate(m_cert));
+  m_keyChain.sign(*data, signingWithSha256());
 
   NDN_LOG_TRACE(*data);
   NDN_LOG_TRACE("Content Data length: " << data->wireEncode().size());

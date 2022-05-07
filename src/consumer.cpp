@@ -41,6 +41,7 @@ Consumer::Consumer(Face& face, KeyChain& keyChain,
 {
   m_trustConfig.addOrUpdateCertificate(attrAuthorityCertificate);
   m_paramFetcher.fetchPublicParams();
+  // obtainDecryptionKey();
 }
 
 void
@@ -53,7 +54,7 @@ Consumer::obtainDecryptionKey()
   interestName.append(DECRYPT_KEY);
   interestName.append(identity.wireEncode().begin(), identity.wireEncode().end());
   Interest interest(interestName);
-  interest.setMustBeFresh(true);
+  // interest.setMustBeFresh(true);
   interest.setCanBePrefix(true);
 
   m_face.expressInterest(interest,
@@ -72,13 +73,28 @@ Consumer::obtainDecryptionKey()
     });
 }
 
+bool
+Consumer::readyForDecryption()
+{
+  // check if public params and private key are ready
+  if (m_paramFetcher.getPublicParams().m_pub == "") {
+    NDN_LOG_INFO("public parameters doesn't exist");
+    return false;
+  } else if (m_keyCache.m_prv.empty()) {
+    NDN_LOG_INFO("Private decryption key doesn't exist");
+    return false;
+  }
+
+  return true;
+}
+
 void
 Consumer::consume(const Name& dataName,
                   const ConsumptionCallback& consumptionCb,
                   const ErrorCallback& errorCallback)
 {
   Interest interest(dataName);
-  interest.setMustBeFresh(true);
+  // interest.setMustBeFresh(true);
   interest.setCanBePrefix(true);
   consume(interest, consumptionCb, errorCallback);
 }
@@ -89,13 +105,8 @@ Consumer::consume(const Interest& dataInterest,
                   const ErrorCallback& errorCallback)
 {
   // ready for decryption
-  if (m_paramFetcher.getPublicParams().m_pub.empty()) {
-    NDN_LOG_INFO("public parameters doesn't exist");
-    errorCallback("public parameters doesn't exist");
-    return;
-  } else if (m_keyCache.m_prv.empty()) {
-    NDN_LOG_INFO("Private decryption key doesn't exist");
-    errorCallback("Private decryption key doesn't exist");
+  if (!readyForDecryption()) {
+    errorCallback("public params or private decryption key doesn't exist");
     return;
   }
 
@@ -133,7 +144,7 @@ Consumer::decryptContent(const Data& data,
   Name ckName(encryptedContent.get(tlv::Name));
   NDN_LOG_INFO("CK Name is " << ckName);
   Interest ckInterest(ckName);
-  ckInterest.setMustBeFresh(true);
+  // ckInterest.setMustBeFresh(true);
   ckInterest.setCanBePrefix(true);
 
   std::string nackMessage = "nack for " + ckName.toUri() + " content key fetch with reason ";
@@ -173,9 +184,9 @@ Consumer::onCkeyData(const Data& data, std::shared_ptr<algo::CipherText> cipherT
 
   Buffer result;
   try {
-    if (m_paramFetcher.m_abeType == ABE_TYPE_CP_ABE)
+    if (m_paramFetcher.getAbeType() == ABE_TYPE_CP_ABE)
       result = algo::ABESupport::getInstance().cpDecrypt(m_paramFetcher.getPublicParams(), m_keyCache, *cipherText);
-    else if (m_paramFetcher.m_abeType == ABE_TYPE_KP_ABE)
+    else if (m_paramFetcher.getAbeType() == ABE_TYPE_KP_ABE)
       result = algo::ABESupport::getInstance().kpDecrypt(m_paramFetcher.getPublicParams(), m_keyCache, *cipherText);
     else
       errorCallback("Unsupported ABE type");
