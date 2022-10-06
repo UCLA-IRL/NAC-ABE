@@ -40,7 +40,8 @@ public:
 public:
   Consumer(Face& face, KeyChain& keyChain,
            const security::Certificate& identityCert,
-           const security::Certificate& attrAuthorityCertificate);
+           const security::Certificate& attrAuthorityCertificate,
+           Interest publicParamInterestTemplate = ParamFetcher::getDefaultInterestTemplate());
 
   /**
    * @brief Obtain attributes (DKEY) from the attribute authority.

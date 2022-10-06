@@ -20,6 +20,7 @@
 
 #include "param-fetcher.hpp"
 
+#include <utility>
 #include <ndn-cxx/security/verification-helpers.hpp>
 
 namespace ndn {
@@ -27,10 +28,11 @@ namespace nacabe {
 
 NDN_LOG_INIT(nacabe.ParamFetcher);
 
-ParamFetcher::ParamFetcher(Face& face, const Name& attrAuthorityPrefix, const TrustConfig& trustConfig)
+ParamFetcher::ParamFetcher(Face& face, const Name& attrAuthorityPrefix, const TrustConfig& trustConfig, Interest interestTemplate)
   : m_face(face),
     m_attrAuthorityPrefix(attrAuthorityPrefix),
-    m_trustConfig(trustConfig)
+    m_trustConfig(trustConfig),
+    m_interestTemplate(std::move(interestTemplate))
 {
 }
 
@@ -39,9 +41,8 @@ ParamFetcher::fetchPublicParams()
 {
   Name interestName = m_attrAuthorityPrefix;
   interestName.append(PUBLIC_PARAMS);
-  Interest interest(interestName);
-  interest.setMustBeFresh(true);
-  interest.setCanBePrefix(true);
+  Interest interest(m_interestTemplate);
+  interest.setName(interestName);
 
   NDN_LOG_INFO("Request public parameters: " << interest.getName());
   m_face.expressInterest(interest,

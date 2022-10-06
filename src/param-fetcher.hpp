@@ -33,7 +33,8 @@ namespace nacabe {
 class ParamFetcher
 {
 public:
-  ParamFetcher(Face& face, const Name& attrAuthorityPrefix, const TrustConfig& trustConfig);
+  ParamFetcher(Face& face, const Name& attrAuthorityPrefix, const TrustConfig& trustConfig,
+               Interest interestTemplate = getDefaultInterestTemplate());
 
   void
   fetchPublicParams();
@@ -50,6 +51,14 @@ public:
     return m_pubParamsCache;
   }
 
+public:
+  static inline Interest getDefaultInterestTemplate() {
+    Interest interest;
+    interest.setMustBeFresh(true);
+    interest.setCanBePrefix(true);
+    return interest;
+  }
+
 private:
   void
   onAttributePubParams(const Data& pubParamData);
@@ -62,6 +71,7 @@ private:
 PUBLIC_WITH_TESTS_ELSE_PRIVATE:
   AbeType m_abeType;
   algo::PublicParams m_pubParamsCache;
+  Interest m_interestTemplate;
 };
 
 } // namespace nacabe
