@@ -24,6 +24,7 @@
 
 #include <ndn-cxx/encoding/block-helpers.hpp>
 #include <ndn-cxx/security/signing-helpers.hpp>
+#include <utility>
 #include <ndn-cxx/security/verification-helpers.hpp>
 #include <ndn-cxx/util/random.hpp>
 
@@ -43,6 +44,7 @@ Producer::Producer(Face& face, KeyChain& keyChain,
 {
   m_trustConfig.addOrUpdateCertificate(attrAuthorityCertificate);
   m_paramFetcher.fetchPublicParams();
+  replyTemplate.setFreshnessPeriod(5_s);
 }
 
 Producer::Producer(Face& face, KeyChain& keyChain,
@@ -69,20 +71,20 @@ Producer::~Producer() = default;
 
 std::tuple<std::shared_ptr<Data>, std::shared_ptr<Data>>
 Producer::produce(const Name& dataNameSuffix, const std::string& accessPolicy,
-                  span<const uint8_t> content)
+                  span<const uint8_t> content, std::shared_ptr<Data> ckTemplate, shared_ptr<Data> dataTemplate)
 {
-  auto contentKey = ckDataGen(accessPolicy);
+  auto contentKey = ckDataGen(accessPolicy, std::move(ckTemplate));
   if (contentKey.first == nullptr) {
     return std::make_tuple(nullptr, nullptr);
   }
   else {
-    auto data = produce(contentKey.first, contentKey.second->getName(), dataNameSuffix, content);
+    auto data = produce(contentKey.first, contentKey.second->getName(), dataNameSuffix, content, std::move(dataTemplate));
     return std::make_tuple(data, contentKey.second);
   }
 }
 
 std::pair<std::shared_ptr<algo::ContentKey>, std::shared_ptr<Data>>
-Producer::ckDataGen(const Policy& accessPolicy)
+Producer::ckDataGen(const Policy& accessPolicy, std::shared_ptr<Data> dataTemplate)
 {
   // do encryption
   if (m_paramFetcher.getPublicParams().m_pub == "") {
@@ -102,9 +104,9 @@ Producer::ckDataGen(const Policy& accessPolicy)
 
     Name ckDataName = ckName;
     ckDataName.append("ENC-BY").append(accessPolicy);
-    auto ckData = std::make_shared<Data>(ckDataName);
+    auto ckData = std::move(dataTemplate);
+    ckData->setName(ckDataName);
     ckData->setContent(contentKey->makeCKContent());
-    ckData->setFreshnessPeriod(5_s);
     m_keyChain.sign(*ckData, signingByCertificate(m_cert));
 
     NDN_LOG_TRACE(*ckData);
@@ -118,23 +120,23 @@ Producer::ckDataGen(const Policy& accessPolicy)
 
 std::tuple<std::shared_ptr<Data>, std::shared_ptr<Data>>
 Producer::produce(const Name& dataNameSuffix, const std::vector<std::string>& attributes,
-                  span<const uint8_t> content)
+                  span<const uint8_t> content, std::shared_ptr<Data> ckTemplate, shared_ptr<Data> dataTemplate)
 {
-  auto contentKey = ckDataGen(attributes);
+  auto contentKey = ckDataGen(attributes, std::move(ckTemplate));
   if (contentKey.first == nullptr) {
     return std::make_tuple(nullptr, nullptr);
   }
   else {
-    auto data = produce(contentKey.first, contentKey.second->getName(), dataNameSuffix, content);
+    auto data = produce(contentKey.first, contentKey.second->getName(), dataNameSuffix, content, std::move(dataTemplate));
     return std::make_tuple(data, contentKey.second);
   }
 }
 
 std::pair<std::shared_ptr<algo::ContentKey>, std::shared_ptr<Data>>
-Producer::ckDataGen(const std::vector<std::string>& attributes)
+Producer::ckDataGen(const std::vector<std::string>& attributes, std::shared_ptr<Data> dataTemplate)
 {
   // do encryption
-  if (m_paramFetcher.getPublicParams().m_pub == "") {
+  if (m_paramFetcher.getPublicParams().m_pub.empty()) {
     NDN_LOG_INFO("public parameters doesn't exist" );
     return std::make_pair(nullptr, nullptr);
   }
@@ -158,9 +160,9 @@ Producer::ckDataGen(const std::vector<std::string>& attributes)
                       .append("ENC-BY")
                       .append(nc);
 
-    auto ckData = std::make_shared<Data>(ckDataName);
+    auto ckData = std::move(dataTemplate);
+    ckData->setName(ckDataName);
     ckData->setContent(contentKey->makeCKContent());
-    ckData->setFreshnessPeriod(5_s);
     m_keyChain.sign(*ckData, signingByCertificate(m_cert));
 
     NDN_LOG_TRACE(*ckData);
@@ -173,7 +175,7 @@ Producer::ckDataGen(const std::vector<std::string>& attributes)
 }
 
 std::tuple<std::shared_ptr<Data>, std::shared_ptr<Data>>
-Producer::produce(const Name& dataNameSuffix, span<const uint8_t> content)
+Producer::produce(const Name& dataNameSuffix, span<const uint8_t> content, std::shared_ptr<Data> ckTemplate, shared_ptr<Data> dataTemplate)
 {
   // Encrypt data based on data prefix.
   if (m_paramFetcher.getAbeType() == ABE_TYPE_CP_ABE) {
@@ -181,14 +183,14 @@ Producer::produce(const Name& dataNameSuffix, span<const uint8_t> content)
     if (policy == "") {
       return std::make_tuple(nullptr, nullptr);
     }
-    return produce(dataNameSuffix, policy, content);
+    return produce(dataNameSuffix, policy, content, std::move(ckTemplate), std::move(dataTemplate));
   }
   else if (m_paramFetcher.getAbeType() == ABE_TYPE_KP_ABE) {
     auto attributes = findMatchedAttributes(dataNameSuffix);
     if (attributes.empty()) {
       return std::make_tuple(nullptr, nullptr);
     }
-    return produce(dataNameSuffix, attributes, content);
+    return produce(dataNameSuffix, attributes, content, std::move(ckTemplate), std::move(dataTemplate));
   }
   else {
     return std::make_tuple(nullptr, nullptr);
@@ -197,12 +199,12 @@ Producer::produce(const Name& dataNameSuffix, span<const uint8_t> content)
 
 std::shared_ptr<Data>
 Producer::produce(std::shared_ptr<algo::ContentKey> key, const Name& keyName,
-                  const Name& dataNameSuffix, span<const uint8_t> content)
+                  const Name& dataNameSuffix, span<const uint8_t> content, shared_ptr<Data> dataTemplate)
 {
   NDN_LOG_INFO("encrypt on data:" << dataNameSuffix);
   auto cipherText = algo::ABESupport::getInstance().encrypt(std::move(key),
                                                             Buffer(content.begin(), content.end()));
-  return getCkEncryptedData(dataNameSuffix, cipherText, keyName);
+  return getCkEncryptedData(dataNameSuffix, cipherText, keyName, std::move(dataTemplate));
 }
 
 void
@@ -299,10 +301,9 @@ Producer::onPolicyInterest(const Interest& interest)
     addNewAttributes(dataPrefix, attrs);
     success = true;
   }
-  Data reply;
+  Data reply = replyTemplate;
   reply.setName(interest.getName());
   reply.setContent(makeStringBlock(tlv::Content, success ? "success" : "failure"));
-  reply.setFreshnessPeriod(5_s);
   NDN_LOG_DEBUG("before sign");
   m_keyChain.sign(reply, signingByCertificate(m_cert));
   NDN_LOG_DEBUG("after sign");
@@ -311,22 +312,34 @@ Producer::onPolicyInterest(const Interest& interest)
 
 shared_ptr<Data>
 Producer::getCkEncryptedData(const Name& dataNameSuffix, const algo::CipherText& cipherText,
-                             const Name& ckName)
+                             const Name& ckName, shared_ptr<Data> dataTemplate)
 {
   Name contentDataName = m_cert.getIdentity();
   contentDataName.append(dataNameSuffix);
-  auto data = std::make_shared<Data>(contentDataName);
+  auto data = std::move(dataTemplate);
+  data->setName(contentDataName);
   auto dataBlock = cipherText.makeDataContent();
   dataBlock.push_back(ckName.wireEncode());
   dataBlock.encode();
   data->setContent(dataBlock);
-  data->setFreshnessPeriod(5_s);
   m_keyChain.sign(*data, security::signingByCertificate(m_cert));
 
   NDN_LOG_TRACE(*data);
   NDN_LOG_TRACE("Content Data length: " << data->wireEncode().size());
   NDN_LOG_TRACE("Content Name length: " << data->getName().wireEncode().size());
   NDN_LOG_TRACE("=================================");
+  return data;
+}
+
+std::shared_ptr<Data> Producer::getDefaultCkTemplate() {
+  auto data = std::make_shared<Data>();
+  data->setFreshnessPeriod(5_s);
+  return data;
+}
+
+std::shared_ptr<Data> Producer::getDefaultEncryptedDataTemplate() {
+  auto data = std::make_shared<Data>();
+  data->setFreshnessPeriod(5_s);
   return data;
 }
 

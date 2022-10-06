@@ -32,36 +32,36 @@ CacheProducer::clearCache()
 
 std::tuple<std::shared_ptr<Data>, std::shared_ptr<Data>>
 CacheProducer::produce(const Name& dataName, const Policy& accessPolicy,
-                       span<const uint8_t> content)
+                       span<const uint8_t> content, std::shared_ptr<Data> ckTemplate, shared_ptr<Data> dataTemplate)
 {
   if (m_cpKeyCache.count(accessPolicy) == 0) {
-    auto k = ckDataGen(accessPolicy);
+    auto k = ckDataGen(accessPolicy, ckTemplate);
     if (k.first == nullptr || k.second == nullptr) {
       return std::make_tuple(nullptr, nullptr);
     }
     m_cpKeyCache.emplace(accessPolicy, k);
   }
   auto& key = m_cpKeyCache.at(accessPolicy);
-  auto data = Producer::produce(key.first, key.second->getName(), dataName, content);
+  auto data = Producer::produce(key.first, key.second->getName(), dataName, content, dataTemplate);
   return std::make_tuple(data, key.second);
 }
 
 std::tuple<std::shared_ptr<Data>, std::shared_ptr<Data>>
 CacheProducer::produce(const Name& dataName, const std::vector<std::string>& attributes,
-                       span<const uint8_t> content)
+                       span<const uint8_t> content, std::shared_ptr<Data> ckTemplate, shared_ptr<Data> dataTemplate)
 {
   std::stringstream ss;
   for (auto& i : attributes) ss << i << "|";
   auto attStr = ss.str();
   if (m_kpKeyCache.count(attStr) == 0) {
-    auto k = ckDataGen(attributes);
+    auto k = ckDataGen(attributes, ckTemplate);
     if (k.first == nullptr || k.second == nullptr) {
       return std::make_tuple(nullptr, nullptr);
     }
     m_kpKeyCache.emplace(attStr, k);
   }
   auto& key = m_kpKeyCache.at(attStr);
-  auto data = Producer::produce(key.first, key.second->getName(), dataName, content);
+  auto data = Producer::produce(key.first, key.second->getName(), dataName, content, dataTemplate);
   return std::make_tuple(data, key.second);
 }
 
