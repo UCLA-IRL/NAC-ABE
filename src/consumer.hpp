@@ -51,6 +51,9 @@ public:
   void
   obtainDecryptionKey();
 
+  bool
+  readyForDecryption();
+
   /**
    * @brief Consume an encrypted data packet
    *
