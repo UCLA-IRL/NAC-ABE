@@ -109,7 +109,7 @@ Producer::ckDataGen(const Policy& accessPolicy, std::shared_ptr<Data> dataTempla
     auto ckData = std::move(dataTemplate);
     ckData->setName(ckDataName);
     ckData->setContent(contentKey->makeCKContent());
-    m_keyChain.sign(*ckData, signingByCertificate(m_cert));
+    m_keyChain.sign(*ckData, signingWithSha256());
 
     NDN_LOG_TRACE(*ckData);
     NDN_LOG_TRACE("CK Data length: " << ckData->wireEncode().size());
@@ -165,7 +165,7 @@ Producer::ckDataGen(const std::vector<std::string>& attributes, std::shared_ptr<
     auto ckData = std::move(dataTemplate);
     ckData->setName(ckDataName);
     ckData->setContent(contentKey->makeCKContent());
-    m_keyChain.sign(*ckData, signingByCertificate(m_cert));
+    m_keyChain.sign(*ckData, signingWithSha256());
 
     NDN_LOG_TRACE(*ckData);
     NDN_LOG_TRACE("CK Data length: " << ckData->wireEncode().size());

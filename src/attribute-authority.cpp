@@ -79,7 +79,8 @@ AttributeAuthority::onDecryptionKeyRequest(const Interest& request)
 {
   // naming: /AA-prefix/DKEY/<identity name block>
   NDN_LOG_INFO("Got DKEY request: " << request.getName());
-  Name identityName(request.getName().at(m_cert.getIdentity().size() + 1).blockFromValue());
+  Name keyName(request.getName().at(m_cert.getIdentity().size() + 1).blockFromValue());
+  Name identityName = security::extractIdentityFromKeyName(keyName);
 
   // verify request and generate token
   auto optionalCert = m_trustConfig.findCertificate(identityName);
@@ -94,7 +95,8 @@ AttributeAuthority::onDecryptionKeyRequest(const Interest& request)
 
   // reply interest with encrypted private key
   Data result;
-  result.setName(request.getName());
+  Name resultName = Name(request.getName()).appendVersion();
+  result.setName(resultName);
   result.setFreshnessPeriod(5_s);
   result.setContent(encryptDataContentWithCK(prvBuffer, optionalCert->getPublicKey()));
   m_keyChain.sign(result, signingByCertificate(m_cert));
@@ -109,7 +111,7 @@ AttributeAuthority::onPublicParamsRequest(const Interest& interest)
   Data result;
   Name dataName = interest.getName();
   dataName.append(m_abeType);
-  dataName.appendTimestamp();
+  dataName.appendVersion();
   result.setName(dataName);
   result.setFreshnessPeriod(5_s);
   const auto& contentBuf = m_pubParams.toBuffer();
