@@ -48,13 +48,16 @@ void
 Consumer::obtainDecryptionKey()
 {
   auto identity = m_cert.getIdentity();
+  auto keyName = security::extractKeyNameFromCertName(m_cert.getName());
+  auto keyNameTlv = keyName.wireEncode();
+
   NDN_LOG_INFO(identity << " Fetch private key");
   // /<attribute authority prefix>/DKEY/<decryptor name block>
   Name interestName = m_attrAuthorityPrefix;
   interestName.append(DECRYPT_KEY);
-  interestName.append(identity.wireEncode().begin(), identity.wireEncode().end());
+  interestName.append(keyNameTlv.begin(), keyNameTlv.end());
   Interest interest(interestName);
-  interest.setMustBeFresh(true);
+  // interest.setMustBeFresh(true);
   interest.setCanBePrefix(true);
 
   m_face.expressInterest(interest,
@@ -93,7 +96,7 @@ Consumer::consume(const Name& dataName,
                   const ErrorCallback& errorCallback)
 {
   Interest interest(dataName);
-  interest.setMustBeFresh(true);
+  // interest.setMustBeFresh(true);
   interest.setCanBePrefix(true);
   consume(interest, consumptionCb, errorCallback);
 }
@@ -105,7 +108,7 @@ Consumer::consume(const Interest& dataInterest,
 {
   // ready for decryption
   if (!readyForDecryption()) {
-    errorCallback("public params or private decryption key doesn't exist");
+    errorCallback("public params or private decryption key doesn't exist", dataInterest.getName());
     return;
   }
 
@@ -143,7 +146,8 @@ Consumer::decryptContent(const Data& data,
   Name ckName(encryptedContent.get(tlv::Name));
   NDN_LOG_INFO("CK Name is " << ckName);
   Interest ckInterest(ckName);
-  ckInterest.setMustBeFresh(true);
+
+  // ckInterest.setMustBeFresh(true);
   ckInterest.setCanBePrefix(true);
 
   std::string nackMessage = "nack for " + ckName.toUri() + " content key fetch with reason ";
@@ -188,14 +192,14 @@ Consumer::onCkeyData(const Data& data, std::shared_ptr<algo::CipherText> cipherT
     else if (m_paramFetcher.getAbeType() == ABE_TYPE_KP_ABE)
       result = algo::ABESupport::getInstance().kpDecrypt(m_paramFetcher.getPublicParams(), m_keyCache, *cipherText);
     else
-      errorCallback("Unsupported ABE type");
+      errorCallback("Unsupported ABE type", data.getName());
   }
   catch (const std::exception& e) {
-    errorCallback(e.what());
+    errorCallback(e.what(), data.getName());
     return;
   }
   NDN_LOG_INFO("result length : " << result.size());
-  successCallBack(result);
+  successCallBack(result, data.getName());
 }
 
 void
@@ -204,7 +208,7 @@ Consumer::handleNack(const Interest& interest, const lp::Nack& nack,
 {
   std::stringstream nackMessage;
   nackMessage << message << nack.getReason();
-  errorCallback(nackMessage.str());
+  errorCallback(nackMessage.str(), interest.getName());
 }
 
 void
@@ -220,7 +224,7 @@ Consumer::handleTimeout(const Interest& interest, int nRetrials,
                                      dataCallback, errorCallback, nackMessage, timeoutMessage));
   }
   else {
-    errorCallback(timeoutMessage);
+    errorCallback(timeoutMessage, interest.getName());
   }
 }
 
