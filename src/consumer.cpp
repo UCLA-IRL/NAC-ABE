@@ -57,7 +57,7 @@ Consumer::obtainDecryptionKey()
   interestName.append(DECRYPT_KEY);
   interestName.append(keyNameTlv.begin(), keyNameTlv.end());
   Interest interest(interestName);
-  // interest.setMustBeFresh(true);
+  interest.setMustBeFresh(true);
   interest.setCanBePrefix(true);
 
   m_face.expressInterest(interest,
