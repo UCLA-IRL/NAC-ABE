@@ -23,7 +23,7 @@ Replied Data:
 /<AA-prefix>/DKEY/<identity-name-block>/metadata=32/<timestamp> (follows RDR)
 /<AA-prefix>/DKEY/<identity-name-block>/<timestamp>/<segment>
 ```
-In the metadata packet, the version of corresponding public param is provided. 
+In the metadata packet, the version of corresponding public param is provided (only for verification, not for fetching). 
 
 ## Policy Set
 ```
