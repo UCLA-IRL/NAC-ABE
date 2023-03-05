@@ -41,8 +41,13 @@ protected:
   virtual
   ~AttributeAuthority();
 
-  virtual algo::PrivateKey
-  getPrivateKey(Name identityName) = 0;
+  /**
+   *
+   * @param identityName
+   * @return the newest private key, and the version timestamp
+   */
+  virtual std::pair<algo::PrivateKey, time::system_clock::time_point>
+  getPrivateKey(const Name& identityName) = 0;
 
 private:
   void
@@ -94,11 +99,11 @@ public:
   addNewPolicy(const Name& decryptorIdentityName, const std::list<std::string>& attributes);
 
 protected:
-  algo::PrivateKey
-  getPrivateKey(Name identityName) override;
+  std::pair<algo::PrivateKey, time::system_clock::time_point>
+  getPrivateKey(const Name& identityName) override;
 
 PUBLIC_WITH_TESTS_ELSE_PRIVATE:
-  std::map<Name/* Consumer Identity */, std::list<std::string>/* Attr */> m_tokens;
+  std::map<Name/* Consumer Identity */, std::pair<std::list<std::string>/* Attr */, time::system_clock::time_point>> m_tokens;
 };
 
 class KpAttributeAuthority: public AttributeAuthority
@@ -128,11 +133,11 @@ public:
   addNewPolicy(const Name& decryptorIdentityName, const Policy& policy);
 
 protected:
-  algo::PrivateKey
-  getPrivateKey(Name identityName) override;
+  std::pair<algo::PrivateKey, time::system_clock::time_point>
+  getPrivateKey(const Name& identityName) override;
 
 PUBLIC_WITH_TESTS_ELSE_PRIVATE:
-  std::map<Name/* Consumer Identity */, Policy> m_tokens;
+  std::map<Name/* Consumer Identity */, std::pair<Policy, time::system_clock::time_point>> m_tokens;
 };
 
 } // namespace nacabe

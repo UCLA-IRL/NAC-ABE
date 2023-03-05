@@ -57,13 +57,13 @@ AttributeAuthority::AttributeAuthority(const security::Certificate& identityCert
 
       // public parameters filter
       auto hdl1 = m_face.setInterestFilter(Name(name).append(PUBLIC_PARAMS),
-                                           std::bind(&CpAttributeAuthority::onPublicParamsRequest, this, _2));
+                                           std::bind(&AttributeAuthority::onPublicParamsRequest, this, _2));
       m_interestFilters.emplace_back(hdl1);
       NDN_LOG_TRACE("InterestFilter " << Name(name).append(PUBLIC_PARAMS) << " set");
 
       // decryption key filter
       auto hdl2 = m_face.setInterestFilter(Name(name).append(DECRYPT_KEY),
-                                           std::bind(&CpAttributeAuthority::onDecryptionKeyRequest, this, _2));
+                                           std::bind(&AttributeAuthority::onDecryptionKeyRequest, this, _2));
       m_interestFilters.emplace_back(hdl2);
       NDN_LOG_TRACE("InterestFilter " << Name(name).append(DECRYPT_KEY) << " set");
     },
@@ -90,7 +90,7 @@ AttributeAuthority::onDecryptionKeyRequest(const Interest& request)
   NDN_LOG_INFO("Find consumer(decryptor) certificate: " << optionalCert->getName());
 
   auto ABEPrvKey = getPrivateKey(identityName);
-  auto prvBuffer = ABEPrvKey.toBuffer();
+  auto prvBuffer = ABEPrvKey.first.toBuffer();
 
   // reply interest with encrypted private key
   Data result;
@@ -133,7 +133,7 @@ void
 CpAttributeAuthority::addNewPolicy(const Name& decryptorIdentityName,
                                    const std::list<std::string>& attributes)
 {
-  m_tokens.insert(std::make_pair(decryptorIdentityName, attributes));
+  m_tokens.emplace(decryptorIdentityName, std::make_pair(attributes, time::system_clock::now()));
 }
 
 void
@@ -144,14 +144,14 @@ CpAttributeAuthority::addNewPolicy(const security::Certificate& decryptorCert,
   addNewPolicy(decryptorCert.getIdentity(), attributes);
 }
 
-algo::PrivateKey
-CpAttributeAuthority::getPrivateKey(Name identityName)
+std::pair<algo::PrivateKey, time::system_clock::time_point>
+CpAttributeAuthority::getPrivateKey(const Name& identityName)
 {
-  const auto& attributes = m_tokens.at(identityName);
-  std::vector<std::string> attrs(attributes.begin(), attributes.end());
+  const auto& pair = m_tokens.at(identityName);
+  std::vector<std::string> attrs(pair.first.begin(), pair.first.end());
 
   // generate ABE private key and do encryption
-  return algo::ABESupport::getInstance().cpPrvKeyGen(m_pubParams, m_masterKey, attrs);
+  return std::make_pair(algo::ABESupport::getInstance().cpPrvKeyGen(m_pubParams, m_masterKey, attrs), pair.second);
 }
 
 KpAttributeAuthority::KpAttributeAuthority(const security::Certificate& identityCert,
@@ -163,7 +163,7 @@ KpAttributeAuthority::KpAttributeAuthority(const security::Certificate& identity
 void
 KpAttributeAuthority::addNewPolicy(const Name& decryptorIdentityName, const Policy& policy)
 {
-  m_tokens.insert(std::make_pair(decryptorIdentityName, policy));
+  m_tokens.emplace(decryptorIdentityName, std::make_pair(policy, time::system_clock::now()));
 }
 
 void
@@ -173,13 +173,13 @@ KpAttributeAuthority::addNewPolicy(const security::Certificate& decryptorCert, c
   addNewPolicy(decryptorCert.getIdentity(), policy);
 }
 
-algo::PrivateKey
-KpAttributeAuthority::getPrivateKey(Name identityName)
+std::pair<algo::PrivateKey, time::system_clock::time_point>
+KpAttributeAuthority::getPrivateKey(const Name& identityName)
 {
-  const auto& policy = m_tokens.at(identityName);
+  const auto& pair = m_tokens.at(identityName);
 
   // generate ABE private key and do encryption
-  return algo::ABESupport::getInstance().kpPrvKeyGen(m_pubParams, m_masterKey, policy);
+  return std::make_pair(algo::ABESupport::getInstance().kpPrvKeyGen(m_pubParams, m_masterKey, pair.first), pair.second);
 }
 
 } // namespace nacabe
