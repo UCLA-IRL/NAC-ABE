@@ -133,7 +133,11 @@ void
 CpAttributeAuthority::addNewPolicy(const Name& decryptorIdentityName,
                                    const std::list<std::string>& attributes)
 {
-  m_tokens.emplace(decryptorIdentityName, std::make_pair(attributes, time::system_clock::now()));
+  auto time = time::system_clock::now();
+  if (m_tokens.count(decryptorIdentityName) > 0 && time - m_tokens.at(decryptorIdentityName).second < time::milliseconds(1)) {
+    time = m_tokens.at(decryptorIdentityName).second + time::milliseconds(1);
+  }
+  m_tokens.emplace(decryptorIdentityName, std::make_pair(attributes, time));
 }
 
 void
@@ -163,7 +167,11 @@ KpAttributeAuthority::KpAttributeAuthority(const security::Certificate& identity
 void
 KpAttributeAuthority::addNewPolicy(const Name& decryptorIdentityName, const Policy& policy)
 {
-  m_tokens.emplace(decryptorIdentityName, std::make_pair(policy, time::system_clock::now()));
+  auto time = time::system_clock::now();
+  if (m_tokens.count(decryptorIdentityName) > 0 && time - m_tokens.at(decryptorIdentityName).second < time::milliseconds(1)) {
+    time = m_tokens.at(decryptorIdentityName).second + time::milliseconds(1);
+  }
+  m_tokens.emplace(decryptorIdentityName, std::make_pair(policy, time));
 }
 
 void
