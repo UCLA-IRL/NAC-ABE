@@ -41,78 +41,55 @@ public:
   static ABESupport &
   getInstance();
 
-  ~ABESupport();
+  virtual ~ABESupport() = default;
 
+  ABESupport() = default;
   ABESupport(ABESupport const &) = delete;
 
   void operator=(ABESupport const &) = delete;
 
 public:
-  void
-  cpInit(PublicParams &pubParams, MasterKey &masterKey);
+  virtual void
+  cpInit(PublicParams &pubParams, MasterKey &masterKey) = 0;
 
-  PrivateKey
+  virtual PrivateKey
   cpPrvKeyGen(PublicParams &pubParams, MasterKey &masterKey,
-              const std::vector<std::string> &attrList);
+              const std::vector<std::string> &attrList) = 0;
 
-  std::shared_ptr<ContentKey>
+  virtual std::shared_ptr<ContentKey>
   cpContentKeyGen(const PublicParams &pubParams,
-                  const Policy &policy);
+                  const Policy &policy) = 0;
 
-  CipherText
+  virtual CipherText
   cpEncrypt(const PublicParams &pubParams,
-            const Policy &policy, Buffer plaintext);
+            const Policy &policy, Buffer plaintext) = 0;
 
-  Buffer
+  virtual Buffer
   cpDecrypt(const PublicParams &pubParams,
-            const PrivateKey &prvKey, CipherText cipherText);
+            const PrivateKey &prvKey, CipherText cipherText) = 0;
 
 public:
-  void
-  kpInit(PublicParams &pubParams, MasterKey &masterKey);
+  virtual void
+  kpInit(PublicParams &pubParams, MasterKey &masterKey) = 0;
 
-  PrivateKey
+  virtual PrivateKey
   kpPrvKeyGen(PublicParams &pubParams, MasterKey &masterKey,
-              const Policy &policy);
+              const Policy &policy) = 0;
 
-  std::shared_ptr<ContentKey>
+  virtual std::shared_ptr<ContentKey>
   kpContentKeyGen(const PublicParams &pubParams,
-                  const std::vector<std::string> &attrList);
+                  const std::vector<std::string> &attrList) = 0;
 
-  CipherText
+  virtual CipherText
   kpEncrypt(const PublicParams &pubParams,
-            const std::vector<std::string> &attrList, Buffer plaintext);
+            const std::vector<std::string> &attrList, Buffer plaintext) = 0;
 
-  CipherText
-  encrypt(std::shared_ptr<ContentKey> contentKey, Buffer plaintext);
+  virtual CipherText
+  encrypt(std::shared_ptr<ContentKey> contentKey, Buffer plaintext) = 0;
 
-  Buffer
+  virtual Buffer
   kpDecrypt(const PublicParams &pubParams,
-            const PrivateKey &prvKey, CipherText cipherText);
-
-
-private:
-  void
-  init(oabe::OpenABECryptoContext &context, PublicParams &pubParams, MasterKey &masterKey);
-
-  PrivateKey
-  prvKeyGen(oabe::OpenABECryptoContext &context, PublicParams &pubParams, MasterKey &masterKey,
-            const std::string &policyOrAttribute);
-
-  std::shared_ptr<ContentKey>
-  contentKeyGen(oabe::OpenABECryptoContext &context, const PublicParams &pubParams,
-                const std::string &policyOrAttribute);
-
-  Buffer
-  decrypt(oabe::OpenABECryptoContext &context, const PublicParams &pubParams,
-          const PrivateKey &prvKey, CipherText cipherText);
-
-private:
-  static const char *SCHEMA_CPABE;
-  static const char *SCHEMA_KPABE;
-
-private:
-  ABESupport();
+            const PrivateKey &prvKey, CipherText cipherText) = 0;
 };
 
 } // namespace algo

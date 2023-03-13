@@ -18,7 +18,7 @@
  * See AUTHORS.md for complete list of NAC-ABE authors and contributors.
  */
 
-#include "abe-support.hpp"
+#include "abe-support-openabe.hpp"
 #include "../ndn-crypto/error.hpp"
 
 using namespace oabe;
@@ -28,35 +28,35 @@ namespace ndn {
 namespace nacabe {
 namespace algo {
 
-const char* ABESupport::SCHEMA_CPABE = "CP-ABE";
-const char* ABESupport::SCHEMA_KPABE = "KP-ABE";
+const char* ABESupportOpenABE::SCHEMA_CPABE = "CP-ABE";
+const char* ABESupportOpenABE::SCHEMA_KPABE = "KP-ABE";
 
 ABESupport&
 ABESupport::getInstance()
 {
-  static ABESupport instance;
+  static ABESupportOpenABE instance;
   return instance;
 }
 
-ABESupport::ABESupport()
+ABESupportOpenABE::ABESupportOpenABE()
 {
   InitializeOpenABE();
 }
 
-ABESupport::~ABESupport()
+ABESupportOpenABE::~ABESupportOpenABE()
 {
   ShutdownOpenABE();
 }
 
 void
-ABESupport::cpInit(PublicParams& pubParams, MasterKey& masterKey)
+ABESupportOpenABE::cpInit(PublicParams& pubParams, MasterKey& masterKey)
 {
   OpenABECryptoContext cpabe(SCHEMA_CPABE);
   init(cpabe, pubParams, masterKey);
 }
 
 PrivateKey
-ABESupport::cpPrvKeyGen(PublicParams& pubParams, MasterKey& masterKey,
+ABESupportOpenABE::cpPrvKeyGen(PublicParams& pubParams, MasterKey& masterKey,
                         const std::vector <std::string>& attrList)
 {
   OpenABECryptoContext cpabe(SCHEMA_CPABE);
@@ -69,7 +69,7 @@ ABESupport::cpPrvKeyGen(PublicParams& pubParams, MasterKey& masterKey,
 }
 
 std::shared_ptr<ContentKey>
-ABESupport::cpContentKeyGen(const PublicParams &pubParams,
+ABESupportOpenABE::cpContentKeyGen(const PublicParams &pubParams,
                             const std::string& policy)
 {
   OpenABECryptoContext cpabe(SCHEMA_CPABE);
@@ -77,7 +77,7 @@ ABESupport::cpContentKeyGen(const PublicParams &pubParams,
 }
 
 CipherText
-ABESupport::cpEncrypt(const PublicParams& pubParams,
+ABESupportOpenABE::cpEncrypt(const PublicParams& pubParams,
                       const std::string& policy, Buffer plaintext)
 {
   OpenABECryptoContext cpabe(SCHEMA_CPABE);
@@ -86,7 +86,7 @@ ABESupport::cpEncrypt(const PublicParams& pubParams,
 }
 
 Buffer
-ABESupport::cpDecrypt(const PublicParams& pubParams,
+ABESupportOpenABE::cpDecrypt(const PublicParams& pubParams,
                       const PrivateKey& prvKey, CipherText cipherText)
 {
   OpenABECryptoContext cpabe(SCHEMA_CPABE);
@@ -94,14 +94,14 @@ ABESupport::cpDecrypt(const PublicParams& pubParams,
 }
 
 void
-ABESupport::kpInit(PublicParams &pubParams, MasterKey &masterKey)
+ABESupportOpenABE::kpInit(PublicParams &pubParams, MasterKey &masterKey)
 {
   OpenABECryptoContext kpabe(SCHEMA_KPABE);
   init(kpabe, pubParams, masterKey);
 }
 
 PrivateKey
-ABESupport::kpPrvKeyGen(PublicParams &pubParams, MasterKey &masterKey,
+ABESupportOpenABE::kpPrvKeyGen(PublicParams &pubParams, MasterKey &masterKey,
             const Policy &policy)
 {
   OpenABECryptoContext kpabe(SCHEMA_KPABE);
@@ -109,7 +109,7 @@ ABESupport::kpPrvKeyGen(PublicParams &pubParams, MasterKey &masterKey,
 }
 
 std::shared_ptr<ContentKey>
-ABESupport::kpContentKeyGen(const PublicParams &pubParams,
+ABESupportOpenABE::kpContentKeyGen(const PublicParams &pubParams,
                 const std::vector<std::string> &attrList) {
   OpenABECryptoContext kpabe(SCHEMA_KPABE);
   std::string policyString;
@@ -121,7 +121,7 @@ ABESupport::kpContentKeyGen(const PublicParams &pubParams,
 }
 
 CipherText
-ABESupport::kpEncrypt(const PublicParams &pubParams,
+ABESupportOpenABE::kpEncrypt(const PublicParams &pubParams,
           const std::vector<std::string> &attrList, Buffer plaintext)
 {
   OpenABECryptoContext kpabe(SCHEMA_KPABE);
@@ -135,7 +135,7 @@ ABESupport::kpEncrypt(const PublicParams &pubParams,
 }
 
 Buffer
-ABESupport::kpDecrypt(const PublicParams &pubParams,
+ABESupportOpenABE::kpDecrypt(const PublicParams &pubParams,
           const PrivateKey &prvKey, CipherText cipherText)
 {
   OpenABECryptoContext kpabe(SCHEMA_KPABE);
@@ -143,7 +143,7 @@ ABESupport::kpDecrypt(const PublicParams &pubParams,
 }
 
 void
-ABESupport::init(oabe::OpenABECryptoContext& context, PublicParams &pubParams, MasterKey &masterKey)
+ABESupportOpenABE::init(oabe::OpenABECryptoContext& context, PublicParams &pubParams, MasterKey &masterKey)
 {
   context.generateParams();
   std::string mpk, msk;
@@ -154,7 +154,7 @@ ABESupport::init(oabe::OpenABECryptoContext& context, PublicParams &pubParams, M
 }
 
 PrivateKey
-ABESupport::prvKeyGen(oabe::OpenABECryptoContext& context, PublicParams &pubParams, MasterKey &masterKey,
+ABESupportOpenABE::prvKeyGen(oabe::OpenABECryptoContext& context, PublicParams &pubParams, MasterKey &masterKey,
           const std::string &policyOrAttribute)
 {
   std::string privKey;
@@ -177,7 +177,7 @@ ABESupport::prvKeyGen(oabe::OpenABECryptoContext& context, PublicParams &pubPara
 }
 
 std::shared_ptr<ContentKey>
-ABESupport::contentKeyGen(oabe::OpenABECryptoContext &context, const PublicParams &pubParams,
+ABESupportOpenABE::contentKeyGen(oabe::OpenABECryptoContext &context, const PublicParams &pubParams,
               const std::string &policyOrAttribute)
 {
   try {
@@ -206,7 +206,7 @@ ABESupport::contentKeyGen(oabe::OpenABECryptoContext &context, const PublicParam
 }
 
 CipherText
-ABESupport::encrypt(std::shared_ptr<ContentKey> contentKey, Buffer plaintext) {
+ABESupportOpenABE::encrypt(std::shared_ptr<ContentKey> contentKey, Buffer plaintext) {
   try {
     // step 3: use the AES symmetric key to cpEncrypt the plain text
     OpenABESymKeyEnc aes(contentKey->m_aesKey);
@@ -235,7 +235,7 @@ ABESupport::encrypt(std::shared_ptr<ContentKey> contentKey, Buffer plaintext) {
 }
 
 Buffer
-ABESupport::decrypt(oabe::OpenABECryptoContext& context, const PublicParams &pubParams,
+ABESupportOpenABE::decrypt(oabe::OpenABECryptoContext& context, const PublicParams &pubParams,
         const PrivateKey &prvKey, CipherText cipherText)
 {
   try {
