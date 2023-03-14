@@ -50,6 +50,8 @@ private:
   void
   onSegmentData(const Data& SegmentData);
 
+  void onDone(bool haveError);
+
 private:
   ndn::Face& m_face;
   // this is name prefix before metadata

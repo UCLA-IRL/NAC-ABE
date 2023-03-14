@@ -34,8 +34,8 @@ void RdrFetcher::fetchRDRSegments(std::function<void(bool)> updateDoneCallback)
   NDN_LOG_INFO("Request metaData: " << interest.getName());
   m_face.expressInterest(interest,
                          [this](const Interest &, const Data &data) { onMetaData(data); },
-                         [this](auto&&...) { NDN_LOG_INFO("NACK"); m_updateDoneCallback(true);m_pendingSegments = 0;},
-                         [this](auto&&...) { NDN_LOG_INFO("Timeout"); m_updateDoneCallback(true);m_pendingSegments = 0;});
+                         [this](auto&&...) { NDN_LOG_INFO("NACK"); onDone(true);},
+                         [this](auto&&...) { NDN_LOG_INFO("Timeout"); onDone(true);});
 }
 
 Buffer RdrFetcher::getSegmentDataBuffers() {
@@ -60,8 +60,7 @@ RdrFetcher::onMetaData(const Data& fetchedMetaData)
   if (m_metaDataVerificationCallback) {
     if (!m_metaDataVerificationCallback(fetchedMetaData)) {
       NDN_LOG_WARN("Metadata Verification failed");
-      m_updateDoneCallback(true);
-      m_pendingSegments = 0;
+      onDone(true);
       return;
     }
   }
@@ -70,8 +69,7 @@ RdrFetcher::onMetaData(const Data& fetchedMetaData)
   auto timeStampComponent = fetchedMetaData.getName().get(m_objectName.size() + 1);
   if (!timeStampComponent.isTimestamp()) {
     NDN_LOG_WARN("Metadata have a bad timestamp component");
-    m_updateDoneCallback(true);
-    m_pendingSegments = 0;
+    onDone(true);
     return;
   }
   auto fetchedTimestamp = timeStampComponent.toTimestamp();
@@ -79,8 +77,7 @@ RdrFetcher::onMetaData(const Data& fetchedMetaData)
   if (fetchedTimestamp == m_lastFetchedTime) {
     //no update
     NDN_LOG_INFO("update done with no new version");
-    m_updateDoneCallback(false);
-    m_pendingSegments = 0;
+    onDone(false);
     return;
   }
   m_lastFetchedTime = fetchedTimestamp;
@@ -105,13 +102,12 @@ RdrFetcher::onMetaData(const Data& fetchedMetaData)
       NDN_LOG_INFO("Request Segment Data: " << interest.getName());
       m_face.expressInterest(interest,
                             [this](const Interest &, const Data &data) { onSegmentData(data); },
-                            [this](auto&&...) { NDN_LOG_INFO("NACK"); m_updateDoneCallback(true);m_pendingSegments = 0;},
-                            [this](auto&&...) { NDN_LOG_INFO("Timeout"); m_updateDoneCallback(true);m_pendingSegments = 0;}
+                            [this](auto&&...) { NDN_LOG_INFO("NACK"); onDone(true);},
+                            [this](auto&&...) { NDN_LOG_INFO("Timeout"); onDone(true);}
                             );
     } catch(const std::exception& e) {
       NDN_LOG_WARN("Error in metadata decoding: " << e.what());
-      m_updateDoneCallback(true);
-      m_pendingSegments = 0;
+      onDone(true);
       return;
     }
     i++;  
@@ -120,7 +116,7 @@ RdrFetcher::onMetaData(const Data& fetchedMetaData)
   m_segmentBuffers.resize(i);
   if (i == 0) {
     NDN_LOG_INFO("New Metadata has no segments; ");
-    m_updateDoneCallback(false);
+    onDone(false);
   }
 }
 void
@@ -147,8 +143,14 @@ RdrFetcher::onSegmentData(const Data& fetchedSegmentData)
   m_pendingSegments --;
   if (m_pendingSegments == 0) {
     NDN_LOG_INFO("All segment fetched. ");
-    m_updateDoneCallback(false);
+    onDone(false);
   }
+}
+
+void RdrFetcher::onDone(bool haveError) {
+  m_pendingSegments = 0;
+  if (m_updateDoneCallback)
+    m_updateDoneCallback(haveError);
 }
 
 } // namespace nacabe
