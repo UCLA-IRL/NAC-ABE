@@ -55,11 +55,9 @@ RdrFetcher::onMetaData(const Data& fetchedMetaData)
   // code to fetch metadata content to know how many segments
   Block metaContent = fetchedMetaData.getContent();
   metaContent.parse();
-  size_t segCount = metaContent.size();
-  NDN_LOG_INFO("Segment Size: " << segCount);
   // send interest based on this current version name
-  // how many segment interest to send?
-  for (size_t i = 0; i < segCount, i++;) {
+  size_t i = 0;
+  for (auto element : metaContent.elements()) {
     Name interestName = Name(segmentName);
     // append segment number
     interestName.appendSegment(i);
@@ -70,7 +68,8 @@ RdrFetcher::onMetaData(const Data& fetchedMetaData)
     m_face.expressInterest(interest,
                           [this](const Interest &, const Data &data) { onSegmentData(data); },
                           [](auto&&...) { NDN_LOG_INFO("NACK"); },
-                          [](auto&&...) { NDN_LOG_INFO("Timeout"); });  
+                          [](auto&&...) { NDN_LOG_INFO("Timeout"); });
+    i++;  
   }
 }
 void
