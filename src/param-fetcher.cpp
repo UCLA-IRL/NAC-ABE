@@ -29,10 +29,11 @@ namespace nacabe {
 NDN_LOG_INIT(nacabe.ParamFetcher);
 
 ParamFetcher::ParamFetcher(Face& face, const Name& attrAuthorityPrefix, const TrustConfig& trustConfig, Interest interestTemplate)
-  : m_face(face),
-    m_attrAuthorityPrefix(attrAuthorityPrefix),
-    m_trustConfig(trustConfig),
-    m_interestTemplate(std::move(interestTemplate))
+  // : m_face(face),
+  //   m_attrAuthorityPrefix(attrAuthorityPrefix),
+  //   m_trustConfig(trustConfig),
+  //   m_interestTemplate(std::move(interestTemplate))
+  m_RdrFetcher(RdrFetcher(face, attrAuthorityPrefix));
 {
 }
 
