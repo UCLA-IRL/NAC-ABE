@@ -19,7 +19,7 @@ public:
 
   void fetchRDRSegments();
 
-  std::vector<Buffer> getSegmentDataBuffers()
+  Buffer* getSegmentDataBuffers()
   {
     return m_segmentBuffers;
   }
@@ -41,10 +41,10 @@ private:
 
 private:
   ndn::Face& m_face;
-  // this is name prefix before 32=metadata
+  // this is name prefix before metadata
   const Name& m_metaDataName;
   Interest m_baseInterest;
-  std::vector<Buffer> m_segmentBuffers;
+  Buffer m_segmentBuffers[];
 };
 
 }

@@ -7,7 +7,7 @@ namespace nacabe {
 
 NDN_LOG_INIT(nacabe.RdrFetcher);
 
-const std::string METADATAKEYWORD = "32=metadata";
+const std::string METADATAKEYWORD = "metadata";
 
 RdrFetcher::RdrFetcher(Face& face, const Name& metaDataName, Interest baseInterest)
   : m_face(face),
@@ -20,7 +20,7 @@ void RdrFetcher::fetchRDRSegments()
 {
   // fetch meta data
   Name interestName = m_metaDataName;
-  interestName.appendKeyword("32=metadata");
+  interestName.appendKeyword("metadata");
   Interest interest(m_baseInterest);
   interest.setName(interestName);
 
@@ -39,22 +39,24 @@ RdrFetcher::onMetaData(const Data& fetchedMetaData)
   
   // code to verify the data?
 
-  // code to fetch metadata content
+  
+  // code to fetch metadata name and get segment names
+  std::string segmentName = ndn::encoding::readString(fetchedMetaData.getName().get(0));
+  // discard the segment number
+  int pos = segmentName.find_last_of("\\");
+  if (pos != std::string::npos) {
+    segmentName = segmentName.substr(0, pos);
+  }
+  NDN_LOG_INFO("segment name is : " << segmentName);
+  
+  // code to fetch metadata content to know how many segments
   Block metaContent = fetchedMetaData.getContent();
   metaContent.parse();
-  // get the name block
-  std::string segmentName = ndn::encoding::readString(metaContent.get(tlv::Name)); 
-  NDN_LOG_INFO("segment name is : " << segmentName);
-
-  // // discard the segment number
-  // int pos = segmentName.find_last_of("\\");
-  // if (pos != std::string::npos) {
-  //   segmentName = segmentName.substr(0, pos);
-  // }
-  
+  size_t segCount = metaContent.size();
+  NDN_LOG_INFO("Segment Size: " << segCount);
   // send interest based on this current version name
   // how many segment interest to send?
-  for (size_t i = 0; i < 10, i++;) {
+  for (size_t i = 0; i < segCount, i++;) {
     Name interestName = Name(segmentName);
     // append segment number
     interestName.appendSegment(i);
@@ -74,10 +76,22 @@ RdrFetcher::onSegmentData(const Data& fetchedSegmentData)
   // when receive metadata, unpack it
   NDN_LOG_INFO("[onSegmentData()] Get Segment data");
 
-  // code to fetch metadata content
+  // code to fetch segname to find out sequence number
+  std::string segmentNumber = ndn::encoding::readString(fetchedSegmentData.getName().get(0));
+  size_t pos = segmentNumber.find_last_of("\\");
+  if (pos != string::npos) {
+    segmentNumber = segmentNumber.substr(pos + 1);
+  }
+  NDN_LOG_INFO("Current segment number:  " << segmentNumber);
+  
+  // code to fetch segdata content
   Block segContent = fetchedSegmentData.getContent();
-  m_segmentBuffers.push_back(Buffer(segContent.value(), segContent.size()));
-
+  
+  // put content buffer into index i = segmentNumber
+  size_t n;
+  stringstream ss(segmentNumber);
+  ss >> n;
+  m_segmentBuffers[n] = Buffer(segContent.value(), segContent.size());
 }
 
 } // namespace nacabe
