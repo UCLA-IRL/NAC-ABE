@@ -89,7 +89,15 @@ BOOST_AUTO_TEST_CASE(Rdr)
 
   //fetch first
   bool done = false;
-  fetcher.fetchRDRSegments([&](bool error){if (!error) done = true;});
+  fetcher.fetchRDRSegments([&](bool error){
+    BOOST_CHECK(!error);
+    done = true;
+    auto b = fetcher.getSegmentDataBuffers();
+    BOOST_CHECK_EQUAL_COLLECTIONS(b.begin(), b.end(), PLAIN_TEXT2, PLAIN_TEXT2 + 8000);
+  });
+  BOOST_CHECK(fetcher.isPending());
+  BOOST_CHECK_THROW(fetcher.fetchRDRSegments([&](bool error){}), std::exception);
+  BOOST_CHECK_THROW(fetcher.getSegmentDataBuffers(), std::exception);
   advanceClocks(time::milliseconds(20), 60);
   BOOST_CHECK(done);
   BOOST_CHECK(!fetcher.isPending());
@@ -104,7 +112,12 @@ BOOST_AUTO_TEST_CASE(Rdr)
 
   //another fetch
   done = false;
-  fetcher.fetchRDRSegments([&](bool error){if (!error) done = true;});
+  fetcher.fetchRDRSegments([&](bool error){
+    BOOST_CHECK(!error);
+    done = true;
+    auto b = fetcher.getSegmentDataBuffers();
+    BOOST_CHECK_EQUAL_COLLECTIONS(b.begin(), b.end(), PLAIN_TEXT2, PLAIN_TEXT2 + 8000);
+  });
   advanceClocks(time::milliseconds(20), 60);
   BOOST_CHECK(done);
   BOOST_CHECK(!fetcher.isPending());
@@ -121,7 +134,12 @@ BOOST_AUTO_TEST_CASE(Rdr)
   timeS = systemClock->getNow();
   span_map.emplace(timeS, span<const uint8_t>({PLAIN_TEXT1, 39999}));
   done = false;
-  fetcher.fetchRDRSegments([&](bool error){if (!error) done = true;});
+  fetcher.fetchRDRSegments([&](bool error){
+    BOOST_CHECK(!error);
+    done = true;
+    auto b = fetcher.getSegmentDataBuffers();
+    BOOST_CHECK_EQUAL_COLLECTIONS(b.begin(), b.end(), PLAIN_TEXT1, PLAIN_TEXT1 + 39999);
+  });
   advanceClocks(time::milliseconds(20), 60);
   BOOST_CHECK(done);
   BOOST_CHECK(!fetcher.isPending());
@@ -138,7 +156,12 @@ BOOST_AUTO_TEST_CASE(Rdr)
 
   //another fetch
   done = false;
-  fetcher.fetchRDRSegments([&](bool error){if (!error) done = true;});
+  fetcher.fetchRDRSegments([&](bool error){
+    BOOST_CHECK(!error);
+    done = true;
+    auto b = fetcher.getSegmentDataBuffers();
+    BOOST_CHECK_EQUAL_COLLECTIONS(b.begin(), b.end(), PLAIN_TEXT1, PLAIN_TEXT1 + 39999);
+  });
   advanceClocks(time::milliseconds(20), 60);
   BOOST_CHECK(done);
   BOOST_CHECK(!fetcher.isPending());
@@ -157,7 +180,12 @@ BOOST_AUTO_TEST_CASE(Rdr)
   timeS = systemClock->getNow();
   span_map.emplace(timeS, span<const uint8_t>({PLAIN_TEXT1, 0}));
   done = false;
-  fetcher.fetchRDRSegments([&](bool error){if (!error) done = true;});
+  fetcher.fetchRDRSegments([&](bool error){
+    BOOST_CHECK(!error);
+    done = true;
+    auto b = fetcher.getSegmentDataBuffers();
+    BOOST_CHECK(b.empty());
+  });
   advanceClocks(time::milliseconds(20), 60);
   BOOST_CHECK(done);
   BOOST_CHECK(!fetcher.isPending());
@@ -165,7 +193,6 @@ BOOST_AUTO_TEST_CASE(Rdr)
   BOOST_CHECK_EQUAL(spanTakeExecuted, 3);
   BOOST_CHECK_EQUAL(signingExecuted, 3);
   BOOST_CHECK_EQUAL(verificationExecuted, 5);
-
   BOOST_CHECK_EQUAL(producerSent, 11);
   BOOST_CHECK_EQUAL(fetcherSent, 11);
 
