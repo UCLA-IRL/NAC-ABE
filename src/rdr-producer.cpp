@@ -43,22 +43,23 @@ void ndn::nacabe::RdrProducer::onInterest(const Interest &interest) {
   if (!interest.getName().get(-1).isKeyword()) {
     // put segments
     bool hasDigest = name.get(-1).isImplicitSha256Digest();
-    if (name.size() != m_objectName.size() + (hasDigest ? 3 : 2) ||
-        !name.get(hasDigest ? -2 : -1).isSegment() || !name.get(hasDigest ? -3 : -2).isTimestamp()) {
+    if (name.size() != m_objectName.size() + 2 + (hasDigest) ||
+        !name.get(m_objectName.size() + 1).isSegment() || !name.get(m_objectName.size()).isTimestamp()) {
       NDN_LOG_WARN("Received interest with bad name: " << name);
       return;
     }
-    auto ts = name.get(hasDigest ? -3 : -2).toTimestamp();
-    auto seg = name.get(hasDigest ? -2 : -1).toSegment();
+    auto ts = name.get(m_objectName.size()).toTimestamp();
+    auto seg = name.get(m_objectName.size() + 1).toSegment();
     if (m_segments.count(ts) == 0 || seg >= m_segments.at(ts).size()) {
       NDN_LOG_WARN("Item not found: " << name);
       return;
     }
     m_face.put(m_segments.at(ts).at(seg));
+    return;
   }
 
   if (readString(name.get(-1)) != "metadata") {
-    NDN_LOG_WARN("Received interest with bad name: " << name);
+    NDN_LOG_WARN("Received metadata interest with bad name: " << name);
     return;
   }
   auto currentTime = time::system_clock::now();

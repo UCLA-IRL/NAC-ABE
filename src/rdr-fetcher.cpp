@@ -7,30 +7,48 @@ namespace nacabe {
 
 NDN_LOG_INIT(nacabe.RdrFetcher);
 
-const std::string METADATAKEYWORD = "metadata";
+const std::string METADATA_KEYWORD = "metadata";
 
-RdrFetcher::RdrFetcher(Face& face, const Name& metaDataName, Interest baseInterest)
+RdrFetcher::RdrFetcher(Face& face, const Name& objectName, std::function<Interest()> baseInterestTemplate)
   : m_face(face),
-    m_metaDataName(metaDataName),
-    m_baseInterest(std::move(baseInterest))
+    m_objectName(objectName),
+    m_baseInterestCallback(std::move(baseInterestTemplate)),
+    m_pendingSegments(0)
 {
 }
 
-void RdrFetcher::fetchRDRSegments()
+void RdrFetcher::fetchRDRSegments(std::function<void(bool)> updateDoneCallback)
 {
+  if (m_pendingSegments) {
+    NDN_THROW(std::runtime_error("RDR fetcher: not ready for consecutive fetch"));
+  }
+  m_pendingSegments = 1;
+  m_updateDoneCallback = updateDoneCallback;
   // fetch meta data
-  Name interestName = m_metaDataName;
-  interestName.appendKeyword("metadata");
-  Interest interest(m_baseInterest);
+  Name interestName = m_objectName;
+  interestName.appendKeyword(METADATA_KEYWORD.c_str());
+  auto interest = m_baseInterestCallback();
   interest.setName(interestName);
 
   NDN_LOG_INFO("Request metaData: " << interest.getName());
   m_face.expressInterest(interest,
                          [this](const Interest &, const Data &data) { onMetaData(data); },
-                         [](auto&&...) { NDN_LOG_INFO("NACK"); },
-                         [](auto&&...) { NDN_LOG_INFO("Timeout"); });  
-  
+                         [this](auto&&...) { NDN_LOG_INFO("NACK"); m_updateDoneCallback(true);m_pendingSegments = 0;},
+                         [this](auto&&...) { NDN_LOG_INFO("Timeout"); m_updateDoneCallback(true);m_pendingSegments = 0;});
 }
+
+Buffer RdrFetcher::getSegmentDataBuffers() {
+  if (m_pendingSegments) {
+    NDN_THROW(std::runtime_error("RDR fetcher: segments not ready"));
+  }
+  Buffer buf;
+  for (const auto& i: m_segmentBuffers) {
+    buf.reserve(buf.size() + i.size());
+    buf.insert(buf.end(), i.begin(), i.end());
+  }
+  return buf;
+}
+
 void
 RdrFetcher::onMetaData(const Data& fetchedMetaData)
 {
@@ -38,38 +56,70 @@ RdrFetcher::onMetaData(const Data& fetchedMetaData)
   NDN_LOG_INFO("[onMetaData()] Get Meta data");
   
   // code to verify the data?
-
+  if (m_metaDataVerificationCallback) {
+    if (!m_metaDataVerificationCallback(fetchedMetaData)) {
+      NDN_LOG_WARN("Metadata Verification failed");
+      m_updateDoneCallback(true);
+      m_pendingSegments = 0;
+      return;
+    }
+  }
   
   // code to fetch metadata name and get segment names
-  
-  // std::string segmentName = ndn::encoding::readString(fetchedMetaData.getName().get(0));
-  // // discard the segment number
-  // int pos = segmentName.find_last_of("\\");
-  // if (pos != std::string::npos) {
-  //   segmentName = segmentName.substr(0, pos);
-  // }
-  
-  PartialName segmentName = fetchedMetaData.getName().getSubName(0, fetchedMetaData.getName().size() - 1);
-  NDN_LOG_INFO("segment name is : " << segmentName);
-  
+  auto timeStampComponent = fetchedMetaData.getName().get(m_objectName.size() + 1);
+  if (!timeStampComponent.isTimestamp()) {
+    NDN_LOG_WARN("Metadata have a bad timestamp component");
+    m_updateDoneCallback(true);
+    m_pendingSegments = 0;
+    return;
+  }
+  auto fetchedTimestamp = timeStampComponent.toTimestamp();
+  NDN_LOG_INFO("timestamp component is : " << timeStampComponent);
+  if (fetchedTimestamp == m_lastFetchedTime) {
+    //no update
+    NDN_LOG_INFO("update done with no new version");
+    m_updateDoneCallback(false);
+    m_pendingSegments = 0;
+    return;
+  }
+  m_lastFetchedTime = fetchedTimestamp;
+  m_segmentBuffers.clear();
+
   // code to fetch metadata content to know how many segments
-  Block metaContent = fetchedMetaData.getContent();
+  auto& metaContent = fetchedMetaData.getContent();
   metaContent.parse();
   // send interest based on this current version name
   size_t i = 0;
   for (auto element : metaContent.elements()) {
-    Name interestName = Name(segmentName);
+    Name interestName = Name(m_objectName).appendTimestamp(fetchedTimestamp);
     // append segment number
-    interestName.appendSegment(i);
-    Interest interest(m_baseInterest);
-    interest.setName(interestName);
+    try {
+      name::Component digestComponent(element);
+      interestName.appendSegment(i).append(digestComponent);
+      Interest interest = m_baseInterestCallback();
+      interest.setMustBeFresh(false);
+      interest.setCanBePrefix(false);
+      interest.setName(interestName);
 
-    NDN_LOG_INFO("Request Segment Data: " << interest.getName());
-    m_face.expressInterest(interest,
-                          [this](const Interest &, const Data &data) { onSegmentData(data); },
-                          [](auto&&...) { NDN_LOG_INFO("NACK"); },
-                          [](auto&&...) { NDN_LOG_INFO("Timeout"); });
+      NDN_LOG_INFO("Request Segment Data: " << interest.getName());
+      m_face.expressInterest(interest,
+                            [this](const Interest &, const Data &data) { onSegmentData(data); },
+                            [this](auto&&...) { NDN_LOG_INFO("NACK"); m_updateDoneCallback(true);m_pendingSegments = 0;},
+                            [this](auto&&...) { NDN_LOG_INFO("Timeout"); m_updateDoneCallback(true);m_pendingSegments = 0;}
+                            );
+    } catch(const std::exception& e) {
+      NDN_LOG_WARN("Error in metadata decoding: " << e.what());
+      m_updateDoneCallback(true);
+      m_pendingSegments = 0;
+      return;
+    }
     i++;  
+  }
+  m_pendingSegments = i;
+  m_segmentBuffers.resize(i);
+  if (i == 0) {
+    NDN_LOG_INFO("New Metadata has no segments; ");
+    m_updateDoneCallback(false);
   }
 }
 void
@@ -78,21 +128,26 @@ RdrFetcher::onSegmentData(const Data& fetchedSegmentData)
   // when receive metadata, unpack it
   NDN_LOG_INFO("[onSegmentData()] Get Segment data");
 
+  if (m_pendingSegments == 0) {
+    NDN_LOG_INFO("[onSegmentData()] Other segments failed...");
+    return;
+  }
+
   // code to fetch segname to find out sequence number
-  // std::string segmentNumber = ndn::encoding::readString(fetchedSegmentData.getName().get(0));
-  // size_t pos = segmentNumber.find_last_of("\\");
-  // if (pos != string::npos) {
-  //   segmentNumber = segmentNumber.substr(pos + 1);
-  // }
-  PartialName segmentNumberName = fetchedSegmentData.getName().getSubName(-1, 1);
-  NDN_LOG_INFO("Current segment number:  " << segmentNumberName);
+  auto segmentNumberComponent = fetchedSegmentData.getName().get(-1);
+  NDN_LOG_INFO("Current segment number:  " << segmentNumberComponent);
   
   // code to fetch segdata content
-  Block segContent = fetchedSegmentData.getContent();
+  const auto& segContent = fetchedSegmentData.getContent();
   
   // put content buffer into index i = segmentNumber
-  uint64_t segmentNumber = segmentNumberName.get(0).toSegment();
-  m_segmentBuffers[segmentNumber] = Buffer(segContent.value(), segContent.size());
+  uint64_t segmentNumber = segmentNumberComponent.toSegment();
+  m_segmentBuffers[segmentNumber] = Buffer(segContent.value(), segContent.value_size());
+  m_pendingSegments --;
+  if (m_pendingSegments == 0) {
+    NDN_LOG_INFO("All segment fetched. ");
+    m_updateDoneCallback(false);
+  }
 }
 
 } // namespace nacabe
