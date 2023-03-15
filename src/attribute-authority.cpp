@@ -37,6 +37,7 @@ AttributeAuthority::AttributeAuthority(const security::Certificate& identityCert
   , m_face(face)
   , m_keyChain(keyChain)
   , m_abeType(abeType)
+  , prefixRegistered(false)
 {
   // ABE setup
   if (m_abeType == ABE_TYPE_CP_ABE) {
@@ -58,14 +59,13 @@ AttributeAuthority::AttributeAuthority(const security::Certificate& identityCert
       // public parameters filter
       auto hdl1 = m_face.setInterestFilter(Name(name).append(PUBLIC_PARAMS),
                                            std::bind(&AttributeAuthority::onPublicParamsRequest, this, _2));
-      m_interestFilters.emplace_back(hdl1);
+      m_publicParamInterestFilters.emplace_back(hdl1);
       NDN_LOG_TRACE("InterestFilter " << Name(name).append(PUBLIC_PARAMS) << " set");
 
-      // decryption key filter
-      auto hdl2 = m_face.setInterestFilter(Name(name).append(DECRYPT_KEY),
-                                           std::bind(&AttributeAuthority::onDecryptionKeyRequest, this, _2));
-      m_interestFilters.emplace_back(hdl2);
-      NDN_LOG_TRACE("InterestFilter " << Name(name).append(DECRYPT_KEY) << " set");
+      prefixRegistered = true;
+      for (const auto& p : m_UnregisteredDecKeyProducer) {
+        setDecrypterInterestFilter(p.first);
+      }
     },
     [] (const Name&, const auto& reason) {
       NDN_LOG_ERROR("Failed to register prefix: " << reason);
@@ -74,31 +74,86 @@ AttributeAuthority::AttributeAuthority(const security::Certificate& identityCert
 
 AttributeAuthority::~AttributeAuthority() = default;
 
-void
-AttributeAuthority::onDecryptionKeyRequest(const Interest& request)
-{
-  // naming: /AA-prefix/DKEY/<identity name block>
-  NDN_LOG_INFO("Got DKEY request: " << request.getName());
-  Name identityName(request.getName().at(m_cert.getIdentity().size() + 1).blockFromValue());
+void AttributeAuthority::insertPolicy(const security::Certificate& identityCert) {
+  Name decrypterIdentity = identityCert.getIdentity();
+  if (m_trustConfig.findCertificate(decrypterIdentity) == nullopt) {
+    m_trustConfig.addOrUpdateCertificate(identityCert);
 
-  // verify request and generate token
-  auto optionalCert = m_trustConfig.findCertificate(identityName);
-  if (!optionalCert) {
-    NDN_LOG_INFO("DKEY Request Interest cannot be authenticated: no certificate for " << identityName);
-    return;
+    if (m_removedDecKeyProducer.count(decrypterIdentity)) {
+      auto it = m_removedDecKeyProducer.find(decrypterIdentity);
+      m_decKeyProducer.emplace(it->first, std::move(it->second.first));
+      m_removedDecKeyProducer.erase(it);
+    } else {
+      Name decObjectName = m_cert.getIdentity();
+      decObjectName.append(DECRYPT_KEY).append(decrypterIdentity.wireEncode().begin(),
+                                               decrypterIdentity.wireEncode().end());
+      RdrProducer rdrProducer(m_face, decObjectName);
+      m_UnregisteredDecKeyProducer.emplace(identityCert.getIdentity(), std::move(rdrProducer));
+      if (prefixRegistered) {
+        setDecrypterInterestFilter(decrypterIdentity);
+      }
+    }
   }
-  NDN_LOG_INFO("Find consumer(decryptor) certificate: " << optionalCert->getName());
+  for (auto it = m_removedDecKeyProducer.begin(); it != m_removedDecKeyProducer.end();) {
+    auto it2 = it;
+    it++;
+    if (it->second.first.checkCancel()) {
+      m_removedDecKeyProducer.erase(it2);
+    }
+  }
+}
 
-  auto ABEPrvKey = getPrivateKey(identityName);
-  auto prvBuffer = ABEPrvKey.first.toBuffer();
+void
+AttributeAuthority::removePolicy(const Name& decrypterIdentityName)
+{
+  removePolicyState(decrypterIdentityName);
+  if (m_decKeyProducer.count(decrypterIdentityName)) {
+    auto it = m_decKeyProducer.find(decrypterIdentityName);
+    m_removedDecKeyProducer.emplace(it->first, std::make_pair(std::move(it->second), time::system_clock::now()));
+    m_decKeyProducer.erase(it);
+  } else if (m_UnregisteredDecKeyProducer.count(decrypterIdentityName)) {
+    auto it = m_UnregisteredDecKeyProducer.find(decrypterIdentityName);
+    m_removedDecKeyProducer.emplace(it->first, std::make_pair(std::move(it->second), time::system_clock::now()));
+    m_UnregisteredDecKeyProducer.erase(it);
+  }
 
-  // reply interest with encrypted private key
-  Data result;
-  result.setName(request.getName());
-  result.setFreshnessPeriod(5_s);
-  result.setContent(encryptDataContentWithCK(prvBuffer, optionalCert->getPublicKey()));
-  m_keyChain.sign(result, signingByCertificate(m_cert));
-  m_face.put(result);
+  for (auto it = m_removedDecKeyProducer.begin(); it != m_removedDecKeyProducer.end();) {
+    auto it2 = it;
+    it++;
+    if (it->second.first.checkCancel()) {
+      m_removedDecKeyProducer.erase(it2);
+    }
+  }
+}
+
+void
+AttributeAuthority::setDecrypterInterestFilter(const Name& decrypterIdentityName)
+{
+  if (m_UnregisteredDecKeyProducer.count(decrypterIdentityName)) {
+    auto it = m_UnregisteredDecKeyProducer.find(decrypterIdentityName);
+    if (m_decKeyProducer.count(it->first)) {
+      NDN_THROW("multiple instance of decrypter producer exists: " + decrypterIdentityName.toUri());
+    }
+    m_decKeyProducer.emplace(it->first, std::move(it->second));
+    m_UnregisteredDecKeyProducer.erase(it);
+
+    auto& p = m_decKeyProducer.at(decrypterIdentityName);
+    p.setInterestFilter([this, decrypterIdentityName](){
+      NDN_LOG_INFO("Got DKEY request on: " << decrypterIdentityName);
+      if (m_removedDecKeyProducer.count(decrypterIdentityName)) return m_removedDecKeyProducer.at(decrypterIdentityName).second;
+      return getLastPrivateKeyTimestamp(decrypterIdentityName);
+    }, [this, decrypterIdentityName](time::system_clock::time_point ts){
+      auto optionalCert = m_trustConfig.findCertificate(decrypterIdentityName);
+      auto ABEPrvKey = getPrivateKey(decrypterIdentityName);
+      auto prvBuffer = ABEPrvKey.toBuffer();
+      auto block = encryptDataContentWithCK(prvBuffer, optionalCert->getPublicKey());
+      block.encode();
+      return span<const uint8_t>(block.wire(), block.size());
+    }, [this](auto& data){
+      //TODO add metadata: public key version
+      m_keyChain.sign(data, signingByCertificate(m_cert));
+    });
+  }
 }
 
 void
@@ -133,6 +188,9 @@ void
 CpAttributeAuthority::addNewPolicy(const Name& decryptorIdentityName,
                                    const std::list<std::string>& attributes)
 {
+  if (!m_trustConfig.findCertificate(decryptorIdentityName)) {
+    NDN_THROW("Cannot find certificate for adding policy: " + decryptorIdentityName.toUri());
+  }
   auto time = time::system_clock::now();
   if (m_tokens.count(decryptorIdentityName) > 0 && time - m_tokens.at(decryptorIdentityName).second < time::milliseconds(1)) {
     time = m_tokens.at(decryptorIdentityName).second + time::milliseconds(1);
@@ -144,18 +202,35 @@ void
 CpAttributeAuthority::addNewPolicy(const security::Certificate& decryptorCert,
                                    const std::list<std::string>& attributes)
 {
-  m_trustConfig.addOrUpdateCertificate(decryptorCert);
+  insertPolicy(decryptorCert);
   addNewPolicy(decryptorCert.getIdentity(), attributes);
 }
 
-std::pair<algo::PrivateKey, time::system_clock::time_point>
+void
+CpAttributeAuthority::removePolicyState(const Name& decryptorIdentityName) {
+  m_tokens.erase(decryptorIdentityName);
+}
+
+algo::PrivateKey
 CpAttributeAuthority::getPrivateKey(const Name& identityName)
 {
+  if (!m_tokens.count(identityName)) {
+    algo::PrivateKey k;
+    k.fromBuffer(Buffer());
+    return k;
+  }
   const auto& pair = m_tokens.at(identityName);
   std::vector<std::string> attrs(pair.first.begin(), pair.first.end());
 
   // generate ABE private key and do encryption
-  return std::make_pair(algo::ABESupport::getInstance().cpPrvKeyGen(m_pubParams, m_masterKey, attrs), pair.second);
+  return algo::ABESupport::getInstance().cpPrvKeyGen(m_pubParams, m_masterKey, attrs);
+}
+
+time::system_clock::time_point
+CpAttributeAuthority::getLastPrivateKeyTimestamp(const Name& identityName)
+{
+  const auto& pair = m_tokens.at(identityName);
+  return pair.second;
 }
 
 KpAttributeAuthority::KpAttributeAuthority(const security::Certificate& identityCert,
@@ -167,6 +242,9 @@ KpAttributeAuthority::KpAttributeAuthority(const security::Certificate& identity
 void
 KpAttributeAuthority::addNewPolicy(const Name& decryptorIdentityName, const Policy& policy)
 {
+  if (!m_trustConfig.findCertificate(decryptorIdentityName)) {
+    NDN_THROW("Cannot find certificate for adding policy: " + decryptorIdentityName.toUri());
+  }
   auto time = time::system_clock::now();
   if (m_tokens.count(decryptorIdentityName) > 0 && time - m_tokens.at(decryptorIdentityName).second < time::milliseconds(1)) {
     time = m_tokens.at(decryptorIdentityName).second + time::milliseconds(1);
@@ -177,17 +255,34 @@ KpAttributeAuthority::addNewPolicy(const Name& decryptorIdentityName, const Poli
 void
 KpAttributeAuthority::addNewPolicy(const security::Certificate& decryptorCert, const Policy& policy)
 {
-  m_trustConfig.addOrUpdateCertificate(decryptorCert);
+  insertPolicy(decryptorCert);
   addNewPolicy(decryptorCert.getIdentity(), policy);
 }
 
-std::pair<algo::PrivateKey, time::system_clock::time_point>
+void
+KpAttributeAuthority::removePolicyState(const Name& decryptorIdentityName) {
+  m_tokens.erase(decryptorIdentityName);
+}
+
+algo::PrivateKey
 KpAttributeAuthority::getPrivateKey(const Name& identityName)
 {
+  if (!m_tokens.count(identityName)) {
+    algo::PrivateKey k;
+    k.fromBuffer(Buffer());
+    return k;
+  }
   const auto& pair = m_tokens.at(identityName);
 
   // generate ABE private key and do encryption
-  return std::make_pair(algo::ABESupport::getInstance().kpPrvKeyGen(m_pubParams, m_masterKey, pair.first), pair.second);
+  return algo::ABESupport::getInstance().kpPrvKeyGen(m_pubParams, m_masterKey, pair.first);
+}
+
+time::system_clock::time_point
+KpAttributeAuthority::getLastPrivateKeyTimestamp(const Name& identityName)
+{
+  const auto& pair = m_tokens.at(identityName);
+  return pair.second;
 }
 
 } // namespace nacabe
