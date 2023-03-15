@@ -53,14 +53,9 @@ public:
   }
 
 private:
-  void onAttributePubParams();
-
-private:
-  Face& m_face;
   const Name& m_attrAuthorityPrefix;
   const TrustConfig& m_trustConfig;
   RdrFetcher m_rdrFetcher;
-  std::function<void(bool)> m_updateDoneCallback = [this](bool haveError) { onAttributePubParams(); };
 
 PUBLIC_WITH_TESTS_ELSE_PRIVATE:
   AbeType m_abeType;

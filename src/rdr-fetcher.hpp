@@ -16,7 +16,7 @@ namespace nacabe {
 
 class RdrFetcher {
 public:
-  RdrFetcher(ndn::Face& face, const Name& objectName,
+  RdrFetcher(ndn::Face& face, Name objectName,
              std::function<Interest()> baseInterestTemplate = getDefaultInterestTemplate);
 
   inline void setMetaDataVerificationCallback(std::function<bool(const Data&)> callback) {
@@ -54,7 +54,7 @@ private:
 private:
   ndn::Face& m_face;
   // this is name prefix before metadata
-  const Name& m_objectName;
+  Name m_objectName;
   uint32_t m_pendingSegments;
   time::system_clock::time_point m_lastFetchedTime;
   std::function<Interest()> m_baseInterestCallback;

@@ -41,7 +41,7 @@ Consumer::Consumer(Face& face, KeyChain& keyChain,
 
     // /<attribute authority prefix>/DKEY/<decryptor name block>
   , m_encKeyFetcher(m_face, Name(m_attrAuthorityPrefix).append(DECRYPT_KEY)
-                    .append(m_cert.getIdentity().wireEncode().begin(), m_cert.getIdentity().wireEncode().end()))
+                    .append(identityCert.getIdentity().wireEncode().begin(), identityCert.getIdentity().wireEncode().end()))
 {
   m_trustConfig.addOrUpdateCertificate(attrAuthorityCertificate);
   m_paramFetcher.fetchPublicParams();

@@ -9,9 +9,9 @@ NDN_LOG_INIT(nacabe.RdrFetcher);
 
 const std::string METADATA_KEYWORD = "metadata";
 
-RdrFetcher::RdrFetcher(Face& face, const Name& objectName, std::function<Interest()> baseInterestTemplate)
+RdrFetcher::RdrFetcher(Face& face, Name objectName, std::function<Interest()> baseInterestTemplate)
   : m_face(face),
-    m_objectName(objectName),
+    m_objectName(std::move(objectName)),
     m_baseInterestCallback(std::move(baseInterestTemplate)),
     m_pendingSegments(0)
 {

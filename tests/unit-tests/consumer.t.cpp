@@ -54,7 +54,7 @@ BOOST_FIXTURE_TEST_SUITE(TestConsumer, TestConsumerFixture)
 BOOST_AUTO_TEST_CASE(Constructor)
 {
   bool commandReceived = false;
-  c2.setInterestFilter(Name(attrAuthorityPrefix).append("PUBPARAMS"),
+  c2.setInterestFilter(Name(attrAuthorityPrefix).append("PUBPARAMS").appendKeyword("metadata"),
                        [&] (auto&&...) { commandReceived = true; });
 
   advanceClocks(time::milliseconds(20), 60);

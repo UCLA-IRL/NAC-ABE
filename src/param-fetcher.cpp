@@ -29,8 +29,7 @@ namespace nacabe {
 NDN_LOG_INIT(nacabe.ParamFetcher);
 
 ParamFetcher::ParamFetcher(Face& face, const Name& attrAuthorityPrefix, const TrustConfig& trustConfig, Interest interestTemplate)
-  : m_face(face),
-    m_attrAuthorityPrefix(attrAuthorityPrefix),
+  : m_attrAuthorityPrefix(attrAuthorityPrefix),
     m_trustConfig(trustConfig),
     m_interestTemplate(std::move(interestTemplate)),
     m_rdrFetcher(face, Name(attrAuthorityPrefix).append(PUBLIC_PARAMS))
@@ -62,13 +61,13 @@ ParamFetcher::fetchPublicParams()
   // set metadata checking call back
   NDN_LOG_INFO("[onAttributePubParams()] Get public parameters");
   // call fetch on rdr fetcher, set call back to be onAttributePubParams
-  m_rdrFetcher.fetchRDRSegments(m_updateDoneCallback);
-}
-
-void
-ParamFetcher::onAttributePubParams()
-{
-  m_pubParamsCache.fromBuffer(m_rdrFetcher.getSegmentDataBuffers());
+  m_rdrFetcher.fetchRDRSegments([this](bool haveError) {
+    if (haveError) {
+      NDN_LOG_INFO("[onAttributePubParams()] error on getting public parameters");
+      return;
+    }
+    m_pubParamsCache.fromBuffer(m_rdrFetcher.getSegmentDataBuffers());
+  });
 }
 
 } // namespace nacabe
