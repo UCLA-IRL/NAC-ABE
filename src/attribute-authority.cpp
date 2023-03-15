@@ -63,8 +63,11 @@ AttributeAuthority::AttributeAuthority(const security::Certificate& identityCert
       NDN_LOG_TRACE("InterestFilter " << Name(name).append(PUBLIC_PARAMS) << " set");
 
       prefixRegistered = true;
-      for (const auto& p : m_UnregisteredDecKeyProducer) {
-        setDecrypterInterestFilter(p.first);
+      for (auto it = m_UnregisteredDecKeyProducer.begin(); it != m_UnregisteredDecKeyProducer.end();) {
+        auto it2 = it;
+        it++;
+        auto decrypter = it2->first;
+        setDecrypterInterestFilter(decrypter);
       }
     },
     [] (const Name&, const auto& reason) {
@@ -93,7 +96,10 @@ void AttributeAuthority::insertPolicy(const security::Certificate& identityCert)
         setDecrypterInterestFilter(decrypterIdentity);
       }
     }
+  } else if (m_trustConfig.findCertificate(decrypterIdentity) != identityCert) {
+    m_trustConfig.addOrUpdateCertificate(identityCert);
   }
+
   for (auto it = m_removedDecKeyProducer.begin(); it != m_removedDecKeyProducer.end();) {
     auto it2 = it;
     it++;
@@ -129,12 +135,12 @@ AttributeAuthority::removePolicy(const Name& decrypterIdentityName)
 void
 AttributeAuthority::setDecrypterInterestFilter(const Name& decrypterIdentityName)
 {
-  if (m_UnregisteredDecKeyProducer.count(decrypterIdentityName)) {
-    auto it = m_UnregisteredDecKeyProducer.find(decrypterIdentityName);
-    if (m_decKeyProducer.count(it->first)) {
+  auto it = m_UnregisteredDecKeyProducer.find(decrypterIdentityName);
+  if (it != m_UnregisteredDecKeyProducer.end()) {
+    if (m_decKeyProducer.count(decrypterIdentityName)) {
       NDN_THROW("multiple instance of decrypter producer exists: " + decrypterIdentityName.toUri());
     }
-    m_decKeyProducer.emplace(it->first, std::move(it->second));
+    m_decKeyProducer.emplace(decrypterIdentityName, std::move(it->second));
     m_UnregisteredDecKeyProducer.erase(it);
 
     auto& p = m_decKeyProducer.at(decrypterIdentityName);
@@ -142,11 +148,11 @@ AttributeAuthority::setDecrypterInterestFilter(const Name& decrypterIdentityName
       NDN_LOG_INFO("Got DKEY request on: " << decrypterIdentityName);
       if (m_removedDecKeyProducer.count(decrypterIdentityName)) return m_removedDecKeyProducer.at(decrypterIdentityName).second;
       return getLastPrivateKeyTimestamp(decrypterIdentityName);
-    }, [this, decrypterIdentityName](time::system_clock::time_point ts){
+    }, [this, decrypterIdentityName, block=Block()](time::system_clock::time_point ts) mutable {
       auto optionalCert = m_trustConfig.findCertificate(decrypterIdentityName);
       auto ABEPrvKey = getPrivateKey(decrypterIdentityName);
       auto prvBuffer = ABEPrvKey.toBuffer();
-      auto block = encryptDataContentWithCK(prvBuffer, optionalCert->getPublicKey());
+      block = encryptDataContentWithCK(prvBuffer, optionalCert->getPublicKey());
       block.encode();
       return span<const uint8_t>(block.wire(), block.size());
     }, [this](auto& data){
