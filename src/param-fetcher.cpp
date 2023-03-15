@@ -35,27 +35,8 @@ ParamFetcher::ParamFetcher(Face& face, const Name& attrAuthorityPrefix, const Tr
     m_interestTemplate(std::move(interestTemplate)),
     m_rdrFetcher(face, Name(attrAuthorityPrefix).append(PUBLIC_PARAMS))
 {
-}
-
-void
-ParamFetcher::fetchPublicParams()
-{
-  // Name interestName = m_attrAuthorityPrefix;
-  // interestName.append(PUBLIC_PARAMS);
-  // Interest interest(m_interestTemplate);
-  // interest.setName(interestName);
-
-  // NDN_LOG_INFO("Request public parameters: " << interest.getName());
-  // m_face.expressInterest(interest,
-  //                        [this](const Interest &, const Data &data) { onAttributePubParams(data); },
-  //                        [](auto&&...) { NDN_LOG_INFO("NACK"); },
-  //                        [](auto&&...) { NDN_LOG_INFO("Timeout"); });
-  
-  
-  // set metadata checking call back
-  NDN_LOG_INFO("[onAttributePubParams()] Get public parameters");
-  auto optionalAAKey = m_trustConfig.findCertificate(m_attrAuthorityPrefix);
-  m_rdrFetcher.setMetaDataVerificationCallback([this, optionalAAKey](const Data& pubParamData) {
+  m_rdrFetcher.setMetaDataVerificationCallback([this](const Data& pubParamData) {
+    auto optionalAAKey = m_trustConfig.findCertificate(m_attrAuthorityPrefix);
     if (optionalAAKey) {
       if (!security::verifySignature(pubParamData, *optionalAAKey)) {
         NDN_THROW(std::runtime_error("Fetched public parameters cannot be authenticated: bad signature"));
@@ -73,6 +54,13 @@ ParamFetcher::fetchPublicParams()
     }
     return true;
   });
+}
+
+void
+ParamFetcher::fetchPublicParams()
+{  
+  // set metadata checking call back
+  NDN_LOG_INFO("[onAttributePubParams()] Get public parameters");
   // call fetch on rdr fetcher, set call back to be onAttributePubParams
   m_rdrFetcher.fetchRDRSegments(m_updateDoneCallback);
 }
@@ -80,13 +68,6 @@ ParamFetcher::fetchPublicParams()
 void
 ParamFetcher::onAttributePubParams()
 {
-  // if (optionalAAKey) {
-  //   if (!security::verifySignature(pubParamData, *optionalAAKey)) {
-  //     NDN_THROW(std::runtime_error("Fetched public parameters cannot be authenticated: bad signature"));
-  //   }
-  // } else {
-  //   NDN_THROW(std::runtime_error("Fetched public parameters cannot be authenticated: no certificate"));
-  // }
   m_pubParamsCache.fromBuffer(m_rdrFetcher.getSegmentDataBuffers());
 }
 
