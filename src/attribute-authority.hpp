@@ -25,6 +25,7 @@
 #include "algo/private-key.hpp"
 #include "algo/public-params.hpp"
 #include "trust-config.hpp"
+#include "rdr-producer.hpp"
 
 #include <list>
 #include <map>
@@ -34,6 +35,14 @@ namespace nacabe {
 
 class AttributeAuthority : noncopyable
 {
+public:
+  /**
+   * @brief remove a new policy <decryptor name> from the state.
+   * @param decrypterIdentityName The decryptor's name to be removed;
+   */
+  void
+  removePolicy(const Name& decrypterIdentityName);
+
 protected:
   AttributeAuthority(const security::Certificate& identityCert, Face& m_face,
                      KeyChain& keyChain, const AbeType& abeType);
@@ -42,16 +51,36 @@ protected:
   ~AttributeAuthority();
 
   /**
+   * make necessary management to add a new decrypter identity certificate
+   * @param identityCert
+   */
+  void insertPolicy(const security::Certificate& identityCert);
+
+  /**
    *
    * @param identityName
-   * @return the newest private key, and the version timestamp
+   * @return the newest private key
    */
-  virtual std::pair<algo::PrivateKey, time::system_clock::time_point>
+  virtual algo::PrivateKey
   getPrivateKey(const Name& identityName) = 0;
+
+  /**
+   * @param identityName
+   * @return the version timestamp
+   */
+  virtual time::system_clock::time_point
+  getLastPrivateKeyTimestamp(const Name& identityName) = 0;
+
+  /**
+   * Remove the policy state in the subclass
+   * @param decrypterIdentityName the name to be removed
+   */
+  virtual void
+  removePolicyState(const Name& decrypterIdentityName) = 0;
 
 private:
   void
-  onDecryptionKeyRequest(const Interest& interest);
+  setDecrypterInterestFilter(const Name& decrypterIdentityName);
 
   void
   onPublicParamsRequest(const Interest& interest);
@@ -69,7 +98,11 @@ PUBLIC_WITH_TESTS_ELSE_PROTECTED:
 
 private:
   ScopedRegisteredPrefixHandle m_registeredPrefix;
-  std::vector<ScopedInterestFilterHandle> m_interestFilters;
+  std::vector<ScopedInterestFilterHandle> m_publicParamInterestFilters;
+  bool prefixRegistered;
+  std::map<Name, RdrProducer> m_UnregisteredDecKeyProducer;
+  std::map<Name, RdrProducer> m_decKeyProducer;
+  std::map<Name, std::pair<RdrProducer, time::system_clock::time_point>> m_removedDecKeyProducer;
 };
 
 class CpAttributeAuthority: public AttributeAuthority
@@ -99,8 +132,15 @@ public:
   addNewPolicy(const Name& decryptorIdentityName, const std::list<std::string>& attributes);
 
 protected:
-  std::pair<algo::PrivateKey, time::system_clock::time_point>
+
+  algo::PrivateKey
   getPrivateKey(const Name& identityName) override;
+
+  time::system_clock::time_point
+  getLastPrivateKeyTimestamp(const Name& identityName) override;
+
+  void
+  removePolicyState(const Name& decryptorIdentityName) override;
 
 PUBLIC_WITH_TESTS_ELSE_PRIVATE:
   std::map<Name/* Consumer Identity */, std::pair<std::list<std::string>/* Attr */, time::system_clock::time_point>> m_tokens;
@@ -133,8 +173,15 @@ public:
   addNewPolicy(const Name& decryptorIdentityName, const Policy& policy);
 
 protected:
-  std::pair<algo::PrivateKey, time::system_clock::time_point>
+
+  algo::PrivateKey
   getPrivateKey(const Name& identityName) override;
+
+  time::system_clock::time_point
+  getLastPrivateKeyTimestamp(const Name& identityName) override;
+
+  void
+  removePolicyState(const Name& decryptorIdentityName) override;
 
 PUBLIC_WITH_TESTS_ELSE_PRIVATE:
   std::map<Name/* Consumer Identity */, std::pair<Policy, time::system_clock::time_point>> m_tokens;
