@@ -40,7 +40,7 @@ void ndn::nacabe::RdrProducer::setInterestFilter(std::function<time::system_cloc
 
 void ndn::nacabe::RdrProducer::onInterest(const Interest &interest) {
   const auto &name = interest.getName();
-  if (!interest.getName().get(-1).isKeyword()) {
+  if (!interest.getName().get(m_objectName.size()).isKeyword()) {
     // put segments
     bool hasDigest = name.get(-1).isImplicitSha256Digest();
     if (name.size() != m_objectName.size() + 2 + (hasDigest) ||
@@ -58,7 +58,7 @@ void ndn::nacabe::RdrProducer::onInterest(const Interest &interest) {
     return;
   }
 
-  if (readString(name.get(-1)) != "metadata") {
+  if (readString(name.get(m_objectName.size())) != "metadata") {
     NDN_LOG_WARN("Received metadata interest with bad name: " << name);
     return;
   }

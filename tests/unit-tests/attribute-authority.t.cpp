@@ -100,9 +100,11 @@ BOOST_AUTO_TEST_CASE(OnPrvKey)
 
   Name interestName = attrAuthorityPrefix;
   interestName.append("DKEY")
-              .append(consumerName.wireEncode().begin(), consumerName.wireEncode().end());
+              .append(consumerName.wireEncode().begin(), consumerName.wireEncode().end())
+              .appendKeyword("metadata");
   Interest interest(interestName);
   interest.setCanBePrefix(true);
+  interest.setMustBeFresh(true);
   m_keyChain.sign(interest, security::signingByCertificate(consumerCert));
 
   advanceClocks(time::milliseconds(20), 60);
@@ -129,9 +131,11 @@ BOOST_AUTO_TEST_CASE(OnKpPrvKey)
 
   Name interestName = attrAuthorityPrefix;
   interestName.append("DKEY")
-              .append(consumerName.wireEncode().begin(), consumerName.wireEncode().end());
+              .append(consumerName.wireEncode().begin(), consumerName.wireEncode().end())
+              .appendKeyword("metadata");
   Interest interest(interestName);
   interest.setCanBePrefix(true);
+  interest.setMustBeFresh(true);
   m_keyChain.sign(interest, security::signingByCertificate(consumerCert));
 
   advanceClocks(time::milliseconds(20), 60);
