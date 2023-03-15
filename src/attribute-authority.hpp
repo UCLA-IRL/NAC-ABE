@@ -103,6 +103,8 @@ private:
   std::map<Name, RdrProducer> m_UnregisteredDecKeyProducer;
   std::map<Name, RdrProducer> m_decKeyProducer;
   std::map<Name, std::pair<RdrProducer, time::system_clock::time_point>> m_removedDecKeyProducer;
+  RdrProducer m_paraProducer;
+  time::system_clock::time_point m_latestParaTimestamp = systemClock->getNow();
 };
 
 class CpAttributeAuthority: public AttributeAuthority

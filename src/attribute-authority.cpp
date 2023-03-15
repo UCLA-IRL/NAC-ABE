@@ -38,6 +38,7 @@ AttributeAuthority::AttributeAuthority(const security::Certificate& identityCert
   , m_keyChain(keyChain)
   , m_abeType(abeType)
   , prefixRegistered(false)
+  , m_paraProducer(face, identityCert.getIdentity())
 {
   // ABE setup
   if (m_abeType == ABE_TYPE_CP_ABE) {
@@ -55,12 +56,27 @@ AttributeAuthority::AttributeAuthority(const security::Certificate& identityCert
   m_registeredPrefix = m_face.registerPrefix(m_cert.getIdentity(),
     [this] (const Name& name) {
       NDN_LOG_TRACE("Prefix " << name << " registered successfully");
-
       // public parameters filter
-      auto hdl1 = m_face.setInterestFilter(Name(name).append(PUBLIC_PARAMS),
-                                           std::bind(&AttributeAuthority::onPublicParamsRequest, this, _2));
-      m_publicParamInterestFilters.emplace_back(hdl1);
-      NDN_LOG_TRACE("InterestFilter " << Name(name).append(PUBLIC_PARAMS) << " set");
+      m_paraProducer.setInterestFilter([this](){
+      m_latestParaTimestamp = systemClock->getNow();
+      return m_latestParaTimestamp;
+    }, [this, block=Block()](time::system_clock::time_point ts) mutable {
+      Data result;
+      Name dataName = m_cert.getIdentity();
+      dataName.append(PUBLIC_PARAMS);
+      dataName.append(m_abeType);
+      dataName.appendTimestamp(ts);
+      result.setName(dataName);
+      result.setFreshnessPeriod(5_s);
+      const auto& contentBuf = m_pubParams.toBuffer();
+      result.setContent(contentBuf);
+      m_keyChain.sign(result, signingByCertificate(m_cert));
+      Block resultBlock = result.wireEncode();
+      return span<const uint8_t>(resultBlock.wire(), resultBlock.size());
+    }, [this](auto& data){
+      // sign metadata
+      m_keyChain.sign(data, signingByCertificate(m_cert));
+    });
 
       prefixRegistered = true;
       for (auto it = m_UnregisteredDecKeyProducer.begin(); it != m_UnregisteredDecKeyProducer.end();) {
@@ -160,28 +176,6 @@ AttributeAuthority::setDecrypterInterestFilter(const Name& decrypterIdentityName
       m_keyChain.sign(data, signingByCertificate(m_cert));
     });
   }
-}
-
-void
-AttributeAuthority::onPublicParamsRequest(const Interest& interest)
-{
-  // naming: /AA-prefix/PUBPARAMS
-  NDN_LOG_INFO("on public params request: " << interest.getName());
-  Data result;
-  Name dataName = interest.getName();
-  dataName.append(m_abeType);
-  dataName.appendTimestamp();
-  result.setName(dataName);
-  result.setFreshnessPeriod(5_s);
-  const auto& contentBuf = m_pubParams.toBuffer();
-  result.setContent(contentBuf);
-  NDN_LOG_DEBUG("before sign");
-  m_keyChain.sign(result, signingByCertificate(m_cert));
-
-  NDN_LOG_TRACE("Reply public params request.");
-  NDN_LOG_TRACE("Pub params size: " << contentBuf.size());
-
-  m_face.put(result);
 }
 
 CpAttributeAuthority::CpAttributeAuthority(const security::Certificate& identityCert,
