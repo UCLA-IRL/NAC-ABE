@@ -77,12 +77,6 @@ AttributeAuthority::AttributeAuthority(const security::Certificate& identityCert
       // sign metadata
       m_keyChain.sign(data, signingByCertificate(m_cert));
     });
-      
-      
-      auto hdl1 = m_face.setInterestFilter(Name(name).append(PUBLIC_PARAMS),
-                                           std::bind(&AttributeAuthority::onPublicParamsRequest, this, _2));
-      m_publicParamInterestFilters.emplace_back(hdl1);
-      NDN_LOG_TRACE("InterestFilter " << Name(name).append(PUBLIC_PARAMS) << " set");
 
       prefixRegistered = true;
       for (auto it = m_UnregisteredDecKeyProducer.begin(); it != m_UnregisteredDecKeyProducer.end();) {
