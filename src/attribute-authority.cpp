@@ -38,6 +38,7 @@ AttributeAuthority::AttributeAuthority(const security::Certificate& identityCert
   , m_keyChain(keyChain)
   , m_abeType(abeType)
   , prefixRegistered(false)
+  , m_paraProducer(face, identityCert.getIdentity())
 {
   // ABE setup
   if (m_abeType == ABE_TYPE_CP_ABE) {
@@ -55,8 +56,19 @@ AttributeAuthority::AttributeAuthority(const security::Certificate& identityCert
   m_registeredPrefix = m_face.registerPrefix(m_cert.getIdentity(),
     [this] (const Name& name) {
       NDN_LOG_TRACE("Prefix " << name << " registered successfully");
-
       // public parameters filter
+      m_paraProducer.setInterestFilter([this](){
+      m_latestParaTimestamp = systemClock->getNow();
+      return m_latestParaTimestamp;
+    }, [this, block=Block()](time::system_clock::time_point ts) mutable {
+      
+      // return span<const uint8_t>(m_pubParams, m_pubParams);
+    }, [this](auto& data){
+      // sign metadata
+      m_keyChain.sign(data, signingByCertificate(m_cert));
+    });
+      
+      
       auto hdl1 = m_face.setInterestFilter(Name(name).append(PUBLIC_PARAMS),
                                            std::bind(&AttributeAuthority::onPublicParamsRequest, this, _2));
       m_publicParamInterestFilters.emplace_back(hdl1);
