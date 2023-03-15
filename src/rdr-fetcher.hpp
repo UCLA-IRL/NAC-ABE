@@ -8,7 +8,6 @@
 #include <ndn-cxx/util/time.hpp>
 #include <ndn-cxx/face.hpp>
 #include <vector>
-#include "trust-config.hpp"
 
 using namespace std;
 
@@ -17,7 +16,7 @@ namespace nacabe {
 
 class RdrFetcher {
 public:
-  RdrFetcher(ndn::Face& face, const Name& objectName, const TrustConfig& trustConfig,
+  RdrFetcher(ndn::Face& face, const Name& objectName,
              std::function<Interest()> baseInterestTemplate = getDefaultInterestTemplate);
 
   inline void setMetaDataVerificationCallback(std::function<bool(const Data&)> callback) {
@@ -57,8 +56,6 @@ private:
   // this is name prefix before metadata
   const Name& m_objectName;
   uint32_t m_pendingSegments;
-  const TrustConfig& m_trustConfig;
-  
   time::system_clock::time_point m_lastFetchedTime;
   std::function<Interest()> m_baseInterestCallback;
   std::function<bool(const Data&)> m_metaDataVerificationCallback;

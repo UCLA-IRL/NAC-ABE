@@ -65,15 +65,15 @@ private:
   onAttributePubParams(const Data& pubParamData);
 
 private:
-  // Face& m_face;
-  // const Name& m_attrAuthorityPrefix;
-  // const TrustConfig& m_trustConfig;
+  Face& m_face;
+  const Name& m_attrAuthorityPrefix;
+  const TrustConfig& m_trustConfig;
+  RdrFetcher m_rdrFetcher;
 
 PUBLIC_WITH_TESTS_ELSE_PRIVATE:
   AbeType m_abeType;
   algo::PublicParams m_pubParamsCache;
   Interest m_interestTemplate;
-  RdrFetcher m_RdrFetcher;
 };
 
 } // namespace nacabe
