@@ -178,30 +178,6 @@ AttributeAuthority::setDecrypterInterestFilter(const Name& decrypterIdentityName
   }
 }
 
-void
-AttributeAuthority::onPublicParamsRequest(const Interest& interest)
-{
-  // naming: /AA-prefix/PUBPARAMS
-  // NDN_LOG_INFO("on public params request: " << interest.getName());
-  // Data result;
-  // Name dataName = interest.getName();
-  // dataName.append(m_abeType);
-  // dataName.appendTimestamp();
-  // result.setName(dataName);
-  // result.setFreshnessPeriod(5_s);
-  // const auto& contentBuf = m_pubParams.toBuffer();
-  // result.setContent(contentBuf);
-  // NDN_LOG_DEBUG("before sign");
-  // m_keyChain.sign(result, signingByCertificate(m_cert));
-
-  // NDN_LOG_TRACE("Reply public params request.");
-  // NDN_LOG_TRACE("Pub params size: " << contentBuf.size());
-
-  // m_face.put(result);
-
-
-}
-
 CpAttributeAuthority::CpAttributeAuthority(const security::Certificate& identityCert,
                                            Face& face, KeyChain& keyChain)
   : AttributeAuthority(identityCert, face, keyChain, ABE_TYPE_CP_ABE)
