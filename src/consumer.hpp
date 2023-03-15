@@ -40,8 +40,7 @@ public:
 public:
   Consumer(Face& face, KeyChain& keyChain,
            const security::Certificate& identityCert,
-           const security::Certificate& attrAuthorityCertificate,
-           Interest publicParamInterestTemplate = ParamFetcher::getDefaultInterestTemplate());
+           const security::Certificate& attrAuthorityCertificate);
 
   /**
    * @brief Obtain attributes (DKEY) from the attribute authority.
@@ -115,6 +114,7 @@ private:
 
 PUBLIC_WITH_TESTS_ELSE_PRIVATE:
   ParamFetcher m_paramFetcher;
+  RdrFetcher m_encKeyFetcher;
 };
 
 } // namespace nacabe

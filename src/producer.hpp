@@ -45,8 +45,7 @@ public:
    */
   Producer(Face& face, KeyChain& keyChain,
            const security::Certificate& identityCert,
-           const security::Certificate& attrAuthorityCertificate,
-           Interest publicParamInterestTemplate = ParamFetcher::getDefaultInterestTemplate());
+           const security::Certificate& attrAuthorityCertificate);
 
   /**
    * @brief Initialize a producer. Use when a data owner is defined.
@@ -54,8 +53,7 @@ public:
   Producer(Face& face, KeyChain& keyChain,
            const security::Certificate& identityCert,
            const security::Certificate& attrAuthorityCertificate,
-           const security::Certificate& dataOwnerCertificate,
-           Interest publicParamInterestTemplate = ParamFetcher::getDefaultInterestTemplate());
+           const security::Certificate& dataOwnerCertificate);
 
   virtual
   ~Producer();

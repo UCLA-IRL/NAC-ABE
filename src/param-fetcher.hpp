@@ -35,7 +35,7 @@ class ParamFetcher
 {
 public:
   ParamFetcher(Face& face, const Name& attrAuthorityPrefix, const TrustConfig& trustConfig,
-               Interest interestTemplate = getDefaultInterestTemplate());
+               Interest interestTemplate = RdrFetcher::getDefaultInterestTemplate());
 
   void
   fetchPublicParams();
@@ -50,14 +50,6 @@ public:
   getPublicParams() const
   {
     return m_pubParamsCache;
-  }
-
-public:
-  static inline Interest getDefaultInterestTemplate() {
-    Interest interest;
-    interest.setMustBeFresh(true);
-    interest.setCanBePrefix(true);
-    return interest;
   }
 
 private:

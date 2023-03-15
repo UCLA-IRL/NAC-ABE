@@ -32,16 +32,22 @@ NDN_LOG_INIT(nacabe.Consumer);
 
 Consumer::Consumer(Face& face, KeyChain& keyChain,
                    const security::Certificate& identityCert,
-                   const security::Certificate& attrAuthorityCertificate,
-                   Interest publicParamInterestTemplate)
+                   const security::Certificate& attrAuthorityCertificate)
   : m_cert(identityCert)
   , m_face(face)
   , m_keyChain(keyChain)
   , m_attrAuthorityPrefix(attrAuthorityCertificate.getIdentity())
-  , m_paramFetcher(m_face, m_attrAuthorityPrefix, m_trustConfig, publicParamInterestTemplate)
+  , m_paramFetcher(m_face, m_attrAuthorityPrefix, m_trustConfig)
+
+    // /<attribute authority prefix>/DKEY/<decryptor name block>
+  , m_encKeyFetcher(m_face, Name(m_attrAuthorityPrefix).append(DECRYPT_KEY)
+                    .append(m_cert.getIdentity().wireEncode().begin(), m_cert.getIdentity().wireEncode().end()))
 {
   m_trustConfig.addOrUpdateCertificate(attrAuthorityCertificate);
   m_paramFetcher.fetchPublicParams();
+  m_encKeyFetcher.setMetaDataVerificationCallback([attrAuthorityCertificate](const auto& data){
+    return security::verifySignature(data, attrAuthorityCertificate);
+  });
 }
 
 void
@@ -49,33 +55,27 @@ Consumer::obtainDecryptionKey()
 {
   auto identity = m_cert.getIdentity();
   NDN_LOG_INFO(identity << " Fetch private key");
-  // /<attribute authority prefix>/DKEY/<decryptor name block>
-  Name interestName = m_attrAuthorityPrefix;
-  interestName.append(DECRYPT_KEY);
-  interestName.append(identity.wireEncode().begin(), identity.wireEncode().end());
-  Interest interest(interestName);
-  interest.setMustBeFresh(true);
-  interest.setCanBePrefix(true);
 
-  m_face.expressInterest(interest,
-    [this] (auto&&, const Data& keyData) {
-      NDN_LOG_INFO(m_cert.getIdentity() << " get decrypt key data");
-      auto prvBlock = decryptDataContent(keyData.getContent(), m_keyChain.getTpm(), m_cert.getName());
-      algo::PrivateKey prv;
-      prv.fromBuffer(Buffer(prvBlock.data(), prvBlock.size()));
-      m_keyCache = prv;
-    },
-    [this] (auto&&, const auto& nack) {
-      NDN_LOG_INFO("nack for " << m_cert.getIdentity() << " decrypt key data with reason " << nack.getReason());
-    },
-    [this] (auto&&) {
-      NDN_LOG_INFO("timeout for " << m_cert.getIdentity() << " decrypt key data");
-    });
+  m_encKeyFetcher.fetchRDRSegments([this](bool error){
+    if (error) {
+      NDN_LOG_WARN(m_cert.getIdentity() << " error on Fetch private key");
+      return;
+    }
+    auto contentBlock = Block(m_encKeyFetcher.getSegmentDataBuffers());
+    auto prvBlock = decryptDataContent(contentBlock, m_keyChain.getTpm(), m_cert.getName());
+    algo::PrivateKey prv;
+    prv.fromBuffer(Buffer(prvBlock.data(), prvBlock.size()));
+    m_keyCache = prv;
+  });
 }
 
 bool
 Consumer::readyForDecryption()
 {
+  if (m_encKeyFetcher.isPending()) {
+    NDN_LOG_INFO("Private decryption key still pending");
+    return false;
+  }
   // check if public params and private key are ready
   if (m_paramFetcher.getPublicParams().m_pub == "") {
     NDN_LOG_INFO("public parameters doesn't exist");

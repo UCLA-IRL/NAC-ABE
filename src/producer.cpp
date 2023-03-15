@@ -35,13 +35,12 @@ NDN_LOG_INIT(nacabe.Producer);
 
 Producer::Producer(Face& face, KeyChain& keyChain,
                    const security::Certificate& identityCert,
-                   const security::Certificate& attrAuthorityCertificate,
-                   Interest publicParamInterestTemplate)
+                   const security::Certificate& attrAuthorityCertificate)
   : m_cert(identityCert)
   , m_face(face)
   , m_keyChain(keyChain)
   , m_attrAuthorityPrefix(attrAuthorityCertificate.getIdentity())
-  , m_paramFetcher(m_face, m_attrAuthorityPrefix, m_trustConfig, publicParamInterestTemplate)
+  , m_paramFetcher(m_face, m_attrAuthorityPrefix, m_trustConfig)
 {
   m_trustConfig.addOrUpdateCertificate(attrAuthorityCertificate);
   m_paramFetcher.fetchPublicParams();
@@ -51,9 +50,8 @@ Producer::Producer(Face& face, KeyChain& keyChain,
 Producer::Producer(Face& face, KeyChain& keyChain,
                    const security::Certificate& identityCert,
                    const security::Certificate& attrAuthorityCertificate,
-                   const security::Certificate& dataOwnerCertificate,
-                   Interest publicParamInterestTemplate)
-  : Producer(face, keyChain, identityCert, attrAuthorityCertificate, publicParamInterestTemplate)
+                   const security::Certificate& dataOwnerCertificate)
+  : Producer(face, keyChain, identityCert, attrAuthorityCertificate)
 {
   m_dataOwnerPrefix = dataOwnerCertificate.getIdentity();
   m_trustConfig.addOrUpdateCertificate(dataOwnerCertificate);
