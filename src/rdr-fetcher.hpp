@@ -21,7 +21,7 @@ public:
   RdrFetcher(ndn::Face& face, Name objectName,
              std::function<Interest()> baseInterestTemplate = getDefaultInterestTemplate);
 
-  inline void setMetaDataVerificationCallback(std::function<bool(const Data&)> callback) {
+  inline void setMetaDataVerificationCallback(std::function<bool(const Data&, bool)> callback) {
     m_metaDataVerificationCallback = std::move(callback);
   }
 
@@ -64,7 +64,7 @@ private:
   uint32_t m_pendingSegments;
   time::system_clock::time_point m_lastFetchedTime;
   std::function<Interest()> m_baseInterestCallback;
-  std::function<bool(const Data&)> m_metaDataVerificationCallback;
+  std::function<bool(const Data&, bool)> m_metaDataVerificationCallback;
   std::function<void(bool)> m_updateDoneCallback;
   std::vector<Buffer> m_segmentBuffers;
 };

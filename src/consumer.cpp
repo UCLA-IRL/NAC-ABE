@@ -46,7 +46,11 @@ Consumer::Consumer(Face& face, KeyChain& keyChain,
       .append(b.begin(), b.end()));
   m_trustConfig.addOrUpdateCertificate(attrAuthorityCertificate);
   m_paramFetcher.fetchPublicParams();
-  m_encKeyFetcher->setMetaDataVerificationCallback([this, attrAuthorityCertificate](const auto& data){
+  m_encKeyFetcher->setMetaDataVerificationCallback([this, attrAuthorityCertificate](const auto& data, bool isRecent){
+    if (!isRecent) {
+      NDN_LOG_WARN("The metainfo for encryption key is not recent");
+      return false;
+    }
     if (!security::verifySignature(data, attrAuthorityCertificate)) return false;
     if (!m_paramFetcher.isPending()) {
       auto paramVersionBlock = data.getMetaInfo().findAppMetaInfo(TLV_ParamVersion);

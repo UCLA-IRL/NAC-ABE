@@ -79,7 +79,7 @@ BOOST_AUTO_TEST_CASE(Rdr)
   NDN_LOG_INFO("Create RDR Fetcher. ");
   RdrFetcher fetcher(fetcherFace, objectName);
   uint8_t verificationExecuted = 0;
-  fetcher.setMetaDataVerificationCallback([&](const auto& data){verificationExecuted ++; return true; });
+  fetcher.setMetaDataVerificationCallback([&](const auto& data, bool isRecent){ BOOST_CHECK(isRecent); verificationExecuted ++; return true; });
 
   advanceClocks(time::milliseconds(20), 10);
   BOOST_CHECK(tsCheck == 0);
@@ -155,6 +155,7 @@ BOOST_AUTO_TEST_CASE(Rdr)
   BOOST_CHECK_EQUAL_COLLECTIONS(b.begin(), b.end(), PLAIN_TEXT1, PLAIN_TEXT1 + 39999);
 
   //another fetch
+  advanceClocks(150_s, 1);
   done = false;
   fetcher.fetchRDRSegments([&](bool error){
     BOOST_CHECK(!error);
@@ -167,7 +168,7 @@ BOOST_AUTO_TEST_CASE(Rdr)
   BOOST_CHECK(!fetcher.isPending());
   BOOST_CHECK_EQUAL(tsCheck, 4);
   BOOST_CHECK_EQUAL(getBufferExecuted, 2);
-  BOOST_CHECK_EQUAL(signingExecuted, 2);
+  BOOST_CHECK_EQUAL(signingExecuted, 3);
   BOOST_CHECK_EQUAL(verificationExecuted, 4);
 
   BOOST_CHECK_EQUAL(producerSent, 10);
@@ -191,7 +192,7 @@ BOOST_AUTO_TEST_CASE(Rdr)
   BOOST_CHECK(!fetcher.isPending());
   BOOST_CHECK_EQUAL(tsCheck, 5);
   BOOST_CHECK_EQUAL(getBufferExecuted, 3);
-  BOOST_CHECK_EQUAL(signingExecuted, 3);
+  BOOST_CHECK_EQUAL(signingExecuted, 4);
   BOOST_CHECK_EQUAL(verificationExecuted, 5);
   BOOST_CHECK_EQUAL(producerSent, 11);
   BOOST_CHECK_EQUAL(fetcherSent, 11);

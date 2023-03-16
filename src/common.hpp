@@ -92,6 +92,7 @@ const uint32_t TLV_InitialVector = 605;
 const uint32_t TLV_Attribute = 606;
 const uint32_t TLV_AbeType = 175;
 const uint32_t TLV_ParamVersion = 177;
+const uint32_t TLV_SegmentsVersion = 179;
 
 static const std::string PUBLIC_PARAMS = "PUBPARAMS";
 static const std::string DECRYPT_KEY = "DKEY";

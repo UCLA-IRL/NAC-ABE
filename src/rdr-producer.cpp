@@ -18,10 +18,11 @@ KeyChain ndn::nacabe::RdrProducer::KEYCHAIN("pib-memory:", "tpm-memory:");
 const size_t ndn::nacabe::RdrProducer::MAX_DATA_SIZE = 8000;
 
 ndn::nacabe::RdrProducer::RdrProducer(Face &face, Name objectName, time::milliseconds metaDataTtl,
-                                      time::milliseconds segmentTtl) :
+                                      time::milliseconds segmentTtl, time::milliseconds metaDataRefreshTime) :
                                       m_face(face),
                                       m_metaDataTtl(metaDataTtl),
                                       m_segmentTtl(segmentTtl),
+                                      m_metaDataRefreshTime(metaDataRefreshTime),
                                       m_objectName(std::move(objectName))
 {
 }
@@ -63,6 +64,7 @@ void ndn::nacabe::RdrProducer::onInterest(const Interest &interest) {
     return;
   }
   auto currentTime = time::system_clock::now();
+  if (m_metaData) currentTime = std::max(currentTime, m_metaData->getName().get(-1).toTimestamp() + time::milliseconds(1));
   auto new_time = m_getLastTimestamp();
   if (new_time != m_lastGenerationTime) {
     m_expireTime[m_lastGenerationTime] = currentTime + m_metaDataTtl * 2;
@@ -70,6 +72,12 @@ void ndn::nacabe::RdrProducer::onInterest(const Interest &interest) {
     m_metaData = nullptr;
   }
   if (m_metaData != nullptr) {
+    auto name = m_metaData->getName();
+    if (currentTime - name.get(-1).toTimestamp() > m_metaDataRefreshTime) {
+      auto new_name = name.getPrefix(-1).appendTimestamp(currentTime); //refresh time to make version current
+      m_metaData->setName(new_name);
+      m_decorateMetaData(*m_metaData);
+    }
     m_face.put(*m_metaData);
     return;
   }
@@ -98,11 +106,17 @@ void ndn::nacabe::RdrProducer::onInterest(const Interest &interest) {
   }
 
   // make metadata
-  auto metadataName = Name(m_objectName).appendKeyword(METADATA_KEYWORD.c_str()).appendTimestamp(new_time);
+  auto metadataName = Name(m_objectName).appendKeyword(METADATA_KEYWORD.c_str()).appendTimestamp(currentTime);
   m_metaData = std::make_unique<Data>(metadataName);
   m_metaData->setFreshnessPeriod(time::duration_cast<time::milliseconds>(m_metaDataTtl));
 
   m_metaData->setContent(digestBlock);
+
+  //put version metainfo
+  auto m = m_metaData->getMetaInfo();
+  m.addAppMetaInfo(makeNestedBlock(TLV_SegmentsVersion, Name().appendTimestamp(new_time).get(0)));
+  m_metaData->setMetaInfo(m);
+
   m_decorateMetaData(*m_metaData);
 
   m_face.put(*m_metaData);

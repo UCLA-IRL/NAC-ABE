@@ -52,10 +52,19 @@ RdrFetcher::onMetaData(const Data& fetchedMetaData)
 {
   // when receive metadata, unpack it
   NDN_LOG_INFO("[onMetaData()] Get Meta data");
+
+  //is this new
+  auto period = fetchedMetaData.getFreshnessPeriod() * 2;
+  if (!fetchedMetaData.getName().get(m_objectName.size() + 1).isTimestamp()) {
+    NDN_LOG_WARN("Metadata has bad name");
+    onDone(true);
+    return;
+  }
+  bool isRecent = fetchedMetaData.getName().get(m_objectName.size() + 1).toTimestamp() + period > time::system_clock::now();
   
-  // code to verify the data?
+  // code to verify the data
   if (m_metaDataVerificationCallback) {
-    if (!m_metaDataVerificationCallback(fetchedMetaData)) {
+    if (!m_metaDataVerificationCallback(fetchedMetaData, isRecent)) {
       NDN_LOG_WARN("Metadata Verification failed");
       onDone(true);
       return;
@@ -63,14 +72,22 @@ RdrFetcher::onMetaData(const Data& fetchedMetaData)
   }
   
   // code to fetch metadata name and get segment names
-  auto timeStampComponent = fetchedMetaData.getName().get(m_objectName.size() + 1);
-  if (!timeStampComponent.isTimestamp()) {
-    NDN_LOG_WARN("Metadata have a bad timestamp component");
+  auto paramVersionBlock = fetchedMetaData.getMetaInfo().findAppMetaInfo(TLV_SegmentsVersion);
+  if (paramVersionBlock == nullptr) {
+    NDN_LOG_WARN("The metainfo for segments version not found");
     onDone(true);
     return;
   }
-  auto fetchedTimestamp = timeStampComponent.toTimestamp();
-  NDN_LOG_INFO("timestamp component is : " << timeStampComponent);
+
+  time::system_clock::time_point fetchedTimestamp;
+  try {
+    fetchedTimestamp = name::Component(Block(*paramVersionBlock).blockFromValue()).toTimestamp();
+  } catch (std::exception& e) {
+    NDN_LOG_WARN("The metainfo for segments version decoding error");
+    onDone(true);
+    return;
+  }
+  NDN_LOG_INFO("segment timestamp component is : t=" << fetchedTimestamp);
   if (fetchedTimestamp == m_lastFetchedTime) {
     //no update
     NDN_LOG_INFO("update done with no new version");

@@ -33,7 +33,11 @@ ParamFetcher::ParamFetcher(Face& face, const Name& attrAuthorityPrefix, const Tr
     m_trustConfig(trustConfig),
     m_rdrFetcher(face, Name(attrAuthorityPrefix).append(PUBLIC_PARAMS))
 {
-  m_rdrFetcher.setMetaDataVerificationCallback([this](const Data& pubParamData) {
+  m_rdrFetcher.setMetaDataVerificationCallback([this](const Data& pubParamData, bool isRecent) {
+    if (!isRecent) {
+      NDN_LOG_WARN("The metainfo for public param is not recent");
+      return false;
+    }
     auto optionalAAKey = m_trustConfig.findCertificate(m_attrAuthorityPrefix);
     if (optionalAAKey) {
       if (!security::verifySignature(pubParamData, *optionalAAKey)) {
