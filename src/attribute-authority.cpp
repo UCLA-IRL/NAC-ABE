@@ -129,7 +129,7 @@ void AttributeAuthority::insertPolicy(const security::Certificate& identityCert)
   for (auto it = m_removedDecKeyProducer.begin(); it != m_removedDecKeyProducer.end();) {
     auto it2 = it;
     it++;
-    if (it->second.checkCancel()) {
+    if (it2->second.checkCancel()) {
       m_decKeyLastTimestamp.erase(it2->first);
       m_removedDecKeyProducer.erase(it2);
     }
@@ -164,7 +164,7 @@ AttributeAuthority::removePolicy(const Name& decrypterIdentityName)
   for (auto it = m_removedDecKeyProducer.begin(); it != m_removedDecKeyProducer.end();) {
     auto it2 = it;
     it++;
-    if (it->second.checkCancel()) {
+    if (it2->second.checkCancel()) {
       m_decKeyLastTimestamp.erase(it2->first);
       m_removedDecKeyProducer.erase(it2);
     }

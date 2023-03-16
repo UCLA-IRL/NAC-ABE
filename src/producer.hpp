@@ -58,6 +58,12 @@ public:
   virtual
   ~Producer();
 
+  void
+  obtainPublicParam();
+
+  bool
+  readyForEncryption();
+
   /**
    * @brief Produce CP-encrypted Data and corresponding encrypted CK Data
    *

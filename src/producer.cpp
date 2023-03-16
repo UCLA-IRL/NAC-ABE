@@ -69,6 +69,16 @@ Producer::Producer(Face& face, KeyChain& keyChain,
 
 Producer::~Producer() = default;
 
+void
+Producer::obtainPublicParam() {
+  m_paramFetcher.fetchPublicParams();
+}
+
+bool
+Producer::readyForEncryption() {
+  return !m_paramFetcher.isPending() && !m_paramFetcher.m_pubParamsCache.m_pub.empty();
+}
+
 std::tuple<std::shared_ptr<Data>, std::shared_ptr<Data>>
 Producer::produce(const Name& dataNameSuffix, const std::string& accessPolicy,
                   span<const uint8_t> content, std::shared_ptr<Data> ckTemplate, shared_ptr<Data> dataTemplate)
