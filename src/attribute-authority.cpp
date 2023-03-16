@@ -85,6 +85,24 @@ AttributeAuthority::AttributeAuthority(const security::Certificate& identityCert
 
 AttributeAuthority::~AttributeAuthority() = default;
 
+void AttributeAuthority::updatePublicParam() {
+  if (m_abeType == ABE_TYPE_CP_ABE) {
+    NDN_LOG_INFO("Refresh CP-ABE key");
+    algo::ABESupport::getInstance().cpInit(m_pubParams, m_masterKey);
+  } else if (m_abeType == ABE_TYPE_KP_ABE) {
+    NDN_LOG_INFO("Refresh KP-ABE key");
+    algo::ABESupport::getInstance().kpInit(m_pubParams, m_masterKey);
+  } else {
+    NDN_LOG_ERROR("Unsupported ABE type: " << m_abeType);
+    NDN_THROW(std::runtime_error("Unsupported ABE type: " + m_abeType));
+  }
+
+  m_latestParaTimestamp = std::max(time::system_clock::now(), m_latestParaTimestamp + time::milliseconds(1));
+  for (auto& i: m_decKeyLastTimestamp) {
+    i.second = std::max(time::system_clock::now(), i.second + time::milliseconds(1));
+  }
+}
+
 void AttributeAuthority::insertPolicy(const security::Certificate& identityCert) {
   Name decrypterIdentity = identityCert.getIdentity();
   if (m_trustConfig.findCertificate(decrypterIdentity) == nullopt) {
@@ -92,7 +110,7 @@ void AttributeAuthority::insertPolicy(const security::Certificate& identityCert)
 
     if (m_removedDecKeyProducer.count(decrypterIdentity)) {
       auto it = m_removedDecKeyProducer.find(decrypterIdentity);
-      m_decKeyProducer.emplace(it->first, std::move(it->second.first));
+      m_decKeyProducer.emplace(it->first, std::move(it->second));
       m_removedDecKeyProducer.erase(it);
     } else {
       Name decObjectName = m_cert.getIdentity();
@@ -111,10 +129,20 @@ void AttributeAuthority::insertPolicy(const security::Certificate& identityCert)
   for (auto it = m_removedDecKeyProducer.begin(); it != m_removedDecKeyProducer.end();) {
     auto it2 = it;
     it++;
-    if (it->second.first.checkCancel()) {
+    if (it->second.checkCancel()) {
+      m_decKeyLastTimestamp.erase(it2->first);
       m_removedDecKeyProducer.erase(it2);
     }
   }
+}
+
+void AttributeAuthority::updatePolicyLastTimestamp(const Name& identityName)
+{
+  auto time = time::system_clock::now();
+  if (m_decKeyLastTimestamp.count(identityName) > 0 && time - m_decKeyLastTimestamp.at(identityName) < time::milliseconds(1)) {
+    time = m_decKeyLastTimestamp.at(identityName) + time::milliseconds(1);
+  }
+  m_decKeyLastTimestamp[identityName] = time;
 }
 
 void
@@ -123,18 +151,21 @@ AttributeAuthority::removePolicy(const Name& decrypterIdentityName)
   removePolicyState(decrypterIdentityName);
   if (m_decKeyProducer.count(decrypterIdentityName)) {
     auto it = m_decKeyProducer.find(decrypterIdentityName);
-    m_removedDecKeyProducer.emplace(it->first, std::make_pair(std::move(it->second), time::system_clock::now()));
+    m_removedDecKeyProducer.emplace(it->first, std::move(it->second));
     m_decKeyProducer.erase(it);
+    updatePolicyLastTimestamp(decrypterIdentityName);
   } else if (m_UnregisteredDecKeyProducer.count(decrypterIdentityName)) {
     auto it = m_UnregisteredDecKeyProducer.find(decrypterIdentityName);
-    m_removedDecKeyProducer.emplace(it->first, std::make_pair(std::move(it->second), time::system_clock::now()));
+    m_removedDecKeyProducer.emplace(it->first, std::move(it->second));
     m_UnregisteredDecKeyProducer.erase(it);
+    updatePolicyLastTimestamp(decrypterIdentityName);
   }
 
   for (auto it = m_removedDecKeyProducer.begin(); it != m_removedDecKeyProducer.end();) {
     auto it2 = it;
     it++;
-    if (it->second.first.checkCancel()) {
+    if (it->second.checkCancel()) {
+      m_decKeyLastTimestamp.erase(it2->first);
       m_removedDecKeyProducer.erase(it2);
     }
   }
@@ -154,15 +185,14 @@ AttributeAuthority::setDecrypterInterestFilter(const Name& decrypterIdentityName
     auto& p = m_decKeyProducer.at(decrypterIdentityName);
     p.setInterestFilter([this, decrypterIdentityName](){
       NDN_LOG_INFO("Got DKEY request on: " << decrypterIdentityName);
-      if (m_removedDecKeyProducer.count(decrypterIdentityName)) return m_removedDecKeyProducer.at(decrypterIdentityName).second;
-      return getLastPrivateKeyTimestamp(decrypterIdentityName);
+      return m_decKeyLastTimestamp.at(decrypterIdentityName);
     }, [this, decrypterIdentityName](time::system_clock::time_point ts) {
       auto optionalCert = m_trustConfig.findCertificate(decrypterIdentityName);
       auto ABEPrvKey = getPrivateKey(decrypterIdentityName);
       auto prvBuffer = ABEPrvKey.toBuffer();
       auto block = encryptDataContentWithCK(prvBuffer, optionalCert->getPublicKey());
       block.encode();
-      return std::move(*block.getBuffer());
+      return *block.getBuffer();
     }, [this](auto& data){
       MetaInfo info = data.getMetaInfo();
       info.addAppMetaInfo(makeNestedBlock(TLV_ParamVersion, Name().appendTimestamp(m_latestParaTimestamp).get(0)));
@@ -185,11 +215,8 @@ CpAttributeAuthority::addNewPolicy(const Name& decryptorIdentityName,
   if (!m_trustConfig.findCertificate(decryptorIdentityName)) {
     NDN_THROW("Cannot find certificate for adding policy: " + decryptorIdentityName.toUri());
   }
-  auto time = time::system_clock::now();
-  if (m_tokens.count(decryptorIdentityName) > 0 && time - m_tokens.at(decryptorIdentityName).second < time::milliseconds(1)) {
-    time = m_tokens.at(decryptorIdentityName).second + time::milliseconds(1);
-  }
-  m_tokens.emplace(decryptorIdentityName, std::make_pair(attributes, time));
+  updatePolicyLastTimestamp(decryptorIdentityName);
+  m_tokens[decryptorIdentityName] = attributes;
 }
 
 void
@@ -213,18 +240,11 @@ CpAttributeAuthority::getPrivateKey(const Name& identityName)
     k.fromBuffer(Buffer());
     return k;
   }
-  const auto& pair = m_tokens.at(identityName);
-  std::vector<std::string> attrs(pair.first.begin(), pair.first.end());
+  const auto& att = m_tokens.at(identityName);
+  std::vector<std::string> attrs(att.begin(), att.end());
 
   // generate ABE private key and do encryption
   return algo::ABESupport::getInstance().cpPrvKeyGen(m_pubParams, m_masterKey, attrs);
-}
-
-time::system_clock::time_point
-CpAttributeAuthority::getLastPrivateKeyTimestamp(const Name& identityName)
-{
-  const auto& pair = m_tokens.at(identityName);
-  return pair.second;
 }
 
 KpAttributeAuthority::KpAttributeAuthority(const security::Certificate& identityCert,
@@ -239,11 +259,8 @@ KpAttributeAuthority::addNewPolicy(const Name& decryptorIdentityName, const Poli
   if (!m_trustConfig.findCertificate(decryptorIdentityName)) {
     NDN_THROW("Cannot find certificate for adding policy: " + decryptorIdentityName.toUri());
   }
-  auto time = time::system_clock::now();
-  if (m_tokens.count(decryptorIdentityName) > 0 && time - m_tokens.at(decryptorIdentityName).second < time::milliseconds(1)) {
-    time = m_tokens.at(decryptorIdentityName).second + time::milliseconds(1);
-  }
-  m_tokens.emplace(decryptorIdentityName, std::make_pair(policy, time));
+  updatePolicyLastTimestamp(decryptorIdentityName);
+  m_tokens[decryptorIdentityName] = policy;
 }
 
 void
@@ -269,14 +286,7 @@ KpAttributeAuthority::getPrivateKey(const Name& identityName)
   const auto& pair = m_tokens.at(identityName);
 
   // generate ABE private key and do encryption
-  return algo::ABESupport::getInstance().kpPrvKeyGen(m_pubParams, m_masterKey, pair.first);
-}
-
-time::system_clock::time_point
-KpAttributeAuthority::getLastPrivateKeyTimestamp(const Name& identityName)
-{
-  const auto& pair = m_tokens.at(identityName);
-  return pair.second;
+  return algo::ABESupport::getInstance().kpPrvKeyGen(m_pubParams, m_masterKey, pair);
 }
 
 } // namespace nacabe

@@ -46,8 +46,25 @@ Consumer::Consumer(Face& face, KeyChain& keyChain,
       .append(b.begin(), b.end()));
   m_trustConfig.addOrUpdateCertificate(attrAuthorityCertificate);
   m_paramFetcher.fetchPublicParams();
-  m_encKeyFetcher->setMetaDataVerificationCallback([attrAuthorityCertificate](const auto& data){
-    return security::verifySignature(data, attrAuthorityCertificate);
+  m_encKeyFetcher->setMetaDataVerificationCallback([this, attrAuthorityCertificate](const auto& data){
+    if (!security::verifySignature(data, attrAuthorityCertificate)) return false;
+    if (!m_paramFetcher.isPending()) {
+      auto paramVersionBlock = data.getMetaInfo().findAppMetaInfo(TLV_ParamVersion);
+      if (paramVersionBlock == nullptr) {
+        NDN_LOG_WARN("The metainfo for public param not found");
+        return false;
+      }
+      try {
+        auto timestamp = name::Component(Block(*paramVersionBlock).blockFromValue()).toTimestamp();
+        if (m_paramFetcher.getLastTimestamp() != timestamp) {
+          m_paramFetcher.fetchPublicParams();
+        }
+      } catch (const std::exception& e) {
+        NDN_LOG_WARN("The metainfo for public param decoding fail");
+        return false;
+      }
+    }
+    return true;
   });
 }
 
@@ -55,7 +72,7 @@ void
 Consumer::obtainDecryptionKey()
 {
   auto identity = m_cert.getIdentity();
-  NDN_LOG_INFO(identity << " Fetch private key");
+  NDN_LOG_INFO(identity << " fetch private key");
 
   m_encKeyFetcher->fetchRDRSegments([this](bool error){
     if (error) {

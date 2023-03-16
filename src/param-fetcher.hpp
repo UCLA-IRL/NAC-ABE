@@ -40,16 +40,24 @@ public:
   void
   fetchPublicParams();
 
-  AbeType
+  inline AbeType
   getAbeType() const
   {
     return m_abeType;
   }
 
-  algo::PublicParams
+  inline algo::PublicParams
   getPublicParams() const
   {
     return m_pubParamsCache;
+  }
+
+  inline time::system_clock::time_point getLastTimestamp() const {
+    return m_rdrFetcher.lastFetchedTimestamp();
+  }
+
+  inline bool isPending() const {
+    return m_rdrFetcher.isPending();
   }
 
 private:

@@ -32,8 +32,12 @@ public:
 
   Buffer getSegmentDataBuffers();
 
-  bool isPending() {
+  inline bool isPending() const {
     return m_pendingSegments != 0;
+  }
+
+  inline time::system_clock::time_point lastFetchedTimestamp() const {
+    return m_lastFetchedTime;
   }
 
 public:

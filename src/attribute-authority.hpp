@@ -43,6 +43,8 @@ public:
   void
   removePolicy(const Name& decrypterIdentityName);
 
+  void updatePublicParam();
+
 protected:
   AttributeAuthority(const security::Certificate& identityCert, Face& m_face,
                      KeyChain& keyChain, const AbeType& abeType);
@@ -55,6 +57,7 @@ protected:
    * @param identityCert
    */
   void insertPolicy(const security::Certificate& identityCert);
+  void updatePolicyLastTimestamp(const Name& identityName);
 
   /**
    *
@@ -63,13 +66,6 @@ protected:
    */
   virtual algo::PrivateKey
   getPrivateKey(const Name& identityName) = 0;
-
-  /**
-   * @param identityName
-   * @return the version timestamp
-   */
-  virtual time::system_clock::time_point
-  getLastPrivateKeyTimestamp(const Name& identityName) = 0;
 
   /**
    * Remove the policy state in the subclass
@@ -95,13 +91,13 @@ PUBLIC_WITH_TESTS_ELSE_PROTECTED:
 
 private:
   ScopedRegisteredPrefixHandle m_registeredPrefix;
-  std::vector<ScopedInterestFilterHandle> m_publicParamInterestFilters;
   bool prefixRegistered;
   std::map<Name, RdrProducer> m_UnregisteredDecKeyProducer;
   std::map<Name, RdrProducer> m_decKeyProducer;
-  std::map<Name, std::pair<RdrProducer, time::system_clock::time_point>> m_removedDecKeyProducer;
+  std::map<Name, RdrProducer> m_removedDecKeyProducer;
   RdrProducer m_paraProducer;
   time::system_clock::time_point m_latestParaTimestamp;
+  std::map<Name, time::system_clock::time_point> m_decKeyLastTimestamp;
 };
 
 class CpAttributeAuthority: public AttributeAuthority
@@ -135,14 +131,11 @@ protected:
   algo::PrivateKey
   getPrivateKey(const Name& identityName) override;
 
-  time::system_clock::time_point
-  getLastPrivateKeyTimestamp(const Name& identityName) override;
-
   void
   removePolicyState(const Name& decryptorIdentityName) override;
 
 PUBLIC_WITH_TESTS_ELSE_PRIVATE:
-  std::map<Name/* Consumer Identity */, std::pair<std::list<std::string>/* Attr */, time::system_clock::time_point>> m_tokens;
+  std::map<Name/* Consumer Identity */, std::list<std::string>/* Attr */> m_tokens;
 };
 
 class KpAttributeAuthority: public AttributeAuthority
@@ -176,14 +169,11 @@ protected:
   algo::PrivateKey
   getPrivateKey(const Name& identityName) override;
 
-  time::system_clock::time_point
-  getLastPrivateKeyTimestamp(const Name& identityName) override;
-
   void
   removePolicyState(const Name& decryptorIdentityName) override;
 
 PUBLIC_WITH_TESTS_ELSE_PRIVATE:
-  std::map<Name/* Consumer Identity */, std::pair<Policy, time::system_clock::time_point>> m_tokens;
+  std::map<Name/* Consumer Identity */, Policy> m_tokens;
 };
 
 } // namespace nacabe
