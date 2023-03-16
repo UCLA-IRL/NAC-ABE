@@ -58,7 +58,7 @@ void ndn::nacabe::RdrProducer::onInterest(const Interest &interest) {
     return;
   }
 
-  if (readString(name.get(m_objectName.size())) != "metadata") {
+  if (readString(name.get(m_objectName.size())) != METADATA_KEYWORD) {
     NDN_LOG_WARN("Received metadata interest with bad name: " << name);
     return;
   }
@@ -98,7 +98,7 @@ void ndn::nacabe::RdrProducer::onInterest(const Interest &interest) {
   }
 
   // make metadata
-  auto metadataName = Name(m_objectName).appendKeyword("metadata").appendTimestamp(new_time);
+  auto metadataName = Name(m_objectName).appendKeyword(METADATA_KEYWORD.c_str()).appendTimestamp(new_time);
   m_metaData = std::make_unique<Data>(metadataName);
   m_metaData->setFreshnessPeriod(time::duration_cast<time::milliseconds>(m_metaDataTtl));
 

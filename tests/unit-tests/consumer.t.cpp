@@ -19,9 +19,7 @@
  */
 
 #include "consumer.hpp"
-
 #include "test-common.hpp"
-
 #include <ndn-cxx/util/dummy-client-face.hpp>
 
 namespace ndn {
@@ -54,7 +52,7 @@ BOOST_FIXTURE_TEST_SUITE(TestConsumer, TestConsumerFixture)
 BOOST_AUTO_TEST_CASE(Constructor)
 {
   bool commandReceived = false;
-  c2.setInterestFilter(Name(attrAuthorityPrefix).append("PUBPARAMS").appendKeyword("metadata"),
+  c2.setInterestFilter(Name(attrAuthorityPrefix).append(PUBLIC_PARAMS).appendKeyword(METADATA_KEYWORD.c_str()),
                        [&] (auto&&...) { commandReceived = true; });
 
   advanceClocks(time::milliseconds(20), 60);

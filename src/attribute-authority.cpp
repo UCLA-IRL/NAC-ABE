@@ -38,7 +38,8 @@ AttributeAuthority::AttributeAuthority(const security::Certificate& identityCert
   , m_keyChain(keyChain)
   , m_abeType(abeType)
   , prefixRegistered(false)
-  , m_paraProducer(face, identityCert.getIdentity())
+  , m_paraProducer(face, identityCert.getIdentity().append(PUBLIC_PARAMS))
+  , m_latestParaTimestamp(time::system_clock::now())
 {
   // ABE setup
   if (m_abeType == ABE_TYPE_CP_ABE) {
@@ -58,23 +59,15 @@ AttributeAuthority::AttributeAuthority(const security::Certificate& identityCert
       NDN_LOG_TRACE("Prefix " << name << " registered successfully");
       // public parameters filter
       m_paraProducer.setInterestFilter([this](){
-      m_latestParaTimestamp = systemClock->getNow();
       return m_latestParaTimestamp;
-    }, [this, block=Block()](time::system_clock::time_point ts) mutable {
-      Data result;
-      Name dataName = m_cert.getIdentity();
-      dataName.append(PUBLIC_PARAMS);
-      dataName.append(m_abeType);
-      dataName.appendTimestamp(ts);
-      result.setName(dataName);
-      result.setFreshnessPeriod(5_s);
-      const auto& contentBuf = m_pubParams.toBuffer();
-      result.setContent(contentBuf);
-      m_keyChain.sign(result, signingByCertificate(m_cert));
-      Block resultBlock = result.wireEncode();
-      return span<const uint8_t>(resultBlock.wire(), resultBlock.size());
+    }, [this, buf=Buffer()](time::system_clock::time_point ts) mutable {
+      buf = m_pubParams.toBuffer();
+      return buf;
     }, [this](auto& data){
       // sign metadata
+      MetaInfo info;
+      info.addAppMetaInfo(makeStringBlock(TLV_AbeType, m_abeType));
+      data.setMetaInfo(info);
       m_keyChain.sign(data, signingByCertificate(m_cert));
     });
 
@@ -172,7 +165,9 @@ AttributeAuthority::setDecrypterInterestFilter(const Name& decrypterIdentityName
       block.encode();
       return span<const uint8_t>(block.wire(), block.size());
     }, [this](auto& data){
-      //TODO add metadata: public key version
+      MetaInfo info;
+      info.addAppMetaInfo(makeNestedBlock(TLV_ParamVersion, Name().appendTimestamp(m_latestParaTimestamp).get(0)));
+      data.setMetaInfo(info);
       m_keyChain.sign(data, signingByCertificate(m_cert));
     });
   }

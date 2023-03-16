@@ -20,6 +20,7 @@
 
 #include "param-fetcher.hpp"
 #include "algo/abe-support.hpp"
+#include "rdr-producer.hpp"
 
 #include "test-common.hpp"
 
@@ -42,7 +43,7 @@ public:
     , attrAuthorityPrefix("/authority")
   {
     c1.linkTo(c2);
-    authorityCert = addIdentity("/authority").getDefaultKey().getDefaultCertificate();
+    authorityCert = addIdentity(attrAuthorityPrefix).getDefaultKey().getDefaultCertificate();
     trustConfig.addOrUpdateCertificate(authorityCert);
   }
 
@@ -59,32 +60,29 @@ BOOST_FIXTURE_TEST_SUITE(TestParamFetcher, TestParamFetcherFixture)
 BOOST_AUTO_TEST_CASE(Constructor)
 {
   algo::PublicParams m_pubParams;
-  c2.setInterestFilter(InterestFilter(attrAuthorityPrefix),
-                       [&](const ndn::InterestFilter&, const ndn::Interest& interest) {
-                         algo::MasterKey m_masterKey;
-                         algo::ABESupport::getInstance().cpInit(m_pubParams, m_masterKey);
-                         Data result;
-                         Name dataName = interest.getName();
-                         dataName.append(ABE_TYPE_CP_ABE);
-                         dataName.appendTimestamp();
-                         result.setName(dataName);
-                         result.setFreshnessPeriod(10_s);
-                         const auto& contentBuf = m_pubParams.toBuffer();
-                         result.setContent(contentBuf);
-                         m_keyChain.sign(result, signingByCertificate(authorityCert));
-
-                         NDN_LOG_TRACE("Reply public params request.");
-                         NDN_LOG_TRACE("Pub params size: " << contentBuf.size());
-
-                         c2.put(result);
-                       });
+  algo::MasterKey m_masterKey;
+  algo::ABESupport::getInstance().cpInit(m_pubParams, m_masterKey);
+  Buffer b = m_pubParams.toBuffer();
+  RdrProducer producer(c2, Name(attrAuthorityPrefix).append(PUBLIC_PARAMS));
+  producer.setInterestFilter([t = time::system_clock::now()]{return t;},
+                             [b](time::system_clock::time_point i) {
+                               NDN_LOG_TRACE("Reply public params request.");
+                               NDN_LOG_TRACE("Pub params size: " << b.size());
+                               return b;
+                             }, [this](auto& data) {
+        MetaInfo info;
+        info.addAppMetaInfo(makeStringBlock(TLV_AbeType, ABE_TYPE_CP_ABE));
+        data.setMetaInfo(info);
+        m_keyChain.sign(data, signingByCertificate(authorityCert));
+      });
+  advanceClocks(time::milliseconds(20), 60);
 
   ParamFetcher paramFetcher(c1, attrAuthorityPrefix, trustConfig);
   paramFetcher.fetchPublicParams();
-  advanceClocks(time::milliseconds(10), 100);
+  advanceClocks(time::milliseconds(20), 60);
 
-  BOOST_CHECK(paramFetcher.getPublicParams().m_pub != "");
-  BOOST_CHECK(paramFetcher.getAbeType() == ABE_TYPE_CP_ABE);
+  BOOST_CHECK(!paramFetcher.getPublicParams().m_pub.empty());
+  BOOST_CHECK_EQUAL(paramFetcher.getAbeType(), ABE_TYPE_CP_ABE);
 }
 
 BOOST_AUTO_TEST_SUITE_END()

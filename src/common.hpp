@@ -90,10 +90,13 @@ const uint32_t TLV_PlainTextSize = 603;
 const uint32_t TLV_AesKeyId = 604;
 const uint32_t TLV_InitialVector = 605;
 const uint32_t TLV_Attribute = 606;
+const uint32_t TLV_AbeType = 175;
+const uint32_t TLV_ParamVersion = 177;
 
 static const std::string PUBLIC_PARAMS = "PUBPARAMS";
 static const std::string DECRYPT_KEY = "DKEY";
 static const std::string SET_POLICY = "SET_POLICY";
+const std::string METADATA_KEYWORD = "metadata";
 
 using AbeType = std::string;
 static const std::string ABE_TYPE_CP_ABE = "CP-ABE";

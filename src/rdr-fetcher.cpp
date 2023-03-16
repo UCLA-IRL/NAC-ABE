@@ -7,8 +7,6 @@ namespace nacabe {
 
 NDN_LOG_INIT(nacabe.RdrFetcher);
 
-const std::string METADATA_KEYWORD = "metadata";
-
 RdrFetcher::RdrFetcher(Face& face, Name objectName, std::function<Interest()> baseInterestTemplate)
   : m_face(face),
     m_objectName(std::move(objectName)),

@@ -5,6 +5,7 @@
 #ifndef NAC_ABE_RDR_PRODUCER_HPP
 #define NAC_ABE_RDR_PRODUCER_HPP
 
+#include "common.hpp"
 #include <map>
 #include <vector>
 #include <ndn-cxx/data.hpp>

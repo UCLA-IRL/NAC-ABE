@@ -114,7 +114,7 @@ private:
 
 PUBLIC_WITH_TESTS_ELSE_PRIVATE:
   ParamFetcher m_paramFetcher;
-  RdrFetcher m_encKeyFetcher;
+  std::unique_ptr<RdrFetcher> m_encKeyFetcher;
 };
 
 } // namespace nacabe

@@ -61,26 +61,21 @@ BOOST_AUTO_TEST_CASE(OnPublicParams)
   util::DummyClientFace face(io, {true, true});
   CpAttributeAuthority aa(authorityCert, face, m_keyChain);
   Name interestName = attrAuthorityPrefix;
-  Interest request(interestName.append(PUBLIC_PARAMS));
+  Interest request(interestName.append(PUBLIC_PARAMS).appendKeyword(METADATA_KEYWORD.c_str()));
   request.setCanBePrefix(true);
+  request.setMustBeFresh(true);
   auto requiredBuffer = aa.m_pubParams.toBuffer();
 
   advanceClocks(time::milliseconds(20), 60);
 
   int count = 0;
   face.onSendData.connect([&] (const Data& response) {
-      count++;
-      BOOST_CHECK(security::verifySignature(response, authorityCert));
-
-      auto block = response.getContent();
-      Buffer contentBuffer(block.value(), block.value_size());
-      algo::PublicParams pubParams;
-      pubParams.fromBuffer(contentBuffer);
-      auto buffer = pubParams.toBuffer();
-
-      BOOST_CHECK_EQUAL_COLLECTIONS(buffer.begin(), buffer.end(),
-                                    requiredBuffer.begin(), requiredBuffer.end());
-    });
+    count++;
+    BOOST_CHECK(security::verifySignature(response, authorityCert));
+    auto c = response.getContent();
+    c.parse();
+    BOOST_CHECK(c.elements_size() > 0);
+  });
   face.receive(request);
 
   advanceClocks(time::milliseconds(20), 60);
@@ -99,9 +94,9 @@ BOOST_AUTO_TEST_CASE(OnPrvKey)
   aa.addNewPolicy(consumerCert, attrList);
 
   Name interestName = attrAuthorityPrefix;
-  interestName.append("DKEY")
+  interestName.append(DECRYPT_KEY)
               .append(consumerName.wireEncode().begin(), consumerName.wireEncode().end())
-              .appendKeyword("metadata");
+              .appendKeyword(METADATA_KEYWORD.c_str());
   Interest interest(interestName);
   interest.setCanBePrefix(true);
   interest.setMustBeFresh(true);
@@ -132,7 +127,7 @@ BOOST_AUTO_TEST_CASE(OnKpPrvKey)
   Name interestName = attrAuthorityPrefix;
   interestName.append("DKEY")
               .append(consumerName.wireEncode().begin(), consumerName.wireEncode().end())
-              .appendKeyword("metadata");
+              .appendKeyword(METADATA_KEYWORD.c_str());
   Interest interest(interestName);
   interest.setCanBePrefix(true);
   interest.setMustBeFresh(true);

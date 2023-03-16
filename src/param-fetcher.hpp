@@ -21,6 +21,7 @@
 #ifndef NAC_ABE_PARAM_FETCHER_HPP
 #define NAC_ABE_PARAM_FETCHER_HPP
 
+#include "common.hpp"
 #include "algo/public-params.hpp"
 #include "trust-config.hpp"
 #include "rdr-fetcher.hpp"
@@ -34,8 +35,7 @@ namespace nacabe {
 class ParamFetcher
 {
 public:
-  ParamFetcher(Face& face, const Name& attrAuthorityPrefix, const TrustConfig& trustConfig,
-               Interest interestTemplate = RdrFetcher::getDefaultInterestTemplate());
+  ParamFetcher(Face& face, const Name& attrAuthorityPrefix, const TrustConfig& trustConfig);
 
   void
   fetchPublicParams();
@@ -60,7 +60,6 @@ private:
 PUBLIC_WITH_TESTS_ELSE_PRIVATE:
   AbeType m_abeType;
   algo::PublicParams m_pubParamsCache;
-  Interest m_interestTemplate;
 };
 
 } // namespace nacabe

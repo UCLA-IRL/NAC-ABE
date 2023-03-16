@@ -82,9 +82,6 @@ private:
   void
   setDecrypterInterestFilter(const Name& decrypterIdentityName);
 
-  void
-  onPublicParamsRequest(const Interest& interest);
-
 protected:
   security::Certificate m_cert;
   Face& m_face;
@@ -104,7 +101,7 @@ private:
   std::map<Name, RdrProducer> m_decKeyProducer;
   std::map<Name, std::pair<RdrProducer, time::system_clock::time_point>> m_removedDecKeyProducer;
   RdrProducer m_paraProducer;
-  time::system_clock::time_point m_latestParaTimestamp = systemClock->getNow();
+  time::system_clock::time_point m_latestParaTimestamp;
 };
 
 class CpAttributeAuthority: public AttributeAuthority

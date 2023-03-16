@@ -1,6 +1,8 @@
 #ifndef NAC_ABE_RDR_FETCHER_HPP
 #define NAC_ABE_RDR_FETCHER_HPP
 
+#include "common.hpp"
+
 #include <map>
 #include <utility>
 #include <vector>
