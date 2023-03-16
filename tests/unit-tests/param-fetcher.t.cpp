@@ -70,7 +70,7 @@ BOOST_AUTO_TEST_CASE(Constructor)
                                NDN_LOG_TRACE("Pub params size: " << b.size());
                                return b;
                              }, [this](auto& data) {
-        MetaInfo info;
+        MetaInfo info = data.getMetaInfo();
         info.addAppMetaInfo(makeStringBlock(TLV_AbeType, ABE_TYPE_CP_ABE));
         data.setMetaInfo(info);
         m_keyChain.sign(data, signingByCertificate(authorityCert));
@@ -80,6 +80,9 @@ BOOST_AUTO_TEST_CASE(Constructor)
   ParamFetcher paramFetcher(c1, attrAuthorityPrefix, trustConfig);
   paramFetcher.fetchPublicParams();
   advanceClocks(time::milliseconds(20), 60);
+
+  auto interestName = c1.sentInterests.at(0).getName();
+  auto dataName = c2.sentData.at(0).getName();
 
   BOOST_CHECK(!paramFetcher.getPublicParams().m_pub.empty());
   BOOST_CHECK_EQUAL(paramFetcher.getAbeType(), ABE_TYPE_CP_ABE);

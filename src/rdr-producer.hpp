@@ -21,7 +21,7 @@ public:
               time::milliseconds segmentTtl = time::days(1));
 
   void setInterestFilter(std::function<time::system_clock::time_point()> getLastTimestamp,
-                         std::function<const span<const uint8_t>&(time::system_clock::time_point)> getContent,
+                         std::function<Buffer(time::system_clock::time_point)> getContent,
                          std::function<void(ndn::Data&)> decorateMetaData
                          );
 
@@ -39,7 +39,7 @@ private:
   ndn::Name m_objectName;
   ndn::InterestFilterHandle m_handle;
   std::function<time::system_clock::time_point()> m_getLastTimestamp;
-  std::function<const span<const uint8_t>&(time::system_clock::time_point)> m_getContent;
+  std::function<Buffer(time::system_clock::time_point)> m_getContent;
   std::function<void(ndn::Data&)> m_decorateMetaData;
 
   std::map<time::system_clock::time_point, std::vector<ndn::Data>> m_segments;

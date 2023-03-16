@@ -125,7 +125,7 @@ BOOST_AUTO_TEST_CASE(OnKpPrvKey)
   aa.addNewPolicy(consumerCert, policy);
 
   Name interestName = attrAuthorityPrefix;
-  interestName.append("DKEY")
+  interestName.append(DECRYPT_KEY)
               .append(consumerName.wireEncode().begin(), consumerName.wireEncode().end())
               .appendKeyword(METADATA_KEYWORD.c_str());
   Interest interest(interestName);

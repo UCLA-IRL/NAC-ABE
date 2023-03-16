@@ -60,12 +60,11 @@ AttributeAuthority::AttributeAuthority(const security::Certificate& identityCert
       // public parameters filter
       m_paraProducer.setInterestFilter([this](){
       return m_latestParaTimestamp;
-    }, [this, buf=Buffer()](time::system_clock::time_point ts) mutable {
-      buf = m_pubParams.toBuffer();
-      return buf;
+    }, [this](time::system_clock::time_point ts) {
+      return m_pubParams.toBuffer();
     }, [this](auto& data){
       // sign metadata
-      MetaInfo info;
+      MetaInfo info = data.getMetaInfo();
       info.addAppMetaInfo(makeStringBlock(TLV_AbeType, m_abeType));
       data.setMetaInfo(info);
       m_keyChain.sign(data, signingByCertificate(m_cert));
@@ -157,15 +156,15 @@ AttributeAuthority::setDecrypterInterestFilter(const Name& decrypterIdentityName
       NDN_LOG_INFO("Got DKEY request on: " << decrypterIdentityName);
       if (m_removedDecKeyProducer.count(decrypterIdentityName)) return m_removedDecKeyProducer.at(decrypterIdentityName).second;
       return getLastPrivateKeyTimestamp(decrypterIdentityName);
-    }, [this, decrypterIdentityName, block=Block()](time::system_clock::time_point ts) mutable {
+    }, [this, decrypterIdentityName](time::system_clock::time_point ts) {
       auto optionalCert = m_trustConfig.findCertificate(decrypterIdentityName);
       auto ABEPrvKey = getPrivateKey(decrypterIdentityName);
       auto prvBuffer = ABEPrvKey.toBuffer();
-      block = encryptDataContentWithCK(prvBuffer, optionalCert->getPublicKey());
+      auto block = encryptDataContentWithCK(prvBuffer, optionalCert->getPublicKey());
       block.encode();
-      return span<const uint8_t>(block.wire(), block.size());
+      return std::move(*block.getBuffer());
     }, [this](auto& data){
-      MetaInfo info;
+      MetaInfo info = data.getMetaInfo();
       info.addAppMetaInfo(makeNestedBlock(TLV_ParamVersion, Name().appendTimestamp(m_latestParaTimestamp).get(0)));
       data.setMetaInfo(info);
       m_keyChain.sign(data, signingByCertificate(m_cert));

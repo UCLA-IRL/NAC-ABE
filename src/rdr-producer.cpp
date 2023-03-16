@@ -14,7 +14,7 @@ NDN_LOG_INIT(nacabe.RdrProducer);
 using namespace ndn;
 
 
-KeyChain ndn::nacabe::RdrProducer::KEYCHAIN;
+KeyChain ndn::nacabe::RdrProducer::KEYCHAIN("pib-memory:", "tpm-memory:");
 const size_t ndn::nacabe::RdrProducer::MAX_DATA_SIZE = 8000;
 
 ndn::nacabe::RdrProducer::RdrProducer(Face &face, Name objectName, time::milliseconds metaDataTtl,
@@ -27,7 +27,7 @@ ndn::nacabe::RdrProducer::RdrProducer(Face &face, Name objectName, time::millise
 }
 
 void ndn::nacabe::RdrProducer::setInterestFilter(std::function<time::system_clock::time_point()> getLastTimestamp,
-                                                 std::function<const nonstd::span<const uint8_t> &(
+                                                 std::function<Buffer(
                                                      time::system_clock::time_point)> getContent,
                                                  std::function<void(Data &)> decorateMetaData) {
   m_handle.cancel();

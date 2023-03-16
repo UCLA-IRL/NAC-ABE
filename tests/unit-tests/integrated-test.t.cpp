@@ -164,6 +164,7 @@ BOOST_AUTO_TEST_CASE(Cp)
   bool isConsumeCbCalled = false;
   consumer1.obtainDecryptionKey();
   advanceClocks(time::milliseconds(20), 60);
+  BOOST_CHECK(consumer1.readyForDecryption());
   consumer1.consume(producerCert.getIdentity().append(dataName),
     [&] (const Buffer& result) {
       isConsumeCbCalled = true;

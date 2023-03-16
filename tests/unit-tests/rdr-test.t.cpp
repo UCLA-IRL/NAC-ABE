@@ -47,7 +47,7 @@ public:
 protected:
   util::DummyClientFace producerFace;
   util::DummyClientFace fetcherFace;
-  std::map<time::system_clock::TimePoint, span<const uint8_t>> span_map;
+  std::map<time::system_clock::TimePoint, Buffer> buffer_map;
 };
 
 BOOST_FIXTURE_TEST_SUITE(TestRdr, TestRdrFixture)
@@ -65,11 +65,11 @@ BOOST_AUTO_TEST_CASE(Rdr)
   RdrProducer producer(producerFace, objectName);
   advanceClocks(time::milliseconds(20), 60);
   time::system_clock::TimePoint timeS = systemClock->getNow();
-  span_map.emplace(timeS, span<const uint8_t>({PLAIN_TEXT2, 8000}));
+  buffer_map.emplace(timeS, Buffer({PLAIN_TEXT2, 8000}));
 
-  uint8_t tsCheck = 0, spanTakeExecuted = 0, signingExecuted = 0;
+  uint8_t tsCheck = 0, getBufferExecuted = 0, signingExecuted = 0;
   producer.setInterestFilter([&](){tsCheck ++; return timeS;},
-                             [&](auto timePoint){spanTakeExecuted ++; return span_map.at(timePoint);},
+                             [&](auto timePoint){getBufferExecuted ++; return buffer_map.at(timePoint);},
                              [&](Data &data) {
                                signingExecuted++;
                                m_keyChain.sign(data, signingWithSha256());
@@ -83,7 +83,7 @@ BOOST_AUTO_TEST_CASE(Rdr)
 
   advanceClocks(time::milliseconds(20), 10);
   BOOST_CHECK(tsCheck == 0);
-  BOOST_CHECK(spanTakeExecuted == 0);
+  BOOST_CHECK(getBufferExecuted == 0);
   BOOST_CHECK(signingExecuted == 0);
   BOOST_CHECK(verificationExecuted == 0);
 
@@ -102,7 +102,7 @@ BOOST_AUTO_TEST_CASE(Rdr)
   BOOST_CHECK(done);
   BOOST_CHECK(!fetcher.isPending());
   BOOST_CHECK_EQUAL(tsCheck, 1);
-  BOOST_CHECK_EQUAL(spanTakeExecuted, 1);
+  BOOST_CHECK_EQUAL(getBufferExecuted, 1);
   BOOST_CHECK_EQUAL(signingExecuted, 1);
   BOOST_CHECK_EQUAL(verificationExecuted, 1);
   BOOST_CHECK_EQUAL(producerSent, 2);
@@ -122,7 +122,7 @@ BOOST_AUTO_TEST_CASE(Rdr)
   BOOST_CHECK(done);
   BOOST_CHECK(!fetcher.isPending());
   BOOST_CHECK_EQUAL(tsCheck, 2);
-  BOOST_CHECK_EQUAL(spanTakeExecuted, 1);
+  BOOST_CHECK_EQUAL(getBufferExecuted, 1);
   BOOST_CHECK_EQUAL(signingExecuted, 1);
   BOOST_CHECK_EQUAL(verificationExecuted, 2);
   BOOST_CHECK_EQUAL(producerSent, 3);
@@ -132,7 +132,7 @@ BOOST_AUTO_TEST_CASE(Rdr)
 
   //update data
   timeS = systemClock->getNow();
-  span_map.emplace(timeS, span<const uint8_t>({PLAIN_TEXT1, 39999}));
+  buffer_map.emplace(timeS, Buffer({PLAIN_TEXT1, 39999}));
   done = false;
   fetcher.fetchRDRSegments([&](bool error){
     BOOST_CHECK(!error);
@@ -144,7 +144,7 @@ BOOST_AUTO_TEST_CASE(Rdr)
   BOOST_CHECK(done);
   BOOST_CHECK(!fetcher.isPending());
   BOOST_CHECK_EQUAL(tsCheck, 3);
-  BOOST_CHECK_EQUAL(spanTakeExecuted, 2);
+  BOOST_CHECK_EQUAL(getBufferExecuted, 2);
   BOOST_CHECK_EQUAL(signingExecuted, 2);
   BOOST_CHECK_EQUAL(verificationExecuted, 3);
 
@@ -166,7 +166,7 @@ BOOST_AUTO_TEST_CASE(Rdr)
   BOOST_CHECK(done);
   BOOST_CHECK(!fetcher.isPending());
   BOOST_CHECK_EQUAL(tsCheck, 4);
-  BOOST_CHECK_EQUAL(spanTakeExecuted, 2);
+  BOOST_CHECK_EQUAL(getBufferExecuted, 2);
   BOOST_CHECK_EQUAL(signingExecuted, 2);
   BOOST_CHECK_EQUAL(verificationExecuted, 4);
 
@@ -178,7 +178,7 @@ BOOST_AUTO_TEST_CASE(Rdr)
 
   //update data
   timeS = systemClock->getNow();
-  span_map.emplace(timeS, span<const uint8_t>({PLAIN_TEXT1, 0}));
+  buffer_map.emplace(timeS, Buffer({PLAIN_TEXT1, 0}));
   done = false;
   fetcher.fetchRDRSegments([&](bool error){
     BOOST_CHECK(!error);
@@ -190,7 +190,7 @@ BOOST_AUTO_TEST_CASE(Rdr)
   BOOST_CHECK(done);
   BOOST_CHECK(!fetcher.isPending());
   BOOST_CHECK_EQUAL(tsCheck, 5);
-  BOOST_CHECK_EQUAL(spanTakeExecuted, 3);
+  BOOST_CHECK_EQUAL(getBufferExecuted, 3);
   BOOST_CHECK_EQUAL(signingExecuted, 3);
   BOOST_CHECK_EQUAL(verificationExecuted, 5);
   BOOST_CHECK_EQUAL(producerSent, 11);

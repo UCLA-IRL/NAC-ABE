@@ -40,7 +40,7 @@ Consumer::Consumer(Face& face, KeyChain& keyChain,
   , m_paramFetcher(m_face, m_attrAuthorityPrefix, m_trustConfig)
 
 {
-  auto b = m_attrAuthorityPrefix.wireEncode();
+  auto b = identityCert.getIdentity().wireEncode();
   // /<attribute authority prefix>/DKEY/<decrypter name block>
   m_encKeyFetcher = std::make_unique<RdrFetcher>(m_face, Name(m_attrAuthorityPrefix).append(DECRYPT_KEY)
       .append(b.begin(), b.end()));
