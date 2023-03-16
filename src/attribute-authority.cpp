@@ -188,10 +188,12 @@ AttributeAuthority::setDecrypterInterestFilter(const Name& decrypterIdentityName
       return m_decKeyLastTimestamp.at(decrypterIdentityName);
     }, [this, decrypterIdentityName](time::system_clock::time_point ts) {
       auto optionalCert = m_trustConfig.findCertificate(decrypterIdentityName);
+      NDN_LOG_INFO("Produced DKEY for " << decrypterIdentityName);
       auto ABEPrvKey = getPrivateKey(decrypterIdentityName);
       auto prvBuffer = ABEPrvKey.toBuffer();
       auto block = encryptDataContentWithCK(prvBuffer, optionalCert->getPublicKey());
       block.encode();
+      NDN_LOG_INFO("Produced DKEY size is " << block.size());
       return *block.getBuffer();
     }, [this](auto& data){
       MetaInfo info = data.getMetaInfo();
@@ -285,6 +287,7 @@ KpAttributeAuthority::getPrivateKey(const Name& identityName)
   }
   const auto& pair = m_tokens.at(identityName);
 
+  NDN_LOG_INFO("Produced DKEY of policy " << pair);
   // generate ABE private key and do encryption
   return algo::ABESupport::getInstance().kpPrvKeyGen(m_pubParams, m_masterKey, pair);
 }

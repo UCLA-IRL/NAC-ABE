@@ -134,7 +134,13 @@ BOOST_AUTO_TEST_CASE(KpdecKeyUpdate)
 
   bool isConsumeCbCalled = false;
   consumer1.obtainDecryptionKey();
+  BOOST_CHECK(!consumer1.readyForDecryption());
   advanceClocks(time::milliseconds(20), 60);
+  BOOST_CHECK(consumer1.readyForDecryption());
+  consumer1.obtainDecryptionKey();
+  BOOST_CHECK(!consumer1.readyForDecryption());
+  advanceClocks(time::milliseconds(20), 60);
+  BOOST_CHECK(consumer1.readyForDecryption());
   consumer1.consume(producerCert.getIdentity().append(dataName),
                     [&](const Buffer &result) {
                       isConsumeCbCalled = true;
@@ -170,7 +176,7 @@ BOOST_AUTO_TEST_CASE(KpdecKeyUpdate)
   NDN_LOG_INFO("Change comsumer 1 " << consumerCert1.getIdentity() << " to policy: " << policy1);
   aa.addNewPolicy(consumerCert1, policy1);
 
-  policy2 = "cs and class > 2";
+  policy2 = "(cs and class > 2) or (type > 84029849 and date = Mar 16, 2023)";
   NDN_LOG_INFO("Change comsumer 2 " << consumerCert2.getIdentity() << " to policy: " << policy2);
   aa.addNewPolicy(consumerCert2, policy2);
   BOOST_CHECK_EQUAL(aa.m_tokens.size(), 2);
