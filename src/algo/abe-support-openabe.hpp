@@ -51,17 +51,13 @@ public:
   cpPrvKeyGen(PublicParams &pubParams, MasterKey &masterKey,
               const std::vector<std::string> &attrList) override;
 
-  std::shared_ptr<ContentKey>
-  cpContentKeyGen(const PublicParams &pubParams,
-                  const Policy &policy) override;
+  Buffer cpContentKeyEncrypt(const PublicParams &pubParams,
+                             const Policy &policy,
+                             std::string contentKey) override;
 
-  CipherText
-  cpEncrypt(const PublicParams &pubParams,
-            const Policy &policy, Buffer plaintext) override;
-
-  Buffer
-  cpDecrypt(const PublicParams &pubParams,
-            const PrivateKey &prvKey, CipherText cipherText) override;
+  std::string cpContentKeyDecrypt(const PublicParams &pubParams,
+                                          const PrivateKey &prvKey,
+                                          Buffer encContentKey) override;
 
 public:
   void
@@ -71,20 +67,13 @@ public:
   kpPrvKeyGen(PublicParams &pubParams, MasterKey &masterKey,
               const Policy &policy) override;
 
-  std::shared_ptr<ContentKey>
-  kpContentKeyGen(const PublicParams &pubParams,
-                  const std::vector<std::string> &attrList) override;
+  Buffer kpContentKeyEncrypt(const PublicParams &pubParams,
+                             const std::vector<std::string> &attrList,
+                             std::string contentKey) override;
 
-  CipherText
-  kpEncrypt(const PublicParams &pubParams,
-            const std::vector<std::string> &attrList, Buffer plaintext) override;
-
-  CipherText
-  encrypt(std::shared_ptr<ContentKey> contentKey, Buffer plaintext) override;
-
-  Buffer
-  kpDecrypt(const PublicParams &pubParams,
-            const PrivateKey &prvKey, CipherText cipherText) override;
+  virtual std::string kpContentKeyDecrypt(const PublicParams &pubParams,
+                                          const PrivateKey &prvKey,
+                                          Buffer encContentKey) override;
 
 
 private:
@@ -95,13 +84,13 @@ private:
   prvKeyGen(oabe::OpenABECryptoContext &context, PublicParams &pubParams, MasterKey &masterKey,
             const std::string &policyOrAttribute);
 
-  std::shared_ptr<ContentKey>
-  contentKeyGen(oabe::OpenABECryptoContext &context, const PublicParams &pubParams,
-                const std::string &policyOrAttribute);
-
   Buffer
-  decrypt(oabe::OpenABECryptoContext &context, const PublicParams &pubParams,
-          const PrivateKey &prvKey, CipherText cipherText);
+  contentKeyEncrypt(oabe::OpenABECryptoContext &context, const PublicParams &pubParams,
+                const std::string &policyOrAttribute, std::string contentKey);
+
+  std::string
+  contentKeyDecrypt(oabe::OpenABECryptoContext &context, const PublicParams &pubParams,
+          const PrivateKey &prvKey, Buffer encContentKey);
 
 private:
   static const char *SCHEMA_CPABE;

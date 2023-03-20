@@ -69,29 +69,20 @@ ABESupportOpenABE::cpPrvKeyGen(PublicParams& pubParams, MasterKey& masterKey,
   return prvKeyGen(cpabe, pubParams, masterKey, policyString);
 }
 
-std::shared_ptr<ContentKey>
-ABESupportOpenABE::cpContentKeyGen(const PublicParams &pubParams,
-                            const std::string& policy)
-{
-  OpenABECryptoContext cpabe(SCHEMA_CPABE);
-  return contentKeyGen(cpabe, pubParams, policy);
-}
-
-CipherText
-ABESupportOpenABE::cpEncrypt(const PublicParams& pubParams,
-                      const std::string& policy, Buffer plaintext)
-{
-  OpenABECryptoContext cpabe(SCHEMA_CPABE);
-  auto ck = contentKeyGen(cpabe, pubParams, policy);
-  return encrypt(ck, std::move(plaintext));
-}
-
 Buffer
-ABESupportOpenABE::cpDecrypt(const PublicParams& pubParams,
-                      const PrivateKey& prvKey, CipherText cipherText)
+ABESupportOpenABE::cpContentKeyEncrypt(const PublicParams &pubParams,
+                            const std::string& policy, std::string contentKey)
 {
   OpenABECryptoContext cpabe(SCHEMA_CPABE);
-  return decrypt(cpabe, pubParams, prvKey, std::move(cipherText));
+  return contentKeyEncrypt(cpabe, pubParams, policy, contentKey);
+}
+
+std::string
+ABESupportOpenABE::cpContentKeyDecrypt(const PublicParams& pubParams,
+                      const PrivateKey& prvKey, Buffer encContentKey)
+{
+  OpenABECryptoContext cpabe(SCHEMA_CPABE);
+  return contentKeyDecrypt(cpabe, pubParams, prvKey, std::move(encContentKey));
 }
 
 void
@@ -109,38 +100,24 @@ ABESupportOpenABE::kpPrvKeyGen(PublicParams &pubParams, MasterKey &masterKey,
   return prvKeyGen(kpabe, pubParams, masterKey, policy);
 }
 
-std::shared_ptr<ContentKey>
-ABESupportOpenABE::kpContentKeyGen(const PublicParams &pubParams,
-                const std::vector<std::string> &attrList) {
-  OpenABECryptoContext kpabe(SCHEMA_KPABE);
-  std::string policyString;
-  for (const auto & it : attrList) {
-    policyString += it + "|";
-  }
-  policyString.pop_back();
-  return contentKeyGen(kpabe, pubParams, policyString);
-}
-
-CipherText
-ABESupportOpenABE::kpEncrypt(const PublicParams &pubParams,
-          const std::vector<std::string> &attrList, Buffer plaintext)
-{
-  OpenABECryptoContext kpabe(SCHEMA_KPABE);
-  std::string policyString;
-  for (const auto & it : attrList) {
-    policyString += it + "|";
-  }
-  policyString.pop_back();
-  auto ck = contentKeyGen(kpabe, pubParams, policyString);
-  return encrypt(ck, std::move(plaintext));
-}
-
 Buffer
-ABESupportOpenABE::kpDecrypt(const PublicParams &pubParams,
-          const PrivateKey &prvKey, CipherText cipherText)
+ABESupportOpenABE::kpContentKeyEncrypt(const PublicParams &pubParams,
+                const std::vector<std::string> &attrList, std::string contentKey) {
+  OpenABECryptoContext kpabe(SCHEMA_KPABE);
+  std::string policyString;
+  for (const auto & it : attrList) {
+    policyString += it + "|";
+  }
+  policyString.pop_back();
+  return contentKeyEncrypt(kpabe, pubParams, policyString, contentKey);
+}
+
+std::string
+ABESupportOpenABE::kpContentKeyDecrypt(const PublicParams &pubParams,
+          const PrivateKey &prvKey, Buffer encContentKey)
 {
   OpenABECryptoContext kpabe(SCHEMA_KPABE);
-  return decrypt(kpabe, pubParams, prvKey, std::move(cipherText));
+  return contentKeyDecrypt(kpabe, pubParams, prvKey, std::move(encContentKey));
 }
 
 void
@@ -177,28 +154,21 @@ ABESupportOpenABE::prvKeyGen(oabe::OpenABECryptoContext& context, PublicParams &
   return privateKey;
 }
 
-std::shared_ptr<ContentKey>
-ABESupportOpenABE::contentKeyGen(oabe::OpenABECryptoContext &context, const PublicParams &pubParams,
-              const std::string &policyOrAttribute)
+Buffer
+ABESupportOpenABE::contentKeyEncrypt(oabe::OpenABECryptoContext &context, const PublicParams &pubParams,
+                                     const std::string &policyOrAttribute, std::string contentKey)
 {
   try {
     // step 0: set up ABE Context
     context.importPublicParams(pubParams.m_pub);
 
-    // step 1: generate a AES symmetric key
-    AesKeyParams params;
-    Buffer symKey = Aes::generateKey(params);
-    std::string symmetricKey((const char*) symKey.data(), symKey.size());
-
     // step 2: use publicParams and policy to cpEncrypt this symmetric key
     std::string encryptedSymmetricKey;
-    context.encrypt(policyOrAttribute, symmetricKey, encryptedSymmetricKey);
+    context.encrypt(policyOrAttribute, contentKey, encryptedSymmetricKey);
 
-    Buffer encAesKeySegment((uint8_t*) encryptedSymmetricKey.c_str(),
-                            (uint32_t) encryptedSymmetricKey.size() + 1);
-    auto contentKey = std::make_shared<ContentKey>(symmetricKey, std::move(encAesKeySegment));
-
-    return contentKey;
+    Buffer encAesKeySegment((uint8_t*) encryptedSymmetricKey.data(),
+                            (uint32_t) encryptedSymmetricKey.size());
+    return encAesKeySegment;
   }
   catch (oabe::ZCryptoBoxException& ex) {
     BOOST_THROW_EXCEPTION(NacAlgoError(
@@ -206,38 +176,9 @@ ABESupportOpenABE::contentKeyGen(oabe::OpenABECryptoContext &context, const Publ
   }
 }
 
-CipherText
-ABESupportOpenABE::encrypt(std::shared_ptr<ContentKey> contentKey, Buffer plaintext) {
-  try {
-    // step 3: use the AES symmetric key to cpEncrypt the plain text
-    Buffer aesKey(contentKey->m_aesKey.data(), contentKey->m_aesKey.size());
-    auto iv = Aes::generateIV();
-    auto ciphertext = Aes::encrypt(aesKey, plaintext, iv);
-
-    // step 4: put encryptedSymmetricKey and ciphertext in CipherText object
-    //           and return the CipherText Object
-    CipherText result;
-    assert(iv.size() < std::numeric_limits<uint8_t>::max());
-    Buffer cipherContentSegment{(uint8_t) iv.size()};
-    cipherContentSegment.reserve(1 + iv.size() + ciphertext.size());
-    cipherContentSegment.insert(cipherContentSegment.end(), iv.begin(), iv.end());
-    cipherContentSegment.insert(cipherContentSegment.end(), ciphertext.begin(), ciphertext.end());
-
-    result.m_contentKey = contentKey;
-    result.m_content = cipherContentSegment;
-    result.m_plainTextSize = plaintext.size();
-
-    return result;
-  }
-  catch (oabe::ZCryptoBoxException& ex) {
-    BOOST_THROW_EXCEPTION(NacAlgoError(
-                              "cannot encrypt the plaintext using given public paramater and policy."));
-  }
-}
-
-Buffer
-ABESupportOpenABE::decrypt(oabe::OpenABECryptoContext& context, const PublicParams &pubParams,
-        const PrivateKey &prvKey, CipherText cipherText)
+std::string
+ABESupportOpenABE::contentKeyDecrypt(oabe::OpenABECryptoContext &context, const PublicParams &pubParams,
+                                     const PrivateKey &prvKey, Buffer encContentKey)
 {
   try {
     // step 0: set up ABE Context
@@ -248,20 +189,14 @@ ABESupportOpenABE::decrypt(oabe::OpenABECryptoContext& context, const PublicPara
     context.importUserKey("key1", prvKey.m_prv);
 
     // step 2: cpDecrypt cipherText.aesKey, which is the encrypted symmetric key
-    std::string encryptedSymmetricKey(reinterpret_cast<char*>(cipherText.m_contentKey->m_encAesKey.data()));
-    bool result = context.decrypt(encryptedSymmetricKey, cipherText.m_contentKey->m_aesKey);
+    std::string encryptedSymmetricKey(reinterpret_cast<char*>(encContentKey.data()), encContentKey.size());
+    std::string symmetricKey;
+    bool result = context.decrypt(encryptedSymmetricKey, symmetricKey);
     if (!result) {
       BOOST_THROW_EXCEPTION(NacAlgoError("Decryption error!"));
     }
 
-    // step 3: use the decrypted symmetricKey to AES cpDecrypt cipherText.m_content
-    Buffer aesKey(cipherText.m_contentKey->m_aesKey.data(), cipherText.m_contentKey->m_aesKey.size());
-    auto iv = Buffer(cipherText.m_content.data() + 1, cipherText.m_content.at(0));
-    auto cipherContent = Buffer(cipherText.m_content.data() + 1 + iv.size(), cipherText.m_content.size() - 1 - iv.size());
-    Buffer recoveredContent = Aes::decrypt(aesKey, cipherContent, iv);
-
-    // step 5: finalize
-    return recoveredContent;
+    return std::move(symmetricKey);
   }
   catch (oabe::ZCryptoBoxException& ex) {
     BOOST_THROW_EXCEPTION(NacAlgoError(

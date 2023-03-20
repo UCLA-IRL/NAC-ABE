@@ -55,18 +55,14 @@ public:
   virtual PrivateKey
   cpPrvKeyGen(PublicParams &pubParams, MasterKey &masterKey,
               const std::vector<std::string> &attrList) = 0;
+protected:
+  virtual Buffer cpContentKeyEncrypt(const PublicParams &pubParams,
+                                     const Policy &policy,
+                                     std::string contentKey) = 0;
 
-  virtual std::shared_ptr<ContentKey>
-  cpContentKeyGen(const PublicParams &pubParams,
-                  const Policy &policy) = 0;
-
-  virtual CipherText
-  cpEncrypt(const PublicParams &pubParams,
-            const Policy &policy, Buffer plaintext) = 0;
-
-  virtual Buffer
-  cpDecrypt(const PublicParams &pubParams,
-            const PrivateKey &prvKey, CipherText cipherText) = 0;
+  virtual std::string cpContentKeyDecrypt(const PublicParams &pubParams,
+                                          const PrivateKey &prvKey,
+                                          Buffer encContentKey) = 0;
 
 public:
   virtual void
@@ -75,21 +71,48 @@ public:
   virtual PrivateKey
   kpPrvKeyGen(PublicParams &pubParams, MasterKey &masterKey,
               const Policy &policy) = 0;
+protected:
+  virtual Buffer kpContentKeyEncrypt(const PublicParams &pubParams,
+                                     const std::vector<std::string> &attrList,
+                                     std::string contentKey) = 0;
 
-  virtual std::shared_ptr<ContentKey>
+  virtual std::string kpContentKeyDecrypt(const PublicParams &pubParams,
+                                          const PrivateKey &prvKey,
+                                          Buffer encContentKey) = 0;
+
+public:
+  std::shared_ptr<ContentKey>
+  cpContentKeyGen(const PublicParams &pubParams,
+                  const Policy &policy);
+
+  CipherText
+  cpEncrypt(const PublicParams &pubParams,
+            const Policy &policy, Buffer plaintext);
+
+  Buffer
+  cpDecrypt(const PublicParams &pubParams,
+            const PrivateKey &prvKey, CipherText cipherText);
+
+  std::shared_ptr<ContentKey>
   kpContentKeyGen(const PublicParams &pubParams,
-                  const std::vector<std::string> &attrList) = 0;
+                  const std::vector<std::string> &attrList);
 
-  virtual CipherText
+  CipherText
   kpEncrypt(const PublicParams &pubParams,
-            const std::vector<std::string> &attrList, Buffer plaintext) = 0;
+            const std::vector<std::string> &attrList, Buffer plaintext);
 
-  virtual CipherText
-  encrypt(std::shared_ptr<ContentKey> contentKey, Buffer plaintext) = 0;
-
-  virtual Buffer
+  Buffer
   kpDecrypt(const PublicParams &pubParams,
-            const PrivateKey &prvKey, CipherText cipherText) = 0;
+            const PrivateKey &prvKey, CipherText cipherText);
+
+  CipherText
+  encrypt(std::shared_ptr<ContentKey> contentKey, Buffer plaintext);
+private:
+  std::string
+  generateContentKey();
+
+  Buffer
+  decrypt(CipherText cipherText);
 };
 
 } // namespace algo
