@@ -20,7 +20,6 @@
 
 #include "abe-support-openabe.hpp"
 #include "../ndn-crypto/error.hpp"
-#include "../ndn-crypto/aes.hpp"
 
 using namespace oabe;
 using namespace oabe::crypto;

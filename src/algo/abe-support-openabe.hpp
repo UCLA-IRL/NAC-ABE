@@ -24,8 +24,6 @@
 #include "abe-support.hpp"
 
 #include <openabe/openabe.h>
-#include <openabe/zsymcrypto.h>
-#include <openssl/aes.h>
 #include <openssl/sha.h>
 
 namespace ndn {
