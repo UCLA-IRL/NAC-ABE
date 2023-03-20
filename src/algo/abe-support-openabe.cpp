@@ -20,6 +20,7 @@
 
 #include "abe-support-openabe.hpp"
 #include "../ndn-crypto/error.hpp"
+#include "../ndn-crypto/aes.hpp"
 
 using namespace oabe;
 using namespace oabe::crypto;
@@ -185,9 +186,9 @@ ABESupportOpenABE::contentKeyGen(oabe::OpenABECryptoContext &context, const Publ
     context.importPublicParams(pubParams.m_pub);
 
     // step 1: generate a AES symmetric key
-    OpenABESymKey symKey;
-    symKey.generateSymmetricKey(DEFAULT_SYM_KEY_BYTES);
-    std::string symmetricKey = symKey.toString();
+    AesKeyParams params;
+    Buffer symKey = Aes::generateKey(params);
+    std::string symmetricKey((const char*) symKey.data(), symKey.size());
 
     // step 2: use publicParams and policy to cpEncrypt this symmetric key
     std::string encryptedSymmetricKey;
@@ -209,18 +210,18 @@ CipherText
 ABESupportOpenABE::encrypt(std::shared_ptr<ContentKey> contentKey, Buffer plaintext) {
   try {
     // step 3: use the AES symmetric key to cpEncrypt the plain text
-    OpenABESymKeyEnc aes(contentKey->m_aesKey);
-    std::string ciphertext = aes.encrypt(
-        (uint8_t*) plaintext.data(),
-        (uint32_t) plaintext.size());
-
+    Buffer aesKey(contentKey->m_aesKey.data(), contentKey->m_aesKey.size());
+    auto iv = Aes::generateIV();
+    auto ciphertext = Aes::encrypt(aesKey, plaintext, iv);
 
     // step 4: put encryptedSymmetricKey and ciphertext in CipherText object
     //           and return the CipherText Object
     CipherText result;
-
-    Buffer cipherContentSegment((uint8_t*) ciphertext.c_str(),
-                                (uint32_t) ciphertext.size() + 1);
+    assert(iv.size() < std::numeric_limits<uint8_t>::max());
+    Buffer cipherContentSegment{(uint8_t) iv.size()};
+    cipherContentSegment.reserve(1 + iv.size() + ciphertext.size());
+    cipherContentSegment.insert(cipherContentSegment.end(), iv.begin(), iv.end());
+    cipherContentSegment.insert(cipherContentSegment.end(), ciphertext.begin(), ciphertext.end());
 
     result.m_contentKey = contentKey;
     result.m_content = cipherContentSegment;
@@ -254,16 +255,13 @@ ABESupportOpenABE::decrypt(oabe::OpenABECryptoContext& context, const PublicPara
     }
 
     // step 3: use the decrypted symmetricKey to AES cpDecrypt cipherText.m_content
-    OpenABESymKeyEnc aes(cipherText.m_contentKey->m_aesKey);
-    std::string cipherContentStr(reinterpret_cast<char*>(cipherText.m_content.data()));
-    std::string recoveredContent = aes.decrypt(cipherContentStr);
-
-    // step 4: set up a Buffer for the decrypted content, and return the Buffer
-    Buffer ret((uint8_t*) recoveredContent.c_str(),
-               (uint32_t) recoveredContent.size());
+    Buffer aesKey(cipherText.m_contentKey->m_aesKey.data(), cipherText.m_contentKey->m_aesKey.size());
+    auto iv = Buffer(cipherText.m_content.data() + 1, cipherText.m_content.at(0));
+    auto cipherContent = Buffer(cipherText.m_content.data() + 1 + iv.size(), cipherText.m_content.size() - 1 - iv.size());
+    Buffer recoveredContent = Aes::decrypt(aesKey, cipherContent, iv);
 
     // step 5: finalize
-    return ret;
+    return recoveredContent;
   }
   catch (oabe::ZCryptoBoxException& ex) {
     BOOST_THROW_EXCEPTION(NacAlgoError(
