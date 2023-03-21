@@ -91,7 +91,7 @@ std::shared_ptr<ContentKey>
 ABESupportCharm::cpContentKeyGen(const PublicParams &pubParams,
                                  const Policy &policy)
 {
-  m_inStream << "cpContentKeyEncrypt" << std::endl;
+  m_inStream << "cpContentKeyGen" << std::endl;
   m_inStream << encode64(pubParams.m_pub) << std::endl;
   m_inStream << encode64(policy) << std::endl;
   auto key = std::make_shared<ContentKey>();
@@ -138,7 +138,7 @@ ABESupportCharm::kpPrvKeyGen(PublicParams &pubParams, MasterKey &masterKey,
 std::shared_ptr<ContentKey>
 ABESupportCharm::kpContentKeyGen(const PublicParams &pubParams,
                                  const std::vector<std::string> &attrList) {
-  return {};
+  return std::make_shared<ContentKey>();
 }
 
 std::string

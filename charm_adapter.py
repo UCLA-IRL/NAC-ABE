@@ -115,7 +115,7 @@ if __name__ == '__main__':
         elif line == 'cpContentKeyGen':
             pubParams = sys.stdin.readline().strip().encode('ascii')
             policy = base64.b64decode(sys.stdin.readline().strip().encode('ascii')).decode('utf-8')
-            key, cipherText = support.cpContentKeyEncrypt(pubParams, policy)
+            key, cipherText = support.cpContentKeyGen(pubParams, policy)
             sys.stdout.write(base64.b64encode(key).decode('ascii') + "\n")
             sys.stdout.write(cipherText.decode('ascii') + "\n")
         elif line == 'cpContentKeyDecrypt':
@@ -125,5 +125,7 @@ if __name__ == '__main__':
             status, clearText = support.cpContentKeyDecrypt(pubParams, prvKey, encContentKey)
             sys.stdout.write(str(status) + "\n")
             sys.stdout.write(base64.b64encode(clearText).decode('ascii') + "\n")
+        else:
+            raise RuntimeError("unknown line: " + line)
 
         sys.stdout.flush()
