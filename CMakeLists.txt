@@ -1,5 +1,5 @@
 # cmake version to be used
-cmake_minimum_required(VERSION 3.5)
+cmake_minimum_required(VERSION 3.10)
 
 # project name
 project(nac-abe
@@ -10,7 +10,7 @@ project(nac-abe
 set(CMAKE_CXX_STANDARD 14)
 set(CMAKE_CXX_STANDARD_REQUIRED True)
 if (HAVE_TESTS)
-    add_compile_definitions(HAVE_TESTS)
+    add_definitions(-DHAVE_TESTS)
 endif(HAVE_TESTS)
 
 # dependencies
@@ -28,8 +28,8 @@ include_directories(${NDN_CXX_INCLUDE_DIRS})
 include_directories(src)
 include_directories(build/src)
 
-add_compile_definitions(SYSCONFDIR="${CMAKE_INSTALL_PREFIX}/etc")
-add_compile_definitions(NAC_ABE_CMAKE_BUILD)
+add_definitions(-DSYSCONFDIR="${CMAKE_INSTALL_PREFIX}/etc")
+add_definitions(-DNAC_ABE_CMAKE_BUILD)
 
 # link
 link_directories(${NDN_CXX_LIBRARY_DIRS})
