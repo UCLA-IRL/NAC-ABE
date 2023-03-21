@@ -209,7 +209,7 @@ ABESupportOpenABE::contentKeyDecrypt(oabe::OpenABECryptoContext &context, const 
   }
   catch (oabe::ZCryptoBoxException& ex) {
     BOOST_THROW_EXCEPTION(NacAlgoError(
-        "cannot encrypt the ciphertext using given private key."));
+        "cannot decrypt the ciphertext using given private key."));
   }
 }
 
