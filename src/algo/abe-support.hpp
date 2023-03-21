@@ -50,10 +50,10 @@ public:
   virtual PrivateKey
   cpPrvKeyGen(PublicParams &pubParams, MasterKey &masterKey,
               const std::vector<std::string> &attrList) = 0;
-protected:
+
   virtual std::shared_ptr<ContentKey> cpContentKeyGen(const PublicParams &pubParams,
                                                       const Policy &policy) = 0;
-
+protected:
   virtual std::string cpContentKeyDecrypt(const PublicParams &pubParams,
                                           const PrivateKey &prvKey,
                                           Buffer encContentKey) = 0;
@@ -65,10 +65,10 @@ public:
   virtual PrivateKey
   kpPrvKeyGen(PublicParams &pubParams, MasterKey &masterKey,
               const Policy &policy) = 0;
-protected:
+
   virtual std::shared_ptr<ContentKey> kpContentKeyGen(const PublicParams &pubParams,
                                                       const std::vector<std::string> &attrList) = 0;
-
+protected:
   virtual std::string kpContentKeyDecrypt(const PublicParams &pubParams,
                                           const PrivateKey &prvKey,
                                           Buffer encContentKey) = 0;
