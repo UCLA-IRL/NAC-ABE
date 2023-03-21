@@ -23,6 +23,7 @@
 #include <boost/archive/iterators/binary_from_base64.hpp>
 #include <boost/archive/iterators/base64_from_binary.hpp>
 #include <boost/archive/iterators/transform_width.hpp>
+#include <iostream>
 
 std::string decode64(const std::string &val) {
   using namespace boost::archive::iterators;
@@ -60,6 +61,7 @@ ABESupportCharm::ABESupportCharm()
 ABESupportCharm::~ABESupportCharm()
 {
   m_inStream << "exit" << std::endl;
+  std::cout << "exit" << std::endl;
   if (m_adapter->running()) m_adapter->wait();
 }
 
@@ -67,6 +69,7 @@ void
 ABESupportCharm::cpInit(PublicParams& pubParams, MasterKey& masterKey)
 {
   m_inStream << "cpInit" << std::endl;
+  std::cout << "cpInit" << std::endl;
   std::string pub, msk;
   std::getline(m_outStream, pub);
   pubParams.m_pub = decode64(pub);
@@ -80,6 +83,7 @@ ABESupportCharm::cpPrvKeyGen(PublicParams& pubParams, MasterKey& masterKey,
                         const std::vector <std::string>& attrList)
 {
   m_inStream << "cpPrvKeyGen" << std::endl;
+  std::cout << "cpPrvKeyGen" << std::endl;
   m_inStream << encode64(pubParams.m_pub) << std::endl;
   m_inStream << encode64(masterKey.m_msk) << std::endl;
   for (const auto& i: attrList) {
@@ -99,6 +103,7 @@ ABESupportCharm::cpContentKeyGen(const PublicParams &pubParams,
                                  const Policy &policy)
 {
   m_inStream << "cpContentKeyGen" << std::endl;
+  std::cout << "cpContentKeyGen" << std::endl;
   m_inStream << encode64(pubParams.m_pub) << std::endl;
   m_inStream << encode64(policy) << std::endl;
   auto key = std::make_shared<ContentKey>();
@@ -118,6 +123,7 @@ ABESupportCharm::cpContentKeyDecrypt(const PublicParams& pubParams,
                       const PrivateKey& prvKey, Buffer encContentKey)
 {
   m_inStream << "cpContentKeyDecrypt" << std::endl;
+  std::cout << "cpContentKeyDecrypt" << std::endl;
   m_inStream << encode64(pubParams.m_pub) << std::endl;
   m_inStream << encode64(prvKey.m_prv) << std::endl;
   m_inStream << encode64(std::string((const char *) encContentKey.data(), encContentKey.size())) << std::endl;
