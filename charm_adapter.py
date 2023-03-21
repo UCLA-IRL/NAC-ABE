@@ -1,6 +1,5 @@
 from charm.toolbox.pairinggroup import PairingGroup, pair, extract_key, GT
 from charm.core.engine.util import objectToBytes,bytesToObject
-from charm.adapters.abenc_adapt_hybrid import HybridABEnc
 
 class ABESupport:
     def __init__(self, cpabe_scheme = "bsw07", kpabe_scheme = "lsw08"):
@@ -45,9 +44,12 @@ class ABESupport:
             pubParams_obj = bytesToObject(pubParams, self.cp_group)
             prvKey_obj = bytesToObject(prvKey, self.cp_group)
             encContentKey_obj = bytesToObject(encContentKey, self.cp_group)
-            return True, extract_key(self.cpabe.decrypt(pubParams_obj, prvKey_obj, encContentKey_obj))
+            origKey = self.cpabe.decrypt(pubParams_obj, prvKey_obj, encContentKey_obj)
+            if origKey == False:
+                return False
+            return extract_key(origKey)
         except:
-            return False, b''
+            return False
 
     # def kpInit() -> PublicParams pubParams, MasterKey masterKey;
     def kpInit(self):
@@ -75,12 +77,14 @@ class ABESupport:
     # std::string kpContentKeyDecrypt(PublicParams pubParams, PrivateKey prvKey, Buffer encContentKey);
     def kpContentKeyDecrypt(self, pubParams, prvKey, encContentKey):
         try:
-            pubParams_obj = bytesToObject(pubParams, self.kp_group)
             prvKey_obj = bytesToObject(prvKey, self.kp_group)
             encContentKey_obj = bytesToObject(encContentKey, self.kp_group)
-            return True, extract_key(self.cpabe.decrypt(pubParams_obj, prvKey_obj, encContentKey_obj))
+            origKey = self.kpabe.decrypt(prvKey_obj, encContentKey_obj)
+            if origKey == False:
+                return False
+            return extract_key(origKey)
         except:
-            return False, b''
+            return False
 
 if __name__ == '__main__':
     import sys
@@ -123,9 +127,9 @@ if __name__ == '__main__':
             pubParams = sys.stdin.readline().strip().encode('ascii')
             prvKey = sys.stdin.readline().strip().encode('ascii')
             encContentKey = sys.stdin.readline().strip().encode('ascii')
-            status, clearText = support.cpContentKeyDecrypt(pubParams, prvKey, encContentKey)
-            sys.stdout.write(str(status) + "\n")
-            sys.stdout.write(base64.b64encode(clearText).decode('ascii') + "\n")
+            clearText = support.cpContentKeyDecrypt(pubParams, prvKey, encContentKey)
+            if clearText == False: sys.stdout.write("False\n")
+            else: sys.stdout.write(base64.b64encode(clearText).decode('ascii') + "\n")
         else:
             raise RuntimeError("unknown line: " + line)
 

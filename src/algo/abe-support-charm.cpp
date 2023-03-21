@@ -114,12 +114,10 @@ ABESupportCharm::cpContentKeyDecrypt(const PublicParams& pubParams,
   m_inStream << encode64(pubParams.m_pub) << std::endl;
   m_inStream << encode64(prvKey.m_prv) << std::endl;
   m_inStream << encode64(std::string((const char *) encContentKey.data(), encContentKey.size())) << std::endl;
-  std::string status;
-  std::getline(m_outStream, status);
   std::string clearText;
   std::getline(m_outStream, clearText);
   assert(m_adapter->running());
-  if (status != "True") {
+  if (clearText == "False") {
     BOOST_THROW_EXCEPTION(NacAlgoError("Decryption error!"));
   }
   return decode64(clearText);
