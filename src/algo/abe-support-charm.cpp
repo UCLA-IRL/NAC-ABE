@@ -116,10 +116,10 @@ ABESupportCharm::cpContentKeyDecrypt(const PublicParams& pubParams,
   m_inStream << encode64(std::string((const char *) encContentKey.data(), encContentKey.size())) << std::endl;
   std::string status;
   std::getline(m_outStream, status);
-  if (status != "True") BOOST_THROW_EXCEPTION(NacAlgoError("cannot encrypt the ciphertext using given private key."));
   std::string clearText;
   std::getline(m_outStream, clearText);
   assert(m_adapter->running());
+  if (status != "True") BOOST_THROW_EXCEPTION(NacAlgoError("cannot encrypt the ciphertext using given private key."));
   return decode64(clearText);
 }
 
