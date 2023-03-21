@@ -26,11 +26,6 @@
 #include "private-key.hpp"
 #include "cipher-text.hpp"
 
-#include <openabe/openabe.h>
-#include <openabe/zsymcrypto.h>
-#include <openssl/aes.h>
-#include <openssl/sha.h>
-
 namespace ndn {
 namespace nacabe {
 namespace algo {
