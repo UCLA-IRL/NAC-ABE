@@ -115,7 +115,7 @@ if __name__ == '__main__':
             contentKey = base64.b64decode(sys.stdin.readline().strip().encode('ascii'))
             cipherText = support.cpContentKeyEncrypt(pubParams, policy, contentKey)
             sys.stdout.write(cipherText.decode('ascii') + "\n")
-        elif line == 'cpContentKeyEncrypt':
+        elif line == 'cpContentKeyDecrypt':
             pubParams = sys.stdin.readline().strip().encode('ascii')
             prvKey = sys.stdin.readline().strip().encode('ascii')
             encContentKey = sys.stdin.readline().strip().encode('ascii')

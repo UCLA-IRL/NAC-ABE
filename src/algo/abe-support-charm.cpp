@@ -23,7 +23,6 @@
 #include <boost/archive/iterators/binary_from_base64.hpp>
 #include <boost/archive/iterators/base64_from_binary.hpp>
 #include <boost/archive/iterators/transform_width.hpp>
-#include <boost/algorithm/string.hpp>
 
 std::string decode64(const std::string &val) {
   using namespace boost::archive::iterators;
@@ -111,6 +110,9 @@ ABESupportCharm::cpContentKeyDecrypt(const PublicParams& pubParams,
   m_inStream << encode64(pubParams.m_pub) << std::endl;
   m_inStream << encode64(prvKey.m_prv) << std::endl;
   m_inStream << encode64(std::string((const char *) encContentKey.data(), encContentKey.size())) << std::endl;
+  std::string status;
+  std::getline(m_outStream, status);
+  if (status != "True") BOOST_THROW_EXCEPTION(NacAlgoError("cannot encrypt the ciphertext using given private key."));
   std::string clearText;
   std::getline(m_outStream, clearText);
   assert(m_adapter->running());
