@@ -45,6 +45,13 @@ namespace ndn {
 namespace nacabe {
 namespace algo {
 
+
+ABESupport &
+ABESupport::getInstance() {
+  static ABESupportCharm support;
+  return support;
+}
+
 ABESupportCharm::ABESupportCharm()
 {
   m_adapter = std::make_unique<child>("python3 /NAC-ABE/charm_adapter.py", std_in < m_inStream, std_out > m_outStream);

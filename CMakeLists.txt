@@ -18,8 +18,6 @@ find_package(PkgConfig REQUIRED)
 pkg_check_modules(NDN_CXX REQUIRED libndn-cxx)
 find_package(OpenSSL REQUIRED)
 
-find_library(openabe NAMES openabe REQUIRED)
-
 # files
 file(GLOB_RECURSE NAC_ABE_LIB_SOURCE_FILES "src/*.cpp" "src/**/*.cpp")
 
@@ -37,7 +35,7 @@ link_directories(${NDN_CXX_LIBRARY_DIRS})
 # target
 add_library(nac-abe SHARED ${NAC_ABE_LIB_SOURCE_FILES})
 target_compile_options(nac-abe PUBLIC ${NDN_CXX_CFLAGS})
-target_link_libraries(nac-abe PUBLIC ${NDN_CXX_LIBRARIES} openabe)
+target_link_libraries(nac-abe PUBLIC ${NDN_CXX_LIBRARIES})
 
 add_subdirectory(tests)
 add_subdirectory(examples)
