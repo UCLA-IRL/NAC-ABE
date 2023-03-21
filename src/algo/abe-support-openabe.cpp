@@ -20,6 +20,8 @@
 
 #include "abe-support-openabe.hpp"
 #include "../ndn-crypto/error.hpp"
+#include "../ndn-crypto/aes.hpp"
+
 
 using namespace oabe;
 using namespace oabe::crypto;
@@ -68,12 +70,12 @@ ABESupportOpenABE::cpPrvKeyGen(PublicParams& pubParams, MasterKey& masterKey,
   return prvKeyGen(cpabe, pubParams, masterKey, policyString);
 }
 
-Buffer
-ABESupportOpenABE::cpContentKeyEncrypt(const PublicParams &pubParams,
-                            const std::string& policy, std::string contentKey)
-{
+std::shared_ptr<ContentKey> ABESupportOpenABE::cpContentKeyGen(const PublicParams &pubParams, const Policy &policy) {
+  std::string symmetricKey = generateContentKey();
   OpenABECryptoContext cpabe(SCHEMA_CPABE);
-  return contentKeyEncrypt(cpabe, pubParams, policy, contentKey);
+  Buffer encSymmetricKey = contentKeyEncrypt(cpabe, pubParams, policy, symmetricKey);
+  auto contentKey = std::make_shared<ContentKey>(symmetricKey, std::move(encSymmetricKey));
+  return contentKey;
 }
 
 std::string
@@ -99,16 +101,18 @@ ABESupportOpenABE::kpPrvKeyGen(PublicParams &pubParams, MasterKey &masterKey,
   return prvKeyGen(kpabe, pubParams, masterKey, policy);
 }
 
-Buffer
-ABESupportOpenABE::kpContentKeyEncrypt(const PublicParams &pubParams,
-                const std::vector<std::string> &attrList, std::string contentKey) {
+std::shared_ptr<ContentKey>
+ABESupportOpenABE::kpContentKeyGen(const PublicParams &pubParams, const std::vector<std::string> &attrList) {
+  std::string symmetricKey = generateContentKey();
   OpenABECryptoContext kpabe(SCHEMA_KPABE);
   std::string policyString;
   for (const auto & it : attrList) {
     policyString += it + "|";
   }
   policyString.pop_back();
-  return contentKeyEncrypt(kpabe, pubParams, policyString, contentKey);
+  Buffer encSymmetricKey = contentKeyEncrypt(kpabe, pubParams, policyString, symmetricKey);
+  auto contentKey = std::make_shared<ContentKey>(symmetricKey, std::move(encSymmetricKey));
+  return contentKey;
 }
 
 std::string
@@ -173,6 +177,12 @@ ABESupportOpenABE::contentKeyEncrypt(oabe::OpenABECryptoContext &context, const 
     BOOST_THROW_EXCEPTION(NacAlgoError(
                               "cannot encrypt the plaintext using given public paramater and policy."));
   }
+}
+
+std::string ABESupportOpenABE::generateContentKey() {
+  AesKeyParams params;
+  Buffer symKey = Aes::generateKey(params);
+  return std::string((const char*) symKey.data(), symKey.size());
 }
 
 std::string

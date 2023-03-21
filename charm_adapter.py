@@ -1,4 +1,4 @@
-from charm.toolbox.pairinggroup import PairingGroup, pair
+from charm.toolbox.pairinggroup import PairingGroup, pair, extract_key, GT
 from charm.core.engine.util import objectToBytes,bytesToObject
 from charm.adapters.abenc_adapt_hybrid import HybridABEnc
 
@@ -8,13 +8,13 @@ class ABESupport:
             if cpabe_scheme == "bsw07" or cpabe_scheme == "Water11":
                 from charm.schemes.abenc.abenc_bsw07 import CPabe_BSW07
                 self.cp_group = PairingGroup('SS512')
-                self.cpabe = HybridABEnc(CPabe_BSW07(self.cp_group), self.cp_group)
+                self.cpabe = CPabe_BSW07(self.cp_group)
 
         if kpabe_scheme is not None:
             if kpabe_scheme == "lsw08":
                 from charm.schemes.abenc.abenc_lsw08 import KPabe
                 self.kp_group = PairingGroup('MNT224')
-                self.kpabe = HybridABEnc(KPabe(self.kp_group), self.cp_group)
+                self.kpabe = KPabe(self.kp_group)
 
     # def cpInit() -> PublicParams pubParams, MasterKey masterKey;
     def cpInit(self):
@@ -31,12 +31,13 @@ class ABESupport:
         secret_key = objectToBytes(secret_key_obj, self.cp_group)
         return secret_key
 
-    # Buffer cpContentKeyEncrypt(PublicParams pubParams, Policy policy, std::string contentKey);
-    def cpContentKeyEncrypt(self, pubParams, policy, contentKey):
+    # ContentKey cpContentKeyGen(PublicParams pubParams, Policy policy);
+    def cpContentKeyGen(self, pubParams, policy):
         pubParams_obj = bytesToObject(pubParams, self.cp_group)
-        ct_obj = self.cpabe.encrypt(pubParams_obj, contentKey, policy)
-        ct = objectToBytes(ct_obj, self.cp_group)
-        return ct
+        origKey = self.cp_group.random(GT)
+        encKey_obj = self.cpabe.encrypt(pubParams_obj, origKey, policy)
+        encKey = objectToBytes(encKey_obj, self.cp_group)
+        return extract_key(origKey), encKey
 
     # std::string cpContentKeyDecrypt(PublicParams pubParams, PrivateKey prvKey, Buffer encContentKey);
     def cpContentKeyDecrypt(self, pubParams, prvKey, encContentKey):
@@ -44,7 +45,7 @@ class ABESupport:
             pubParams_obj = bytesToObject(pubParams, self.cp_group)
             prvKey_obj = bytesToObject(prvKey, self.cp_group)
             encContentKey_obj = bytesToObject(encContentKey, self.cp_group)
-            return True, self.cpabe.decrypt(pubParams_obj, prvKey_obj, encContentKey_obj)
+            return True, extract_key(self.cpabe.decrypt(pubParams_obj, prvKey_obj, encContentKey_obj))
         except:
             return False, b''
 
@@ -63,19 +64,21 @@ class ABESupport:
         secret_key = objectToBytes(secret_key_obj, self.kp_group)
         return secret_key
 
-    # Buffer kpContentKeyEncrypt(PublicParams pubParams, std::vector<std::string> attrList, std::string contentKey);
-    def kpContentKeyEncrypt(self, pubParams, attrList, contentKey):
+    # ContentKey cpContentKeyGen(PublicParams pubParams, std::vector<std::string> attrList);
+    def kpContentKeyGen(self, pubParams, attrList):
         pubParams_obj = bytesToObject(pubParams, self.kp_group)
-        ct_obj = self.kpabe.encrypt(pubParams_obj, contentKey, attrList)
-        ct = objectToBytes(ct_obj, self.kp_group)
-        return ct
+        origKey = self.kp_group.random(GT)
+        encKey_obj = self.kpabe.encrypt(pubParams_obj, origKey, attrList)
+        encKey = objectToBytes(encKey_obj, self.kp_group)
+        return extract_key(origKey), encKey
 
     # std::string kpContentKeyDecrypt(PublicParams pubParams, PrivateKey prvKey, Buffer encContentKey);
     def kpContentKeyDecrypt(self, pubParams, prvKey, encContentKey):
         try:
-            encContentKey_obj = bytesToObject(encContentKey, self.kp_group)
+            pubParams_obj = bytesToObject(pubParams, self.kp_group)
             prvKey_obj = bytesToObject(prvKey, self.kp_group)
-            return True, self.kpabe.decrypt(prvKey_obj, encContentKey_obj)
+            encContentKey_obj = bytesToObject(encContentKey, self.kp_group)
+            return True, extract_key(self.cpabe.decrypt(pubParams_obj, prvKey_obj, encContentKey_obj))
         except:
             return False, b''
 
@@ -109,11 +112,11 @@ if __name__ == '__main__':
             attrList = arrayDecode(sys.stdin.readline().strip())
             prvKey = support.cpPrvKeyGen(pubParams, masterKey, attrList)
             sys.stdout.write(prvKey.decode('ascii') + "\n")
-        elif line == 'cpContentKeyEncrypt':
+        elif line == 'cpContentKeyGen':
             pubParams = sys.stdin.readline().strip().encode('ascii')
             policy = base64.b64decode(sys.stdin.readline().strip().encode('ascii')).decode('utf-8')
-            contentKey = base64.b64decode(sys.stdin.readline().strip().encode('ascii'))
-            cipherText = support.cpContentKeyEncrypt(pubParams, policy, contentKey)
+            key, cipherText = support.cpContentKeyEncrypt(pubParams, policy)
+            sys.stdout.write(base64.b64encode(key).decode('ascii') + "\n")
             sys.stdout.write(cipherText.decode('ascii') + "\n")
         elif line == 'cpContentKeyDecrypt':
             pubParams = sys.stdin.readline().strip().encode('ascii')

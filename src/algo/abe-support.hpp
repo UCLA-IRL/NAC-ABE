@@ -51,9 +51,8 @@ public:
   cpPrvKeyGen(PublicParams &pubParams, MasterKey &masterKey,
               const std::vector<std::string> &attrList) = 0;
 protected:
-  virtual Buffer cpContentKeyEncrypt(const PublicParams &pubParams,
-                                     const Policy &policy,
-                                     std::string contentKey) = 0;
+  virtual std::shared_ptr<ContentKey> cpContentKeyGen(const PublicParams &pubParams,
+                                                      const Policy &policy) = 0;
 
   virtual std::string cpContentKeyDecrypt(const PublicParams &pubParams,
                                           const PrivateKey &prvKey,
@@ -67,18 +66,14 @@ public:
   kpPrvKeyGen(PublicParams &pubParams, MasterKey &masterKey,
               const Policy &policy) = 0;
 protected:
-  virtual Buffer kpContentKeyEncrypt(const PublicParams &pubParams,
-                                     const std::vector<std::string> &attrList,
-                                     std::string contentKey) = 0;
+  virtual std::shared_ptr<ContentKey> kpContentKeyGen(const PublicParams &pubParams,
+                                                      const std::vector<std::string> &attrList) = 0;
 
   virtual std::string kpContentKeyDecrypt(const PublicParams &pubParams,
                                           const PrivateKey &prvKey,
                                           Buffer encContentKey) = 0;
 
 public:
-  std::shared_ptr<ContentKey>
-  cpContentKeyGen(const PublicParams &pubParams,
-                  const Policy &policy);
 
   CipherText
   cpEncrypt(const PublicParams &pubParams,
@@ -87,10 +82,6 @@ public:
   Buffer
   cpDecrypt(const PublicParams &pubParams,
             const PrivateKey &prvKey, CipherText cipherText);
-
-  std::shared_ptr<ContentKey>
-  kpContentKeyGen(const PublicParams &pubParams,
-                  const std::vector<std::string> &attrList);
 
   CipherText
   kpEncrypt(const PublicParams &pubParams,
@@ -103,8 +94,6 @@ public:
   CipherText
   encrypt(std::shared_ptr<ContentKey> contentKey, Buffer plaintext);
 private:
-  std::string
-  generateContentKey();
 
   Buffer
   decrypt(CipherText cipherText);

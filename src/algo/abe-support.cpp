@@ -25,12 +25,6 @@ ABESupport::kpEncrypt(const PublicParams &pubParams,
   return encrypt(ck, std::move(plaintext));
 }
 
-std::string ABESupport::generateContentKey() {
-  AesKeyParams params;
-  Buffer symKey = Aes::generateKey(params);
-  return std::string((const char*) symKey.data(), symKey.size());
-}
-
 CipherText
 ABESupport::encrypt(std::shared_ptr<ContentKey> contentKey, Buffer plaintext) {
   // step 3: use the AES symmetric key to cpEncrypt the plain text
@@ -65,24 +59,9 @@ Buffer ABESupport::decrypt(CipherText cipherText) {
   return recoveredContent;
 }
 
-std::shared_ptr<ContentKey> ABESupport::cpContentKeyGen(const PublicParams &pubParams, const Policy &policy) {
-  std::string symmetricKey = generateContentKey();
-  Buffer encSymmetricKey = cpContentKeyEncrypt(pubParams, policy, symmetricKey);
-  auto contentKey = std::make_shared<ContentKey>(symmetricKey, std::move(encSymmetricKey));
-  return contentKey;
-}
-
 Buffer ABESupport::cpDecrypt(const PublicParams &pubParams, const PrivateKey &prvKey, CipherText cipherText) {
   cipherText.m_contentKey->m_aesKey = cpContentKeyDecrypt(pubParams, prvKey, cipherText.m_contentKey->m_encAesKey);
   return ABESupport::decrypt(cipherText);
-}
-
-std::shared_ptr<ContentKey>
-ABESupport::kpContentKeyGen(const PublicParams &pubParams, const std::vector<std::string> &attrList) {
-  std::string symmetricKey = generateContentKey();
-  Buffer encSymmetricKey = kpContentKeyEncrypt(pubParams, attrList, symmetricKey);
-  auto contentKey = std::make_shared<ContentKey>(symmetricKey, std::move(encSymmetricKey));
-  return contentKey;
 }
 
 Buffer ABESupport::kpDecrypt(const PublicParams &pubParams, const PrivateKey &prvKey, CipherText cipherText) {

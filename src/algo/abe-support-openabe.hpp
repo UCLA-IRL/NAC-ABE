@@ -49,9 +49,8 @@ public:
   cpPrvKeyGen(PublicParams &pubParams, MasterKey &masterKey,
               const std::vector<std::string> &attrList) override;
 
-  Buffer cpContentKeyEncrypt(const PublicParams &pubParams,
-                             const Policy &policy,
-                             std::string contentKey) override;
+  std::shared_ptr<ContentKey> cpContentKeyGen(const PublicParams &pubParams,
+                                              const Policy &policy) override;
 
   std::string cpContentKeyDecrypt(const PublicParams &pubParams,
                                           const PrivateKey &prvKey,
@@ -65,9 +64,8 @@ public:
   kpPrvKeyGen(PublicParams &pubParams, MasterKey &masterKey,
               const Policy &policy) override;
 
-  Buffer kpContentKeyEncrypt(const PublicParams &pubParams,
-                             const std::vector<std::string> &attrList,
-                             std::string contentKey) override;
+  std::shared_ptr<ContentKey> kpContentKeyGen(const PublicParams &pubParams,
+                                              const std::vector<std::string> &attrList) override;
 
   virtual std::string kpContentKeyDecrypt(const PublicParams &pubParams,
                                           const PrivateKey &prvKey,
@@ -91,6 +89,10 @@ private:
           const PrivateKey &prvKey, Buffer encContentKey);
 
 private:
+
+  std::string
+  generateContentKey();
+
   static const char *SCHEMA_CPABE;
   static const char *SCHEMA_KPABE;
 

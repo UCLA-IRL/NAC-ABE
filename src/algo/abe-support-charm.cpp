@@ -87,19 +87,23 @@ ABESupportCharm::cpPrvKeyGen(PublicParams& pubParams, MasterKey& masterKey,
   return key;
 }
 
-Buffer
-ABESupportCharm::cpContentKeyEncrypt(const PublicParams &pubParams,
-                            const std::string& policy, std::string contentKey)
+std::shared_ptr<ContentKey>
+ABESupportCharm::cpContentKeyGen(const PublicParams &pubParams,
+                                 const Policy &policy)
 {
   m_inStream << "cpContentKeyEncrypt" << std::endl;
   m_inStream << encode64(pubParams.m_pub) << std::endl;
   m_inStream << encode64(policy) << std::endl;
-  m_inStream << encode64(contentKey) << std::endl;
-  std::string cipherText;
-  std::getline(m_outStream, cipherText);
-  std::string decodedCipherText = decode64(cipherText);
+  auto key = std::make_shared<ContentKey>();
+  std::string keyStr;
+  std::getline(m_outStream, keyStr);
+  key->m_aesKey = decode64(keyStr);
+  std::string encKeyStr;
+  std::getline(m_outStream, encKeyStr);
+  auto re = decode64(encKeyStr);
+  key->m_encAesKey = {re.data(), re.size()};
   assert(m_adapter->running());
-  return {decodedCipherText.data(), decodedCipherText.size()};
+  return key;
 }
 
 std::string
@@ -131,9 +135,9 @@ ABESupportCharm::kpPrvKeyGen(PublicParams &pubParams, MasterKey &masterKey,
   return {};
 }
 
-Buffer
-ABESupportCharm::kpContentKeyEncrypt(const PublicParams &pubParams,
-                const std::vector<std::string> &attrList, std::string contentKey) {
+std::shared_ptr<ContentKey>
+ABESupportCharm::kpContentKeyGen(const PublicParams &pubParams,
+                                 const std::vector<std::string> &attrList) {
   return {};
 }
 
