@@ -95,29 +95,32 @@ if __name__ == '__main__':
     support = ABESupport()
 
     while True:
-        line = sys.stdin.readline()
-        if line.strip() == 'exit':
+        line = sys.stdin.readline().strip()
+        sys.stderr.write(line + "\n")
+        if line == 'exit':
             break
-        elif line.strip() == 'cpInit':
+        elif line == 'cpInit':
             pubParams, master_key = support.cpInit()
             sys.stdout.write(pubParams.decode('ascii') + "\n")
             sys.stdout.write(master_key.decode('ascii') + "\n")
-        elif line.strip() == 'cpPrvKeyGen':
+        elif line == 'cpPrvKeyGen':
             pubParams = sys.stdin.readline().strip().encode('ascii')
             masterKey = sys.stdin.readline().strip().encode('ascii')
             attrList = arrayDecode(sys.stdin.readline().strip())
             prvKey = support.cpPrvKeyGen(pubParams, masterKey, attrList)
             sys.stdout.write(prvKey.decode('ascii') + "\n")
-        elif line.strip() == 'cpContentKeyEncrypt':
+        elif line == 'cpContentKeyEncrypt':
             pubParams = sys.stdin.readline().strip().encode('ascii')
             policy = base64.b64decode(sys.stdin.readline().strip().encode('ascii')).decode('utf-8')
             contentKey = base64.b64decode(sys.stdin.readline().strip().encode('ascii'))
             cipherText = support.cpContentKeyEncrypt(pubParams, policy, contentKey)
             sys.stdout.write(cipherText.decode('ascii') + "\n")
-        elif line.strip() == 'cpContentKeyEncrypt':
+        elif line == 'cpContentKeyEncrypt':
             pubParams = sys.stdin.readline().strip().encode('ascii')
             prvKey = sys.stdin.readline().strip().encode('ascii')
             encContentKey = sys.stdin.readline().strip().encode('ascii')
             status, clearText = support.cpContentKeyDecrypt(pubParams, prvKey, encContentKey)
             sys.stdout.write(str(status) + "\n")
             sys.stdout.write(base64.b64encode(clearText).decode('ascii') + "\n")
+
+        sys.stdout.flush()
