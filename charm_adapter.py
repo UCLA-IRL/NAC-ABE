@@ -110,6 +110,7 @@ if __name__ == '__main__':
             pubParams = sys.stdin.readline().strip().encode('ascii')
             masterKey = sys.stdin.readline().strip().encode('ascii')
             attrList = arrayDecode(sys.stdin.readline().strip())
+            attrList = list(map(lambda s: s.upper(), attrList))
             prvKey = support.cpPrvKeyGen(pubParams, masterKey, attrList)
             sys.stdout.write(prvKey.decode('ascii') + "\n")
         elif line == 'cpContentKeyGen':
