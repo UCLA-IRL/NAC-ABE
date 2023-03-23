@@ -108,7 +108,7 @@ Consumer::consume(const Interest& dataInterest,
 {
   // ready for decryption
   if (!readyForDecryption()) {
-    errorCallback("public params or private decryption key doesn't exist", dataInterest.getName());
+    errorCallback("public params or private decryption key doesn't exist");
     return;
   }
 
@@ -192,14 +192,14 @@ Consumer::onCkeyData(const Data& data, std::shared_ptr<algo::CipherText> cipherT
     else if (m_paramFetcher.getAbeType() == ABE_TYPE_KP_ABE)
       result = algo::ABESupport::getInstance().kpDecrypt(m_paramFetcher.getPublicParams(), m_keyCache, *cipherText);
     else
-      errorCallback("Unsupported ABE type", data.getName());
+      errorCallback("Unsupported ABE type");
   }
   catch (const std::exception& e) {
-    errorCallback(e.what(), data.getName());
+    errorCallback(e.what());
     return;
   }
   NDN_LOG_INFO("result length : " << result.size());
-  successCallBack(result, data.getName());
+  successCallBack(result);
 }
 
 void
@@ -208,7 +208,7 @@ Consumer::handleNack(const Interest& interest, const lp::Nack& nack,
 {
   std::stringstream nackMessage;
   nackMessage << message << nack.getReason();
-  errorCallback(nackMessage.str(), interest.getName());
+  errorCallback(nackMessage.str());
 }
 
 void
@@ -224,7 +224,7 @@ Consumer::handleTimeout(const Interest& interest, int nRetrials,
                                      dataCallback, errorCallback, nackMessage, timeoutMessage));
   }
   else {
-    errorCallback(timeoutMessage, interest.getName());
+    errorCallback(timeoutMessage);
   }
 }
 

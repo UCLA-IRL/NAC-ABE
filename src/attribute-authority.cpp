@@ -80,6 +80,7 @@ AttributeAuthority::onDecryptionKeyRequest(const Interest& request)
   // naming: /AA-prefix/DKEY/<identity name block>
   NDN_LOG_INFO("Got DKEY request: " << request.getName());
   Name keyName(request.getName().at(m_cert.getIdentity().size() + 1).blockFromValue());
+  NDN_LOG_DEBUG("KeyName --------> " << keyName);
   Name identityName = security::extractIdentityFromKeyName(keyName);
 
   // verify request and generate token
