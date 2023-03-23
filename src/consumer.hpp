@@ -34,8 +34,8 @@ class Consumer
 {
 public:
   using OnDataCallback = std::function<void (const Interest&, const Data&)>;
-  using ErrorCallback = std::function<void (const std::string&, const ndn::Name& name)>;
-  using ConsumptionCallback = std::function<void (const Buffer&, const ndn::Name& dataName)>;
+  using ErrorCallback = std::function<void (const std::string&)>;
+  using ConsumptionCallback = std::function<void (const Buffer&)>;
 
 public:
   Consumer(Face& face, KeyChain& keyChain,
