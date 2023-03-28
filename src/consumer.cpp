@@ -1,6 +1,6 @@
 /* -*- Mode:C++; c-file-style:"gnu"; indent-tabs-mode:nil; -*- */
 /*
- * Copyright (c) 2017-2022, Regents of the University of California.
+ * Copyright (c) 2017-2023, Regents of the University of California.
  *
  * This file is part of NAC-ABE.
  *
@@ -69,10 +69,10 @@ Consumer::obtainDecryptionKey()
       m_keyCache = prv;
     },
     [this] (auto&&, const auto& nack) {
-      NDN_LOG_INFO("nack for " << m_cert.getIdentity() << " decrypt key data with reason " << nack.getReason());
+      NDN_LOG_INFO("Nack for " << m_cert.getIdentity() << " decrypt key data with reason " << nack.getReason());
     },
     [this] (auto&&) {
-      NDN_LOG_INFO("timeout for " << m_cert.getIdentity() << " decrypt key data");
+      NDN_LOG_INFO("Timeout for " << m_cert.getIdentity() << " decrypt key data");
     });
 }
 
@@ -81,7 +81,7 @@ Consumer::readyForDecryption()
 {
   // check if public params and private key are ready
   if (m_paramFetcher.getPublicParams().m_pub == "") {
-    NDN_LOG_INFO("public parameters doesn't exist");
+    NDN_LOG_INFO("Public parameters doesn't exist");
     return false;
   } else if (m_keyCache.m_prv.empty()) {
     NDN_LOG_INFO("Private decryption key doesn't exist");
@@ -96,7 +96,8 @@ Consumer::consume(const Name& dataName,
                   const ErrorCallback& errorCallback)
 {
   Interest interest(dataName);
-  // interest.setMustBeFresh(true);
+  // Application data can be fetched long after they have been published,
+  // so we should not set the MustBeFresh flag.
   interest.setCanBePrefix(true);
   consume(interest, consumptionCb, errorCallback);
 }
@@ -108,12 +109,12 @@ Consumer::consume(const Interest& dataInterest,
 {
   // ready for decryption
   if (!readyForDecryption()) {
-    errorCallback("public params or private decryption key doesn't exist");
+    errorCallback("Public params or private decryption key doesn't exist");
     return;
   }
 
-  std::string nackMessage = "nack for " + dataInterest.getName().toUri() + " data fetch with reason ";
-  std::string timeoutMessage = "timeout for " + dataInterest.getName().toUri() + " data fetch";
+  std::string nackMessage = "Nack for " + dataInterest.getName().toUri() + " data fetch with reason ";
+  std::string timeoutMessage = "Timeout for " + dataInterest.getName().toUri() + " data fetch";
 
   auto dataCallback = [=] (const Interest&, const Data& data) {
     decryptContent(data, consumptionCb, errorCallback);
@@ -138,7 +139,7 @@ Consumer::decryptContent(const Data& data,
   encryptedContent.parse();
   auto encryptedContentTLV = encryptedContent.get(TLV_EncryptedContent);
 
-  NDN_LOG_INFO("encrypted Content size is " << encryptedContentTLV.value_size());
+  NDN_LOG_INFO("Encrypted Content size is " << encryptedContentTLV.value_size());
   auto cipherText = std::make_shared<algo::CipherText>();
   cipherText->m_content = Buffer(encryptedContentTLV.value(), encryptedContentTLV.value_size());
   cipherText->m_plainTextSize = readNonNegativeInteger(encryptedContent.get(TLV_PlainTextSize));
@@ -146,13 +147,10 @@ Consumer::decryptContent(const Data& data,
   Name ckName(encryptedContent.get(tlv::Name));
   NDN_LOG_INFO("CK Name is " << ckName);
   Interest ckInterest(ckName);
-
-  // ckInterest.setMustBeFresh(true);
   ckInterest.setCanBePrefix(true);
 
-  std::string nackMessage = "nack for " + ckName.toUri() + " content key fetch with reason ";
-
-  std::string timeoutMessage = "timeout for " + ckName.toUri() + " content key fetch";
+  std::string nackMessage = "Nack for " + ckName.toUri() + " content key fetch with reason ";
+  std::string timeoutMessage = "Timeout for " + ckName.toUri() + " content key fetch";
 
   auto dataCallback = [=] (const Interest&, const Data& data) {
     onCkeyData(data, cipherText, successCallBack, errorCallback);
@@ -179,11 +177,9 @@ Consumer::onCkeyData(const Data& data, std::shared_ptr<algo::CipherText> cipherT
   cipherText->m_contentKey = std::make_shared<algo::ContentKey>();
   cipherText->m_contentKey->m_encAesKey = Buffer(encryptedAESKeyTLV.value(), encryptedAESKeyTLV.value_size());
 
-  //std::string encryptedSymmetricKey(reinterpret_cast<char*>(cipherText->m_aesKey.data()));
-
-  NDN_LOG_INFO("content size : " << cipherText->m_content.size());
-  NDN_LOG_INFO("plaintext size : " << cipherText->m_plainTextSize);
-  NDN_LOG_INFO("encrypted aes key size : " << cipherText->m_contentKey->m_encAesKey.size());
+  NDN_LOG_INFO("Content size : " << cipherText->m_content.size());
+  NDN_LOG_INFO("Plaintext size : " << cipherText->m_plainTextSize);
+  NDN_LOG_INFO("Encrypted aes key size : " << cipherText->m_contentKey->m_encAesKey.size());
 
   Buffer result;
   try {
@@ -198,7 +194,7 @@ Consumer::onCkeyData(const Data& data, std::shared_ptr<algo::CipherText> cipherT
     errorCallback(e.what());
     return;
   }
-  NDN_LOG_INFO("result length : " << result.size());
+  NDN_LOG_INFO("Result length : " << result.size());
   successCallBack(result);
 }
 
@@ -217,7 +213,7 @@ Consumer::handleTimeout(const Interest& interest, int nRetrials,
                         std::string nackMessage, std::string timeoutMessage)
 {
   if (nRetrials > 0) {
-    NDN_LOG_INFO("timeout for: " << interest << ", retrying");
+    NDN_LOG_INFO("Timeout for: " << interest << ", retrying");
     m_face.expressInterest(interest, dataCallback,
                            std::bind(&Consumer::handleNack, this, _1, _2, errorCallback, nackMessage),
                            std::bind(&Consumer::handleTimeout, this, _1, nRetrials - 1,
