@@ -1,6 +1,6 @@
 /* -*- Mode:C++; c-file-style:"gnu"; indent-tabs-mode:nil; -*- */
 /*
- * Copyright (c) 2017-2022, Regents of the University of California.
+ * Copyright (c) 2017-2023, Regents of the University of California.
  *
  * This file is part of NAC-ABE.
  *
@@ -98,11 +98,18 @@ BOOST_AUTO_TEST_CASE(OnPrvKey)
   CpAttributeAuthority aa(authorityCert, face, m_keyChain);
   aa.addNewPolicy(consumerCert, attrList);
 
+  auto identity = consumerCert.getIdentity();
+  auto keyName = security::extractKeyNameFromCertName(consumerCert.getName());
+  auto keyNameTlv = keyName.wireEncode();
+
+  // /<attribute authority prefix>/DKEY/<decryptor name block>
   Name interestName = attrAuthorityPrefix;
-  interestName.append("DKEY")
-              .append(consumerName.wireEncode().begin(), consumerName.wireEncode().end());
+  interestName.append(DECRYPT_KEY);
+  interestName.append(keyNameTlv.begin(), keyNameTlv.end());
   Interest interest(interestName);
+  interest.setMustBeFresh(true);
   interest.setCanBePrefix(true);
+
   m_keyChain.sign(interest, security::signingByCertificate(consumerCert));
 
   advanceClocks(time::milliseconds(20), 60);
@@ -127,11 +134,18 @@ BOOST_AUTO_TEST_CASE(OnKpPrvKey)
   KpAttributeAuthority aa(authorityCert, face, m_keyChain);
   aa.addNewPolicy(consumerCert, policy);
 
+  auto identity = consumerCert.getIdentity();
+  auto keyName = security::extractKeyNameFromCertName(consumerCert.getName());
+  auto keyNameTlv = keyName.wireEncode();
+
+  // /<attribute authority prefix>/DKEY/<decryptor name block>
   Name interestName = attrAuthorityPrefix;
-  interestName.append("DKEY")
-              .append(consumerName.wireEncode().begin(), consumerName.wireEncode().end());
+  interestName.append(DECRYPT_KEY);
+  interestName.append(keyNameTlv.begin(), keyNameTlv.end());
   Interest interest(interestName);
+  interest.setMustBeFresh(true);
   interest.setCanBePrefix(true);
+
   m_keyChain.sign(interest, security::signingByCertificate(consumerCert));
 
   advanceClocks(time::milliseconds(20), 60);

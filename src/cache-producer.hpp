@@ -1,6 +1,6 @@
 /* -*- Mode:C++; c-file-style:"gnu"; indent-tabs-mode:nil; -*- */
 /*
- * Copyright (c) 2017-2022, Regents of the University of California.
+ * Copyright (c) 2017-2023, Regents of the University of California.
  *
  * This file is part of NAC-ABE.
  *
@@ -48,11 +48,14 @@ public:
    * @param dataSuffix The suffix of data.
    * @param accessPolicy The encryption policy, e.g., (ucla or mit) and professor
    * @param content The payload
+   * @param info The signing parameters
    * @return The encrypted data and the encrypted CK data
    */
   std::tuple<std::shared_ptr<Data>, std::shared_ptr<Data>>
-  produce(const Name& dataName, const Policy& accessPolicy, span<const uint8_t> content,
-          std::shared_ptr<Data> ckTemplate = getDefaultCkTemplate(), shared_ptr<Data> dataTemplate = getDefaultEncryptedDataTemplate()) override;
+  produce(const Name& dataName, const Policy& accessPolicy,
+          span<const uint8_t> content, const security::SigningInfo& info,
+          std::shared_ptr<Data> ckTemplate = getDefaultCkTemplate(),
+          shared_ptr<Data> dataTemplate = getDefaultEncryptedDataTemplate()) override;
 
   /**
    * @brief Produce KP-encrypted Data and corresponding encrypted CK Data
@@ -63,11 +66,13 @@ public:
    * @param dataSuffix The suffix of data.
    * @param accessPolicy The encryption policy, e.g., (ucla or mit) and professor
    * @param content The payload
+   * @param info The signing parameters
    * @return The encrypted data and the encrypted CK data
    */
   std::tuple<std::shared_ptr<Data>, std::shared_ptr<Data>>
   produce(const Name& dataName, const std::vector<std::string>& attributes,
-          span<const uint8_t> content, std::shared_ptr<Data> ckTemplate = getDefaultCkTemplate(),
+          span<const uint8_t> content, const security::SigningInfo& info,
+          std::shared_ptr<Data> ckTemplate = getDefaultCkTemplate(),
           shared_ptr<Data> dataTemplate = getDefaultEncryptedDataTemplate()) override;
 
 PUBLIC_WITH_TESTS_ELSE_PRIVATE:

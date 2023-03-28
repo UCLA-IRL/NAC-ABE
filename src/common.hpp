@@ -93,6 +93,8 @@ const uint32_t TLV_Attribute = 606;
 
 static const std::string PUBLIC_PARAMS = "PUBPARAMS";
 static const std::string DECRYPT_KEY = "DKEY";
+static const std::string ENCRYPT_BY = "ENC-BY";
+static const std::string CONTENT_KEY = "CK";
 static const std::string SET_POLICY = "SET_POLICY";
 
 using AbeType = std::string;
