@@ -42,6 +42,7 @@ public:
     , fetcherFace(io, m_keyChain, {false, true})
   {
     producerFace.linkTo(fetcherFace);
+    advanceClocks(42_us, 1);
   }
 
 protected:

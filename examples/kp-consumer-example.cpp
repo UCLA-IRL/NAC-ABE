@@ -24,6 +24,7 @@ public:
   run()
   {
     ndn::Name dataName("/randomData");
+    while (!m_consumer.readyForDecryption()) usleep(1);
     m_consumer.consume(m_producerCert.getIdentity().append(dataName),
                        [] (const auto& result) {
                          std::cout << "Received data: " << std::string(result.begin(), result.end()) << std::endl;

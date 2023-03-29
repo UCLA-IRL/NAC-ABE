@@ -25,6 +25,7 @@ public:
     const std::vector<std::string> attributes = {"attribute"};
 
     std::shared_ptr<ndn::Data> contentData, ckData;
+    while (!m_producer.readyForEncryption()) usleep(1);
     std::tie(contentData, ckData) = m_producer.produce("/randomData", attributes,
                                                        {reinterpret_cast<const uint8_t*>(plainText.data()),
                                                         plainText.size()});
@@ -72,7 +73,7 @@ main(int argc, char** argv)
 
   try {
     examples::Producer producer;
-    producer.processEvents(1_s);
+    producer.processEvents(5_s);
     producer.run();
     return 0;
   }

@@ -66,8 +66,10 @@ void ndn::nacabe::RdrProducer::onInterest(const Interest &interest) {
   auto currentTime = time::system_clock::now();
   if (m_metaData) currentTime = std::max(currentTime, m_metaData->getName().get(-1).toTimestamp() + time::milliseconds(1));
   auto new_time = m_getLastTimestamp();
+  // convert to a timestamp unique in ndn names
+  auto new_timestamp_time = time::duration_cast<time::milliseconds>(new_time - time::getUnixEpoch()) + time::getUnixEpoch();
   if (new_time != m_lastGenerationTime) {
-    m_expireTime[m_lastGenerationTime] = currentTime + m_metaDataTtl * 2;
+    m_expireTime[new_timestamp_time] = currentTime + m_metaDataTtl * 2;
     m_lastGenerationTime = new_time;
     m_metaData = nullptr;
   }
@@ -89,7 +91,8 @@ void ndn::nacabe::RdrProducer::onInterest(const Interest &interest) {
 
   for (size_t i = 0; i < nSegments; i++) {
     // Create encapsulated segment
-    auto segmentName = Name(m_objectName).appendTimestamp(new_time).appendSegment(i);
+    auto segmentName = Name(m_objectName).appendTimestamp(new_timestamp_time).appendSegment(i);
+    NDN_LOG_INFO("New segment: " << segmentName);
     Data segment(segmentName);
     segment.setFreshnessPeriod(time::duration_cast<time::milliseconds>(m_segmentTtl));
 
@@ -101,8 +104,7 @@ void ndn::nacabe::RdrProducer::onInterest(const Interest &interest) {
     digestBlock.push_back(segment.getFullName().get(-1));
 
     // Insert outer segment
-    new_time = time::duration_cast<time::milliseconds>(new_time - time::getUnixEpoch()) + time::getUnixEpoch();
-    m_segments[new_time].push_back(std::move(segment));
+    m_segments[new_timestamp_time].push_back(std::move(segment));
   }
 
   // make metadata
@@ -114,7 +116,8 @@ void ndn::nacabe::RdrProducer::onInterest(const Interest &interest) {
 
   //put version metainfo
   auto m = m_metaData->getMetaInfo();
-  m.addAppMetaInfo(makeNestedBlock(TLV_SegmentsVersion, Name().appendTimestamp(new_time).get(0)));
+  NDN_LOG_INFO("New version with timestamp: " << Name().appendTimestamp(new_timestamp_time).get(0));
+  m.addAppMetaInfo(makeNestedBlock(TLV_SegmentsVersion, Name().appendTimestamp(new_timestamp_time).get(0)));
   m_metaData->setMetaInfo(m);
 
   m_decorateMetaData(*m_metaData);

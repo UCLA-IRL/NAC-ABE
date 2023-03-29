@@ -75,6 +75,7 @@ BOOST_FIXTURE_TEST_SUITE(TestIntegratedUpdate, TestIntegratedUpdateFixture)
 
 BOOST_AUTO_TEST_CASE(KpdecKeyUpdate)
 {
+  advanceClocks(42_us, 1);
   // set up AA
   NDN_LOG_INFO("Create Attribute Authority. AA prefix: " << aaCert.getIdentity());
   KpAttributeAuthority aa(aaCert, aaFace, m_keyChain);
