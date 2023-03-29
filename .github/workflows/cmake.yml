@@ -140,7 +140,7 @@ jobs:
 
       - name: Install dependencies
         run: |
-          FORMULAE=(boost openssl pkg-config bison gsed)
+          FORMULAE=(boost openssl pkg-config bison gsed openssl@1.1)
           # GitHub Actions runners have a large number of pre-installed
           # Homebrew packages. Don't waste time upgrading all of them.
           brew list --versions "${FORMULAE[@]}" || brew update
@@ -148,7 +148,7 @@ jobs:
             brew list --versions "$FORMULA" || brew install "$FORMULA"
           done
           # Ensure /usr/local/opt/openssl exists
-          brew reinstall openssl openssl@1.1
+          # brew reinstall openssl openssl@1.1
 
       - name: Install OpenABE
         run: |
@@ -178,9 +178,10 @@ jobs:
           git clone https://github.com/named-data/ndn-cxx
           cd ndn-cxx
           git checkout 535bd33223a63f7ec4820d90db2f8764ffb635f8
-          ./waf --color=yes configure --disable-static --enable-shared --without-osx-keychain
+          ./waf --color=yes configure --with-tests --without-osx-keychain
           ./waf --color=yes build
           sudo ./waf --color=yes install
+          ./build/unit-tests
           cd ../NAC-ABE
 
       - name: Configure NFD
@@ -193,10 +194,6 @@ jobs:
           ./waf --color=yes build
           sudo ./waf --color=yes install
           sudo cp /usr/local/etc/ndn/nfd.conf.sample /usr/local/etc/ndn/nfd.conf
-          sudo rm -f /usr/local/etc/ndn/client.conf
-          sudo cat /usr/local/etc/ndn/client.conf.sample | sed 's/tpm=tpm-osxkeychain/tpm=tpm-file/' > /usr/local/etc/ndn/client.conf
-          sudo cat /usr/local/etc/ndn/client.conf.sample
-          cat /usr/local/etc/ndn/client.conf
           cd ../NAC-ABE
           sudo nfd-start
 
