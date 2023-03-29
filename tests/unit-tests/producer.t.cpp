@@ -1,6 +1,6 @@
 /* -*- Mode:C++; c-file-style:"gnu"; indent-tabs-mode:nil; -*- */
 /*
- * Copyright (c) 2017-2022, Regents of the University of California.
+ * Copyright (c) 2017-2023, Regents of the University of California.
  *
  * This file is part of NAC-ABE.
  *
@@ -46,6 +46,7 @@ public:
     producerCert = addIdentity("/producer").getDefaultKey().getDefaultCertificate();
     authorityCert = addIdentity("/authority").getDefaultKey().getDefaultCertificate();
     ownerCert = addIdentity("/owner").getDefaultKey().getDefaultCertificate();
+    signingInfo = signingByCertificate(producerCert);
   }
 
 protected:
@@ -55,6 +56,7 @@ protected:
   security::Certificate producerCert;
   security::Certificate authorityCert;
   security::Certificate ownerCert;
+  security::SigningInfo signingInfo;
 };
 
 BOOST_FIXTURE_TEST_SUITE(TestProducer, TestProducerFixture)
@@ -87,13 +89,13 @@ BOOST_AUTO_TEST_CASE(OnPolicyInterest)
                        .append(dataPrefix.wireEncode().begin(), dataPrefix.wireEncode().end())
                        .append(Name("policy"));
 
-  NDN_LOG_DEBUG("set policy Interest name:" << setPolicyInterestName);
+  NDN_LOG_DEBUG("Set policy Interest name:" << setPolicyInterestName);
   Interest setPolicyInterest = Interest(setPolicyInterestName);
   setPolicyInterest.setCanBePrefix(true);
   setPolicyInterest.setMustBeFresh(true);
   m_keyChain.sign(setPolicyInterest, signingByCertificate(ownerCert));
 
-  NDN_LOG_DEBUG("before receive, interest name:" << setPolicyInterest.getName());
+  NDN_LOG_DEBUG("Before receive, interest name:" << setPolicyInterest.getName());
   //dynamic_cast<util::DummyClientFace*>(&c1)->receive(setPolicyInterest);
   c2.expressInterest(setPolicyInterest,
       [&](const Interest&, const Data& response) {
@@ -103,7 +105,7 @@ BOOST_AUTO_TEST_CASE(OnPolicyInterest)
       [](const Interest&, const lp::Nack&) {},
       [](const Interest&) {});
 
-  NDN_LOG_DEBUG("set policy Interest:" << setPolicyInterest.getName());
+  NDN_LOG_DEBUG("Set policy Interest:" << setPolicyInterest.getName());
   // /producer/SET_POLICY/dataPrefix/policy
   NDN_LOG_DEBUG("data prefix:" << setPolicyInterest.getName().getSubName(2, 1));
   NDN_LOG_DEBUG(setPolicyInterest.getName().getSubName(3, 1));
@@ -144,13 +146,13 @@ BOOST_AUTO_TEST_CASE(OnKpPolicyInterest)
                        .append(dataPrefix.wireEncode().begin(), dataPrefix.wireEncode().end())
                        .append(attr1.begin(), attr1.end());
 
-  NDN_LOG_DEBUG("set policy Interest name:" << setPolicyInterestName);
+  NDN_LOG_DEBUG("Set policy Interest name:" << setPolicyInterestName);
   Interest setPolicyInterest = Interest(setPolicyInterestName);
   setPolicyInterest.setCanBePrefix(true);
   setPolicyInterest.setMustBeFresh(true);
   m_keyChain.sign(setPolicyInterest, signingByCertificate(ownerCert));
 
-  NDN_LOG_DEBUG("before receive, interest name:" << setPolicyInterest.getName());
+  NDN_LOG_DEBUG("Before receive, interest name:" << setPolicyInterest.getName());
   //dynamic_cast<util::DummyClientFace*>(&c1)->receive(setPolicyInterest);
   c2.expressInterest(setPolicyInterest,
       [&](const Interest&, const Data& response) {
@@ -162,7 +164,7 @@ BOOST_AUTO_TEST_CASE(OnKpPolicyInterest)
 
   NDN_LOG_DEBUG("set policy Interest:" << setPolicyInterest.getName());
   // /producer/SET_POLICY/dataPrefix/policy
-  NDN_LOG_DEBUG("data prefix:" << setPolicyInterest.getName().getSubName(2, 1));
+  NDN_LOG_DEBUG("Data prefix:" << setPolicyInterest.getName().getSubName(2, 1));
   NDN_LOG_DEBUG(setPolicyInterest.getName().getSubName(3, 1));
 
   advanceClocks(time::milliseconds(20), 60);
@@ -209,7 +211,7 @@ BOOST_AUTO_TEST_CASE(EncryptContent)
   algo::PrivateKey prvKey = algo::ABESupport::getInstance().cpPrvKeyGen(pubParams, masterKey, attrList);
 
   std::shared_ptr<Data> data, ckData;
-  std::tie(data, ckData) = producer.produce(Name("/dataset1/example/data1"), "attr1 or attr2", PLAIN_TEXT);
+  std::tie(data, ckData) = producer.produce(Name("/dataset1/example/data1"), "attr1 or attr2", PLAIN_TEXT, signingInfo);
   BOOST_CHECK(data != nullptr);
   BOOST_CHECK(ckData != nullptr);
 }
@@ -233,7 +235,7 @@ BOOST_AUTO_TEST_CASE(KpEncryptContent)
   algo::PrivateKey prvKey = algo::ABESupport::getInstance().kpPrvKeyGen(pubParams, masterKey, "attr1 or attr2");
 
   std::shared_ptr<Data> data, ckData;
-  std::tie(data, ckData) = producer.produce(Name("/dataset1/example/data1"), attrList, PLAIN_TEXT);
+  std::tie(data, ckData) = producer.produce(Name("/dataset1/example/data1"), attrList, PLAIN_TEXT, signingInfo);
   BOOST_CHECK(data != nullptr);
   BOOST_CHECK(ckData != nullptr);
 }

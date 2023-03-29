@@ -17,15 +17,17 @@ ndnsec key-gen /aaPrefix
 ndnsec key-gen /producerPrefix
 
 $1/examples/kp-aa-example &
+aa_pid=$!
 sleep 1
 $1/examples/kp-producer-example &
+pro_pid=$!
 sleep 1
 
 $1/examples/kp-consumer-example | grep "Hello world"
 exit_val=$?
 
-kill %1
-kill %2
+kill $aa_pid
+kill $pro_pid
 
 ndnsec delete /consumerPrefix1
 ndnsec delete /aaPrefix

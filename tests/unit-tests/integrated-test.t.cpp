@@ -1,6 +1,6 @@
 /* -*- Mode:C++; c-file-style:"gnu"; indent-tabs-mode:nil; -*- */
 /*
- * Copyright (c) 2017-2022, Regents of the University of California.
+ * Copyright (c) 2017-2023, Regents of the University of California.
  *
  * This file is part of NAC-ABE.
  *
@@ -59,6 +59,8 @@ public:
     consumerCert2 = addIdentity("/consumerPrefix2", RsaKeyParams()).getDefaultKey().getDefaultCertificate();
     producerCert = addIdentity("/producerPrefix").getDefaultKey().getDefaultCertificate();
     dataOwnerCert = addIdentity("/dataOwnerPrefix").getDefaultKey().getDefaultCertificate();
+
+    signingInfo = signingByCertificate(producerCert);
   }
 
 protected:
@@ -75,6 +77,7 @@ protected:
   security::Certificate consumerCert2;
   security::Certificate producerCert;
   security::Certificate dataOwnerCert;
+  security::SigningInfo signingInfo;
 };
 
 BOOST_FIXTURE_TEST_SUITE(TestIntegrated, TestIntegratedFixture)
@@ -138,20 +141,22 @@ BOOST_AUTO_TEST_CASE(Cp)
                                      BOOST_CHECK(false);
                                    });
 
-  NDN_LOG_DEBUG("before policy set");
+  NDN_LOG_DEBUG("Before policy set");
   advanceClocks(time::milliseconds(20), 60);
   BOOST_CHECK(isPolicySet);
 
   std::shared_ptr<Data> contentData, ckData;
   auto policyFound = producer.findMatchedPolicy(dataName);
-  std::tie(contentData, ckData) = producer.produce(dataName, policyFound, PLAIN_TEXT);
+
+  std::tie(contentData, ckData) = producer.produce(dataName, policyFound, PLAIN_TEXT, signingInfo);
+
   BOOST_CHECK(contentData != nullptr);
   BOOST_CHECK(ckData != nullptr);
-  NDN_LOG_DEBUG("content data name: " << contentData->getName());
+  NDN_LOG_DEBUG("Content data name: " << contentData->getName());
 
   producerFace.setInterestFilter(producerCert.getIdentity(),
     [&] (const ndn::InterestFilter&, const ndn::Interest& interest) {
-      NDN_LOG_INFO("consumer request for"<<interest.toUri());
+      NDN_LOG_INFO("Consumer request for"<<interest.toUri());
       if (interest.getName().isPrefixOf(contentData->getName())) {
         producerFace.put(*contentData);
       }
@@ -251,16 +256,16 @@ BOOST_AUTO_TEST_CASE(Kp)
                                     BOOST_CHECK(false);
                                   });
 
-  NDN_LOG_DEBUG("before policy set");
+  NDN_LOG_DEBUG("Before policy set");
   advanceClocks(time::milliseconds(20), 60);
   BOOST_CHECK(isPolicySet);
 
   std::shared_ptr<Data> contentData, ckData;
   auto attributeFound = producer.findMatchedAttributes(dataName);
-  std::tie(contentData, ckData) = producer.produce(dataName, attributeFound, PLAIN_TEXT);
+  std::tie(contentData, ckData) = producer.produce(dataName, attributeFound, PLAIN_TEXT, signingInfo);
   BOOST_CHECK(contentData != nullptr);
   BOOST_CHECK(ckData != nullptr);
-  NDN_LOG_DEBUG("content data name: " << contentData->getName());
+  NDN_LOG_DEBUG("Content data name: " << contentData->getName());
 
   producerFace.setInterestFilter(producerCert.getIdentity(),
                                  [&] (const ndn::InterestFilter&, const ndn::Interest& interest) {
@@ -364,20 +369,19 @@ BOOST_AUTO_TEST_CASE(KpCache)
                                     BOOST_CHECK(false);
                                   });
 
-  NDN_LOG_DEBUG("before policy set");
+  NDN_LOG_DEBUG("Before policy set");
   advanceClocks(time::milliseconds(20), 60);
   BOOST_CHECK(isPolicySet);
-
   std::shared_ptr<Data> contentData, ckData;
   auto attributeFound = producer.findMatchedAttributes(dataName);
   BOOST_CHECK(producer.m_kpKeyCache.size() == 0);
-  std::tie(contentData, ckData) = producer.produce(dataName, attributeFound, PLAIN_TEXT);
+  std::tie(contentData, ckData) = producer.produce(dataName, attributeFound, PLAIN_TEXT, signingInfo);
   BOOST_CHECK(producer.m_kpKeyCache.size() == 1);
-  std::tie(contentData, ckData) = producer.produce(dataName, attributeFound, PLAIN_TEXT);
+  std::tie(contentData, ckData) = producer.produce(dataName, attributeFound, PLAIN_TEXT, signingInfo);
   BOOST_CHECK(producer.m_kpKeyCache.size() == 1);
   BOOST_CHECK(contentData != nullptr);
   BOOST_CHECK(ckData != nullptr);
-  NDN_LOG_DEBUG("content data name: " << contentData->getName());
+  NDN_LOG_DEBUG("Content data name: " << contentData->getName());
 
   producerFace.setInterestFilter(producerCert.getIdentity(),
                                  [&] (const ndn::InterestFilter&, const ndn::Interest& interest) {
