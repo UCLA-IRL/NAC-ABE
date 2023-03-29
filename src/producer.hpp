@@ -21,12 +21,14 @@
 #ifndef NAC_ABE_PRODUCER_HPP
 #define NAC_ABE_PRODUCER_HPP
 
-#include <utility>
-
 #include "algo/cipher-text.hpp"
 #include "algo/content-key.hpp"
 #include "param-fetcher.hpp"
 #include "trust-config.hpp"
+
+#include <ndn-cxx/security/signing-helpers.hpp>
+
+#include <utility>
 
 namespace ndn {
 namespace nacabe {
@@ -106,7 +108,7 @@ public:
    */
   virtual std::tuple<std::shared_ptr<Data>, std::shared_ptr<Data>>
   produce(const Name& dataNameSuffix, const std::vector<std::string>& attributes,
-          span<const uint8_t> content, const security::SigningInfo& info,
+          span<const uint8_t> content, const security::SigningInfo& info = signingWithSha256(),
           std::shared_ptr<Data> ckTemplate = getDefaultCkTemplate(),
           shared_ptr<Data> dataTemplate = getDefaultEncryptedDataTemplate());
 

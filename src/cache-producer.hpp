@@ -53,7 +53,7 @@ public:
    */
   std::tuple<std::shared_ptr<Data>, std::shared_ptr<Data>>
   produce(const Name& dataName, const Policy& accessPolicy,
-          span<const uint8_t> content, const security::SigningInfo& info,
+          span<const uint8_t> content, const security::SigningInfo& info = signingWithSha256(),
           std::shared_ptr<Data> ckTemplate = getDefaultCkTemplate(),
           shared_ptr<Data> dataTemplate = getDefaultEncryptedDataTemplate()) override;
 
