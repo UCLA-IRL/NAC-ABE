@@ -5,6 +5,12 @@ on:
     branches: [ master ]
   pull_request:
     branches: [ master ]
+  workflow_dispatch:
+    inputs:
+      logLevel:
+        description: 'Log level'
+        required: true
+        default: 'warning'
 
 env:
   # Customize the CMake build type here (Release, Debug, RelWithDebInfo, etc.)
@@ -100,8 +106,13 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        xcode: ['11.3', '11.7', '12.4']
-        os: [macos-10.15]
+        os: [ macos-11 ]
+        xcode: [ '12.4', '12.5', '13.2' ]
+        include:
+          - os: macos-12
+            xcode: '13.4'
+          - os: macos-12
+            xcode: '14.2'
     runs-on: ${{ matrix.os }}
     steps:
       - name: Set up Xcode
@@ -111,9 +122,25 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v3
 
+      - name: Configure googletest
+        run: |
+          cd ..
+          wget https://github.com/google/googletest/archive/refs/tags/release-1.12.1.tar.gz
+          tar -xzvf release-1.12.1.tar.gz
+          cd googletest-release-1.12.1
+          mkdir build
+          cd build
+          cmake -DBUILD_SHARED_LIBS=ON -DCMAKE_BUILD_TYPE=Release ..
+          make
+          sudo make install
+          cmake -DCMAKE_BUILD_TYPE=Release ..
+          make
+          sudo make install
+          cd ../..
+
       - name: Install dependencies
         run: |
-          FORMULAE=(boost openssl pkg-config bison googletest gsed)
+          FORMULAE=(boost openssl pkg-config bison gsed)
           # GitHub Actions runners have a large number of pre-installed
           # Homebrew packages. Don't waste time upgrading all of them.
           brew list --versions "${FORMULAE[@]}" || brew update
@@ -128,6 +155,7 @@ jobs:
           cd ..
           git clone https://github.com/zeutro/openabe.git
           cd openabe
+          mv VERSION OpenABE-VERSION
           sudo -E ./deps/install_pkgs.sh
           . ./env
 
@@ -147,9 +175,10 @@ jobs:
       - name: Configure ndn-cxx
         run: |
           cd ..
-          git clone -b ndn-cxx-0.8.1 --depth=1 https://github.com/named-data/ndn-cxx
+          git clone https://github.com/named-data/ndn-cxx
           cd ndn-cxx
-          ./waf --color=yes configure --disable-static --enable-shared --without-osx-keychain
+          git checkout 535bd33223a63f7ec4820d90db2f8764ffb635f8
+          ./waf --color=yes configure --disable-static --enable-shared
           ./waf --color=yes build
           sudo ./waf install
           cd ../NAC-ABE
