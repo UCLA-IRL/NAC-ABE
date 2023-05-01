@@ -29,14 +29,17 @@
 
 namespace examples {
 
+ndn::KeyChain m_keyChain;
+ndn::security::Certificate m_cert = m_keyChain.getPib().getIdentity("/example/producer").getDefaultKey().getDefaultCertificate();
 class Producer
 {
 public:
   Producer()
-    : m_producerCert(m_keyChain.getPib().getIdentity("/producerPrefix").getDefaultKey().getDefaultCertificate())
-    , m_producer(m_face, m_keyChain, m_producerCert,
-                 m_keyChain.getPib().getIdentity("/aaPrefix").getDefaultKey().getDefaultCertificate())
+    : m_producerCert(m_cert)
+    , m_producer(m_face, m_keyChain, m_validator, m_producerCert,
+                 m_keyChain.getPib().getIdentity("/example/aa").getDefaultKey().getDefaultCertificate())
   {
+    m_validator.load("trust-schema.conf");
     m_signingInfo = signingByCertificate(m_producerCert);
   }
 
@@ -56,6 +59,9 @@ public:
     m_face.setInterestFilter(m_producerCert.getIdentity(),
                              [=] (const auto&, const auto& interest) {
                                std::cout << ">> I: " << interest << std::endl;
+                               if (interest.getName().isPrefixOf(m_cert.getName())) {
+                                 m_face.put(m_cert);
+                               }
                                if (interest.getName().isPrefixOf(contentData->getName())) {
                                  std::cout << "<< D: " << contentData->getName() << std::endl;
                                  m_face.put(*contentData);
@@ -81,7 +87,7 @@ public:
 
 private:
   ndn::Face m_face;
-  ndn::KeyChain m_keyChain;
+  ndn::ValidatorConfig m_validator{m_face};
   ndn::security::Certificate m_producerCert;
   ndn::nacabe::Producer m_producer;
   ndn::security::SigningInfo m_signingInfo;

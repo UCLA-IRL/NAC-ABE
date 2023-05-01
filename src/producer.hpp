@@ -44,6 +44,7 @@ public:
    * @brief Initialize a producer. Use when no data owner defined.
    */
   Producer(Face& face, KeyChain& keyChain,
+           security::Validator& validator,
            const security::Certificate& identityCert,
            const security::Certificate& attrAuthorityCertificate,
            Interest publicParamInterestTemplate = ParamFetcher::getDefaultInterestTemplate());
@@ -52,6 +53,7 @@ public:
    * @brief Initialize a producer. Use when a data owner is defined.
    */
   Producer(Face& face, KeyChain& keyChain,
+           security::Validator& validator,
            const security::Certificate& identityCert,
            const security::Certificate& attrAuthorityCertificate,
            const security::Certificate& dataOwnerCertificate,
@@ -184,6 +186,7 @@ private:
   security::Certificate m_cert;
   Face& m_face;
   KeyChain& m_keyChain;
+  security::Validator& m_validator;
   Name m_attrAuthorityPrefix;
   Name m_dataOwnerPrefix;
   TrustConfig m_trustConfig;

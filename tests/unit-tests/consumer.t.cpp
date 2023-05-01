@@ -37,14 +37,22 @@ public:
     , attrAuthorityPrefix("/authority")
   {
     c1.linkTo(c2);
-    consumerCert = addIdentity("/consumer", RsaKeyParams()).getDefaultKey().getDefaultCertificate();
-    authorityCert = addIdentity("/authority").getDefaultKey().getDefaultCertificate();
+    security::pib::Identity anchorId = addIdentity("/example");
+    saveCertToFile(anchorCert, "tests/unit-tests/example-trust-anchor.t.cert");
+    security::pib::Identity consumerId = addIdentity("/example/consumer", RsaKeyParams());
+    addSubCertificate("/example/consumer", anchorId);
+    consumerCert = consumerId.getDefaultKey().getDefaultCertificate();
+
+    security::pib::Identity authorityId = addIdentity(attrAuthorityPrefix);
+    addSubCertificate("/example/authority", anchorId);
+    authorityCert = authorityId.getDefaultKey().getDefaultCertificate();
   }
 
 protected:
   util::DummyClientFace c1;
   util::DummyClientFace c2;
   Name attrAuthorityPrefix;
+  security::Certificate anchorCert;
   security::Certificate consumerCert;
   security::Certificate authorityCert;
 };
@@ -59,7 +67,9 @@ BOOST_AUTO_TEST_CASE(Constructor)
 
   advanceClocks(time::milliseconds(20), 60);
 
-  Consumer consumer(c1, m_keyChain, consumerCert, authorityCert);
+  security::ValidatorConfig validator(c1);
+  validator.load("tests/unit-tests/trust-schema.t.conf");
+  Consumer consumer(c1, m_keyChain, validator, consumerCert, authorityCert);
   advanceClocks(time::milliseconds(20), 60);
 
   BOOST_CHECK(commandReceived);

@@ -28,3 +28,6 @@ __pycache__/
 # Other
 .idea/
 cmake-build-*/
+
+# Example files
+*.cert
