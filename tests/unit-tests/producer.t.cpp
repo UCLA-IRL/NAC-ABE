@@ -44,7 +44,7 @@ public:
   {
     c1.linkTo(c2);
     security::pib::Identity anchorId = addIdentity("/example");
-    saveCertToFile(anchorId.getDefaultKey().getDefaultCertificate(), "example-trust-anchor.t.cert");
+    saveCertToFile(anchorId.getDefaultKey().getDefaultCertificate(), "example-trust-anchor.cert");
 
     security::pib::Identity producerId = addIdentity("/example/producer");
     addSubCertificate("/example/producer", anchorId);
@@ -83,7 +83,7 @@ BOOST_AUTO_TEST_CASE(Constructor)
 
   advanceClocks(time::milliseconds(20), 60);
   security::ValidatorConfig validator(c1);
-  validator.load("tests/unit-tests/trust-schema.t.conf");
+  validator.load("trust-schema.conf");
   Producer producer(c1, m_keyChain, validator, producerCert, authorityCert);
   advanceClocks(time::milliseconds(10), 60);
 
@@ -93,7 +93,7 @@ BOOST_AUTO_TEST_CASE(Constructor)
 BOOST_AUTO_TEST_CASE(OnPolicyInterest)
 {
   security::ValidatorConfig validator(c1);
-  validator.load("tests/unit-tests/trust-schema.t.conf");
+  validator.load("trust-schema.conf");
   Producer producer(c1, m_keyChain, validator, producerCert, authorityCert, ownerCert);
   producer.m_paramFetcher.m_abeType = ABE_TYPE_CP_ABE;
   advanceClocks(time::milliseconds(20), 60);
@@ -151,7 +151,7 @@ BOOST_AUTO_TEST_CASE(OnPolicyInterest)
 BOOST_AUTO_TEST_CASE(OnKpPolicyInterest)
 {
   security::ValidatorConfig validator(c1);
-  validator.load("tests/unit-tests/trust-schema.t.conf");
+  validator.load("trust-schema.conf");
   Producer producer(c1, m_keyChain, validator, producerCert, authorityCert, ownerCert);
   producer.m_paramFetcher.m_abeType = ABE_TYPE_KP_ABE;
   advanceClocks(time::milliseconds(20), 60);
@@ -214,7 +214,7 @@ BOOST_AUTO_TEST_CASE(EncryptContent)
   algo::PublicParams pubParams;
   algo::MasterKey masterKey;
   security::ValidatorConfig validator(c1);
-  validator.load("tests/unit-tests/trust-schema.t.conf");
+  validator.load("trust-schema.conf");
   Producer producer(c1, m_keyChain, validator, producerCert, authorityCert);
   advanceClocks(time::milliseconds(20), 60);
   algo::ABESupport::getInstance().cpInit(pubParams, masterKey);
@@ -240,7 +240,7 @@ BOOST_AUTO_TEST_CASE(KpEncryptContent)
   algo::PublicParams pubParams;
   algo::MasterKey masterKey;
   security::ValidatorConfig validator(c1);
-  validator.load("tests/unit-tests/trust-schema.t.conf");
+  validator.load("trust-schema.conf");
   Producer producer(c1, m_keyChain, validator, producerCert, authorityCert);
   advanceClocks(time::milliseconds(20), 60);
   algo::ABESupport::getInstance().kpInit(pubParams, masterKey);

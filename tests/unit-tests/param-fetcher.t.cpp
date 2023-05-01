@@ -45,7 +45,7 @@ public:
 
     security::pib::Identity anchorId = addIdentity("/example");
     anchorCert = anchorId.getDefaultKey().getDefaultCertificate();
-    saveCertToFile(anchorCert, "tests/unit-tests/example-trust-anchor.t.cert");
+    saveCertToFile(anchorCert, "example-trust-anchor.cert");
     security::pib::Identity authorityId = addIdentity(attrAuthorityPrefix);
     addSubCertificate(attrAuthorityPrefix, anchorId);
     authorityCert = authorityId.getDefaultKey().getDefaultCertificate();
@@ -89,7 +89,7 @@ BOOST_AUTO_TEST_CASE(Constructor)
                        );
 
   security::ValidatorConfig validator(c1);
-  validator.load("tests/unit-tests/trust-schema.t.conf");
+  validator.load("trust-schema.conf");
   ParamFetcher paramFetcher(c1, validator, attrAuthorityPrefix, trustConfig);
   paramFetcher.fetchPublicParams();
   advanceClocks(time::milliseconds(20), 60);

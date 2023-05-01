@@ -38,7 +38,7 @@ public:
   {
     c1.linkTo(c2);
     security::pib::Identity anchorId = addIdentity("/example");
-    saveCertToFile(anchorCert, "tests/unit-tests/example-trust-anchor.t.cert");
+    saveCertToFile(anchorCert, "example-trust-anchor.cert");
     security::pib::Identity consumerId = addIdentity("/example/consumer", RsaKeyParams());
     addSubCertificate("/example/consumer", anchorId);
     consumerCert = consumerId.getDefaultKey().getDefaultCertificate();
@@ -68,7 +68,7 @@ BOOST_AUTO_TEST_CASE(Constructor)
   advanceClocks(time::milliseconds(20), 60);
 
   security::ValidatorConfig validator(c1);
-  validator.load("tests/unit-tests/trust-schema.t.conf");
+  validator.load("trust-schema.conf");
   Consumer consumer(c1, m_keyChain, validator, consumerCert, authorityCert);
   advanceClocks(time::milliseconds(20), 60);
 

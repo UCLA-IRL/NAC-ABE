@@ -55,7 +55,7 @@ public:
 
     security::pib::Identity anchorId = addIdentity("/example");
     anchorCert = anchorId.getDefaultKey().getDefaultCertificate();
-    saveCertToFile(anchorCert, "tests/unit-tests/example-trust-anchor.t.cert");
+    saveCertToFile(anchorCert, "example-trust-anchor.cert");
     security::pib::Identity consumerId1 = addIdentity("/example/consumer1", RsaKeyParams());
     addSubCertificate("/example/consumer1", anchorId);
     consumerCert1 = consumerId1.getDefaultKey().getDefaultCertificate();
@@ -124,7 +124,7 @@ BOOST_AUTO_TEST_CASE(Cp)
   // set up consumer
   NDN_LOG_INFO("Create Consumer 1. Consumer 1 prefix:"<<consumerCert1.getIdentity());
   security::ValidatorConfig validator1(consumerFace1);
-  validator1.load("tests/unit-tests/trust-schema.t.conf");
+  validator1.load("trust-schema.conf");
   Consumer consumer1(consumerFace1, m_keyChain, validator1, consumerCert1, aaCert);
   advanceClocks(time::milliseconds(20), 60);
   consumerFace1.receive(aaCert);
@@ -136,7 +136,7 @@ BOOST_AUTO_TEST_CASE(Cp)
   // set up consumer
   NDN_LOG_INFO("Create Consumer 2. Consumer 2 prefix:"<<consumerCert2.getIdentity());
   security::ValidatorConfig validator2(consumerFace2);
-  validator2.load("tests/unit-tests/trust-schema.t.conf");
+  validator2.load("trust-schema.conf");
   Consumer consumer2(consumerFace2, m_keyChain, validator2, consumerCert2, aaCert);
   advanceClocks(time::milliseconds(20), 60);
   consumerFace2.receive(aaCert);
@@ -148,7 +148,7 @@ BOOST_AUTO_TEST_CASE(Cp)
   // set up producer
   NDN_LOG_INFO("Create Producer. Producer prefix:"<<producerCert.getIdentity());
   security::ValidatorConfig validator3(producerFace);
-  validator3.load("tests/unit-tests/trust-schema.t.conf");
+  validator3.load("trust-schema.conf");
   Producer producer(producerFace, m_keyChain, validator3, producerCert, aaCert, dataOwnerCert);
   advanceClocks(time::milliseconds(20), 60);
   producerFace.receive(aaCert);
@@ -273,7 +273,7 @@ BOOST_AUTO_TEST_CASE(Kp)
   // set up consumer
   NDN_LOG_INFO("Create Consumer 1. Consumer 1 prefix:"<<consumerCert1.getIdentity());
   security::ValidatorConfig validator1(consumerFace1);
-  validator1.load("tests/unit-tests/trust-schema.t.conf");
+  validator1.load("trust-schema.conf");
   Consumer consumer1(consumerFace1, m_keyChain, validator1, consumerCert1, aaCert);
   advanceClocks(time::milliseconds(20), 60);
   consumerFace1.receive(aaCert);
@@ -285,7 +285,7 @@ BOOST_AUTO_TEST_CASE(Kp)
   // set up consumer
   NDN_LOG_INFO("Create Consumer 2. Consumer 2 prefix:"<<consumerCert2.getIdentity());
   security::ValidatorConfig validator2(consumerFace2);
-  validator2.load("tests/unit-tests/trust-schema.t.conf");
+  validator2.load("trust-schema.conf");
   Consumer consumer2(consumerFace2, m_keyChain, validator2, consumerCert2, aaCert);
   advanceClocks(time::milliseconds(20), 60);
   consumerFace2.receive(aaCert);
@@ -297,7 +297,7 @@ BOOST_AUTO_TEST_CASE(Kp)
   // set up producer
   NDN_LOG_INFO("Create Producer. Producer prefix:"<<producerCert.getIdentity());
   security::ValidatorConfig validator3(producerFace);
-  validator3.load("tests/unit-tests/trust-schema.t.conf");
+  validator3.load("trust-schema.conf");
   Producer producer(producerFace, m_keyChain, validator3, producerCert, aaCert, dataOwnerCert);
   advanceClocks(time::milliseconds(20), 60);
   producerFace.receive(aaCert);
@@ -420,7 +420,7 @@ BOOST_AUTO_TEST_CASE(KpCache)
   // set up consumer
   NDN_LOG_INFO("Create Consumer 1. Consumer 1 prefix:"<<consumerCert1.getIdentity());
   security::ValidatorConfig validator1(consumerFace1);
-  validator1.load("tests/unit-tests/trust-schema.t.conf");
+  validator1.load("trust-schema.conf");
   Consumer consumer1(consumerFace1, m_keyChain, validator1, consumerCert1, aaCert);
   advanceClocks(time::milliseconds(20), 60);
   consumerFace1.receive(aaCert);
@@ -431,7 +431,7 @@ BOOST_AUTO_TEST_CASE(KpCache)
   // set up consumer
   NDN_LOG_INFO("Create Consumer 2. Consumer 2 prefix:"<<consumerCert2.getIdentity());
   security::ValidatorConfig validator2(consumerFace2);
-  validator2.load("tests/unit-tests/trust-schema.t.conf");
+  validator2.load("trust-schema.conf");
   Consumer consumer2(consumerFace2, m_keyChain, validator2, consumerCert2, aaCert);
   advanceClocks(time::milliseconds(20), 60);
   consumerFace2.receive(aaCert);
@@ -442,7 +442,7 @@ BOOST_AUTO_TEST_CASE(KpCache)
   // set up producer
   NDN_LOG_INFO("Create Producer. Producer prefix:"<<producerCert.getIdentity());
   security::ValidatorConfig validator3(producerFace);
-  validator3.load("tests/unit-tests/trust-schema.t.conf");
+  validator3.load("trust-schema.conf");
   CacheProducer producer(producerFace, m_keyChain, validator3, producerCert, aaCert, dataOwnerCert);
   advanceClocks(time::milliseconds(20), 60);
   producerFace.receive(aaCert);
