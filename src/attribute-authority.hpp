@@ -29,6 +29,9 @@
 #include <list>
 #include <map>
 
+#include <ndn-cxx/util/segmenter.hpp>
+#include <ndn-cxx/security/signing-helpers.hpp>
+
 namespace ndn {
 namespace nacabe {
 
@@ -56,6 +59,8 @@ protected:
   Face& m_face;
   KeyChain& m_keyChain;
   TrustConfig m_trustConfig;
+  std::map<Name, std::vector<std::shared_ptr<Data>>> m_segmentMap;
+  util::Segmenter m_segmenter{m_keyChain, signingByCertificate(m_cert)};
 
 PUBLIC_WITH_TESTS_ELSE_PROTECTED:
   AbeType m_abeType;

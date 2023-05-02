@@ -23,11 +23,12 @@
 #include "algo/abe-support.hpp"
 #include "ndn-crypto/data-enc-dec.hpp"
 
-#include <ndn-cxx/security/signing-helpers.hpp>
 #include <ndn-cxx/security/verification-helpers.hpp>
 
 namespace ndn {
 namespace nacabe {
+
+#define MAX_SEGMENT_SIZE 1500
 
 NDN_LOG_INIT(nacabe.AttributeAuthority);
 
@@ -77,31 +78,49 @@ AttributeAuthority::~AttributeAuthority() = default;
 void
 AttributeAuthority::onDecryptionKeyRequest(const Interest& request)
 {
-  // naming: /AA-prefix/DKEY/<identity name block>
-  NDN_LOG_INFO("Got DKEY request: " << request.getName());
-  Name keyName(request.getName().at(m_cert.getIdentity().size() + 1).blockFromValue());
-  NDN_LOG_DEBUG("KeyName --------> " << keyName);
-  Name identityName = security::extractIdentityFromKeyName(keyName);
+  // naming1: /AA-prefix/DKEY/<key name block>
+  // naming2: /AA-prefix/DKEY/<key name block>/<version>/<segment>
+  Name requestName = request.getName();
+  NDN_LOG_INFO("Got DKEY request: " << requestName);
 
-  // verify request and generate token
-  auto optionalCert = m_trustConfig.findCertificate(identityName);
-  if (!optionalCert) {
-    NDN_LOG_INFO("DKEY Request Interest cannot be authenticated: no certificate for " << identityName);
-    return;
+  Name supposedKeyName(request.getName().at(m_cert.getIdentity().size() + 1).blockFromValue());
+  if (requestName.at(-1).isSegment() && requestName.at(-2).isVersion()) {
+    auto mapIterator = m_segmentMap.find(requestName.getPrefix(-2));
+    if (mapIterator != m_segmentMap.end()) {
+      for (auto data : mapIterator->second) {
+        if (requestName == data->getName()) {
+          m_face.put(*data); 
+        }
+      }
+    }
   }
-  NDN_LOG_INFO("Find consumer(decryptor) certificate: " << optionalCert->getName());
+  else if (security::isValidKeyName(supposedKeyName)) {
+    NDN_LOG_DEBUG("KeyName --------> " << supposedKeyName);
+    Name identityName = security::extractIdentityFromKeyName(supposedKeyName);
+    // verify request and generate token
+    auto optionalCert = m_trustConfig.findCertificate(identityName);
+    if (!optionalCert) {
+      NDN_LOG_INFO("DKEY Request Interest cannot be authenticated: no certificate for " << identityName);
+      return;
+    }
+    NDN_LOG_INFO("Find consumer(decryptor) certificate: " << optionalCert->getName());
+    auto ABEPrvKey = getPrivateKey(identityName);
+    auto prvBuffer = ABEPrvKey.toBuffer();
 
-  auto ABEPrvKey = getPrivateKey(identityName);
-  auto prvBuffer = ABEPrvKey.toBuffer();
-
-  // reply interest with encrypted private key
-  Data result;
-  Name resultName = Name(request.getName()).appendVersion();
-  result.setName(resultName);
-  result.setFreshnessPeriod(5_s);
-  result.setContent(encryptDataContentWithCK(prvBuffer, optionalCert->getPublicKey()));
-  m_keyChain.sign(result, signingByCertificate(m_cert));
-  m_face.put(result);
+    // prepare segments
+    Data result;
+    Name resultName = Name(request.getName()).appendVersion();
+    result.setName(resultName);
+    result.setFreshnessPeriod(5_s);
+    Block dkBlock = encryptDataContentWithCK(prvBuffer, optionalCert->getPublicKey());
+    span<const uint8_t> dkSpan = make_span(dkBlock.data(), dkBlock.size());
+    auto dkSegments = m_segmenter.segment(dkSpan, resultName, MAX_SEGMENT_SIZE, 4_s);
+    m_segmentMap.emplace(resultName, dkSegments);
+    m_face.put(*dkSegments.at(0));
+  }
+  else {
+    // ignore
+  }
 }
 
 void

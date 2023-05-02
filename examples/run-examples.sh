@@ -6,8 +6,10 @@
 
 if ndnsec list | grep "/example/consumer\|/example/aa\|/example/producer"
 then
-  echo "Make sure you do not have identity /example/consumer, /example/aa, /example/producer in the keychain before try again"
-  exit 1
+  echo "cleaning example identities"
+  ndnsec delete /example/consumer
+  ndnsec delete /example/aa
+  ndnsec delete /example/producer
 fi
 
 export NDN_LOG=*=INFO
