@@ -57,6 +57,7 @@
 #include <ndn-cxx/security/certificate.hpp>
 #include <ndn-cxx/security/key-chain.hpp>
 #include <ndn-cxx/security/validator.hpp>
+#include <ndn-cxx/security/validator-config.hpp>
 #include <ndn-cxx/util/logger.hpp>
 #include <ndn-cxx/util/span.hpp>
 

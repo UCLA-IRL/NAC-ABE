@@ -21,6 +21,7 @@
 #ifndef NAC_ABE_CONSUMER_HPP
 #define NAC_ABE_CONSUMER_HPP
 
+#include "common.hpp"
 #include "trust-config.hpp"
 #include "algo/public-params.hpp"
 #include "algo/private-key.hpp"
@@ -39,6 +40,7 @@ public:
 
 public:
   Consumer(Face& face, KeyChain& keyChain,
+           security::Validator& validator,
            const security::Certificate& identityCert,
            const security::Certificate& attrAuthorityCertificate,
            Interest publicParamInterestTemplate = ParamFetcher::getDefaultInterestTemplate());
@@ -109,6 +111,7 @@ private:
   Face& m_face;
   KeyChain& m_keyChain;
   Name m_attrAuthorityPrefix;
+  security::Validator& m_validator;
 
   TrustConfig m_trustConfig;
   algo::PrivateKey m_keyCache;

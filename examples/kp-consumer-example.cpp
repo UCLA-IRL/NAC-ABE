@@ -32,11 +32,12 @@ class Consumer
 {
 public:
   Consumer()
-    : m_producerCert(m_keyChain.getPib().getIdentity("/producerPrefix").getDefaultKey().getDefaultCertificate())
-    , m_consumerCert(m_keyChain.getPib().getIdentity("/consumerPrefix1").getDefaultKey().getDefaultCertificate())
-    , m_consumer(m_face, m_keyChain, m_consumerCert,
-                 m_keyChain.getPib().getIdentity("/aaPrefix").getDefaultKey().getDefaultCertificate())
+    : m_producerCert(m_keyChain.getPib().getIdentity("/example/producer").getDefaultKey().getDefaultCertificate())
+    , m_consumerCert(m_keyChain.getPib().getIdentity("/example/consumer").getDefaultKey().getDefaultCertificate())
+    , m_consumer(m_face, m_keyChain, m_validator, m_consumerCert,
+                 m_keyChain.getPib().getIdentity("/example/aa").getDefaultKey().getDefaultCertificate())
   {
+    m_validator.load("trust-schema.conf");
     m_consumer.obtainDecryptionKey();
   }
 
@@ -63,6 +64,7 @@ public:
 private:
   ndn::Face m_face;
   ndn::KeyChain m_keyChain;
+  ndn::ValidatorConfig m_validator{m_face};
   ndn::security::Certificate m_producerCert;
   ndn::security::Certificate m_consumerCert;
   ndn::nacabe::Consumer m_consumer;

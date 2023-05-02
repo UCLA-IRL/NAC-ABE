@@ -53,12 +53,32 @@ public:
     producerFace.linkTo(consumerFace2);
     producerFace.linkTo(dataOwnerFace);
 
-    aaCert = addIdentity("/aaPrefix").getDefaultKey().getDefaultCertificate();
-    tokenIssuerCert = addIdentity("/tokenIssuerPrefix").getDefaultKey().getDefaultCertificate();
-    consumerCert1 = addIdentity("/consumerPrefix1", RsaKeyParams()).getDefaultKey().getDefaultCertificate();
-    consumerCert2 = addIdentity("/consumerPrefix2", RsaKeyParams()).getDefaultKey().getDefaultCertificate();
-    producerCert = addIdentity("/producerPrefix").getDefaultKey().getDefaultCertificate();
-    dataOwnerCert = addIdentity("/dataOwnerPrefix").getDefaultKey().getDefaultCertificate();
+    security::pib::Identity anchorId = addIdentity("/example");
+    anchorCert = anchorId.getDefaultKey().getDefaultCertificate();
+    saveCertToFile(anchorCert, "example-trust-anchor.cert");
+    security::pib::Identity consumerId1 = addIdentity("/example/consumer1", RsaKeyParams());
+    addSubCertificate("/example/consumer1", anchorId);
+    consumerCert1 = consumerId1.getDefaultKey().getDefaultCertificate();
+
+    security::pib::Identity consumerId2 = addIdentity("/example/consumer2", RsaKeyParams());
+    addSubCertificate("/example/consumer1", anchorId);
+    consumerCert2 = consumerId2.getDefaultKey().getDefaultCertificate();
+
+    security::pib::Identity producerId = addIdentity("/example/producer");
+    addSubCertificate("/example/producer", anchorId);
+    producerCert = producerId.getDefaultKey().getDefaultCertificate();
+
+    security::pib::Identity dataOwnerId = addIdentity("/example/dataOwner");
+    addSubCertificate("/example/dataOwner", anchorId);
+    dataOwnerCert = dataOwnerId.getDefaultKey().getDefaultCertificate();
+
+    security::pib::Identity tokenIssuerId = addIdentity("/example/tokenIssuer");
+    addSubCertificate("/example/tokenIssuer", anchorId);
+    tokenIssuerCert = tokenIssuerId.getDefaultKey().getDefaultCertificate();
+
+    security::pib::Identity authorityId = addIdentity("/example/authority");
+    addSubCertificate("/example/authority", anchorId);
+    aaCert = authorityId.getDefaultKey().getDefaultCertificate();
 
     signingInfo = signingByCertificate(producerCert);
   }
@@ -72,6 +92,7 @@ protected:
   util::DummyClientFace dataOwnerFace;
 
   security::Certificate aaCert;
+  security::Certificate anchorCert;
   security::Certificate tokenIssuerCert;
   security::Certificate consumerCert1;
   security::Certificate consumerCert2;
@@ -102,19 +123,37 @@ BOOST_AUTO_TEST_CASE(Cp)
 
   // set up consumer
   NDN_LOG_INFO("Create Consumer 1. Consumer 1 prefix:"<<consumerCert1.getIdentity());
-  Consumer consumer1(consumerFace1, m_keyChain, consumerCert1, aaCert);
+  security::ValidatorConfig validator1(consumerFace1);
+  validator1.load("trust-schema.conf");
+  Consumer consumer1(consumerFace1, m_keyChain, validator1, consumerCert1, aaCert);
+  advanceClocks(time::milliseconds(20), 60);
+  consumerFace1.receive(aaCert);
+  advanceClocks(time::milliseconds(20), 60);
+  consumerFace1.receive(anchorCert);
   advanceClocks(time::milliseconds(20), 60);
   BOOST_CHECK(consumer1.m_paramFetcher.getPublicParams().m_pub != "");
 
   // set up consumer
   NDN_LOG_INFO("Create Consumer 2. Consumer 2 prefix:"<<consumerCert2.getIdentity());
-  Consumer consumer2(consumerFace2, m_keyChain, consumerCert2, aaCert);
+  security::ValidatorConfig validator2(consumerFace2);
+  validator2.load("trust-schema.conf");
+  Consumer consumer2(consumerFace2, m_keyChain, validator2, consumerCert2, aaCert);
+  advanceClocks(time::milliseconds(20), 60);
+  consumerFace2.receive(aaCert);
+  advanceClocks(time::milliseconds(20), 60);
+  consumerFace2.receive(anchorCert);
   advanceClocks(time::milliseconds(20), 60);
   BOOST_CHECK(consumer2.m_paramFetcher.getPublicParams().m_pub != "");
 
   // set up producer
   NDN_LOG_INFO("Create Producer. Producer prefix:"<<producerCert.getIdentity());
-  Producer producer(producerFace, m_keyChain, producerCert, aaCert, dataOwnerCert);
+  security::ValidatorConfig validator3(producerFace);
+  validator3.load("trust-schema.conf");
+  Producer producer(producerFace, m_keyChain, validator3, producerCert, aaCert, dataOwnerCert);
+  advanceClocks(time::milliseconds(20), 60);
+  producerFace.receive(aaCert);
+  advanceClocks(time::milliseconds(20), 60);
+  producerFace.receive(anchorCert);
   advanceClocks(time::milliseconds(20), 60);
   BOOST_CHECK(producer.m_paramFetcher.getPublicParams().m_pub != "");
 
@@ -180,6 +219,14 @@ BOOST_AUTO_TEST_CASE(Cp)
     }
   );
   advanceClocks(time::milliseconds(20), 60);
+  consumerFace1.receive(producerCert);
+  advanceClocks(time::milliseconds(20), 60);
+  consumerFace1.receive(anchorCert);
+  advanceClocks(time::milliseconds(20), 60);
+  consumerFace1.receive(aaCert);
+  advanceClocks(time::milliseconds(20), 60);
+  consumerFace1.receive(anchorCert);
+  advanceClocks(time::milliseconds(20), 60);
   BOOST_CHECK(isConsumeCbCalled);
 
   isConsumeCbCalled = false;
@@ -193,6 +240,14 @@ BOOST_AUTO_TEST_CASE(Cp)
       isConsumeCbCalled = true;
     }
   );
+  advanceClocks(time::milliseconds(20), 60);
+  consumerFace2.receive(producerCert);
+  advanceClocks(time::milliseconds(20), 60);
+  consumerFace2.receive(anchorCert);
+  advanceClocks(time::milliseconds(20), 60);
+  consumerFace2.receive(aaCert);
+  advanceClocks(time::milliseconds(20), 60);
+  consumerFace2.receive(anchorCert);
   advanceClocks(time::milliseconds(20), 60);
   BOOST_CHECK(isConsumeCbCalled);
 }
@@ -217,19 +272,37 @@ BOOST_AUTO_TEST_CASE(Kp)
 
   // set up consumer
   NDN_LOG_INFO("Create Consumer 1. Consumer 1 prefix:"<<consumerCert1.getIdentity());
-  Consumer consumer1(consumerFace1, m_keyChain, consumerCert1, aaCert);
+  security::ValidatorConfig validator1(consumerFace1);
+  validator1.load("trust-schema.conf");
+  Consumer consumer1(consumerFace1, m_keyChain, validator1, consumerCert1, aaCert);
+  advanceClocks(time::milliseconds(20), 60);
+  consumerFace1.receive(aaCert);
+  advanceClocks(time::milliseconds(20), 60);
+  consumerFace1.receive(anchorCert);
   advanceClocks(time::milliseconds(20), 60);
   BOOST_CHECK(consumer1.m_paramFetcher.getPublicParams().m_pub != "");
 
   // set up consumer
   NDN_LOG_INFO("Create Consumer 2. Consumer 2 prefix:"<<consumerCert2.getIdentity());
-  Consumer consumer2(consumerFace2, m_keyChain, consumerCert2, aaCert);
+  security::ValidatorConfig validator2(consumerFace2);
+  validator2.load("trust-schema.conf");
+  Consumer consumer2(consumerFace2, m_keyChain, validator2, consumerCert2, aaCert);
+  advanceClocks(time::milliseconds(20), 60);
+  consumerFace2.receive(aaCert);
+  advanceClocks(time::milliseconds(20), 60);
+  consumerFace2.receive(anchorCert);
   advanceClocks(time::milliseconds(20), 60);
   BOOST_CHECK(consumer2.m_paramFetcher.getPublicParams().m_pub != "");
 
   // set up producer
   NDN_LOG_INFO("Create Producer. Producer prefix:"<<producerCert.getIdentity());
-  Producer producer(producerFace, m_keyChain, producerCert, aaCert, dataOwnerCert);
+  security::ValidatorConfig validator3(producerFace);
+  validator3.load("trust-schema.conf");
+  Producer producer(producerFace, m_keyChain, validator3, producerCert, aaCert, dataOwnerCert);
+  advanceClocks(time::milliseconds(20), 60);
+  producerFace.receive(aaCert);
+  advanceClocks(time::milliseconds(20), 60);
+  producerFace.receive(anchorCert);
   advanceClocks(time::milliseconds(20), 60);
   BOOST_CHECK(producer.m_paramFetcher.getPublicParams().m_pub != "");
 
@@ -293,6 +366,14 @@ BOOST_AUTO_TEST_CASE(Kp)
                     }
   );
   advanceClocks(time::milliseconds(20), 60);
+  consumerFace1.receive(producerCert);
+  advanceClocks(time::milliseconds(20), 60);
+  consumerFace1.receive(anchorCert);
+  advanceClocks(time::milliseconds(20), 60);
+  consumerFace1.receive(aaCert);
+  advanceClocks(time::milliseconds(20), 60);
+  consumerFace1.receive(anchorCert);
+  advanceClocks(time::milliseconds(20), 60);
   BOOST_CHECK(isConsumeCbCalled);
 
   isConsumeCbCalled = false;
@@ -306,6 +387,14 @@ BOOST_AUTO_TEST_CASE(Kp)
                       isConsumeCbCalled = true;
                     }
   );
+  advanceClocks(time::milliseconds(20), 60);
+  consumerFace2.receive(producerCert);
+  advanceClocks(time::milliseconds(20), 60);
+  consumerFace2.receive(anchorCert);
+  advanceClocks(time::milliseconds(20), 60);
+  consumerFace2.receive(aaCert);
+  advanceClocks(time::milliseconds(20), 60);
+  consumerFace2.receive(anchorCert);
   advanceClocks(time::milliseconds(20), 60);
   BOOST_CHECK(isConsumeCbCalled);
 }
@@ -330,20 +419,35 @@ BOOST_AUTO_TEST_CASE(KpCache)
 
   // set up consumer
   NDN_LOG_INFO("Create Consumer 1. Consumer 1 prefix:"<<consumerCert1.getIdentity());
-  Consumer consumer1(consumerFace1, m_keyChain, consumerCert1, aaCert);
+  security::ValidatorConfig validator1(consumerFace1);
+  validator1.load("trust-schema.conf");
+  Consumer consumer1(consumerFace1, m_keyChain, validator1, consumerCert1, aaCert);
   advanceClocks(time::milliseconds(20), 60);
+  consumerFace1.receive(aaCert);
+  advanceClocks(time::milliseconds(20), 60);
+  consumerFace1.receive(anchorCert);
   BOOST_CHECK(consumer1.m_paramFetcher.getPublicParams().m_pub != "");
 
   // set up consumer
   NDN_LOG_INFO("Create Consumer 2. Consumer 2 prefix:"<<consumerCert2.getIdentity());
-  Consumer consumer2(consumerFace2, m_keyChain, consumerCert2, aaCert);
+  security::ValidatorConfig validator2(consumerFace2);
+  validator2.load("trust-schema.conf");
+  Consumer consumer2(consumerFace2, m_keyChain, validator2, consumerCert2, aaCert);
   advanceClocks(time::milliseconds(20), 60);
+  consumerFace2.receive(aaCert);
+  advanceClocks(time::milliseconds(20), 60);
+  consumerFace2.receive(anchorCert);
   BOOST_CHECK(consumer2.m_paramFetcher.getPublicParams().m_pub != "");
 
   // set up producer
   NDN_LOG_INFO("Create Producer. Producer prefix:"<<producerCert.getIdentity());
-  CacheProducer producer(producerFace, m_keyChain, producerCert, aaCert, dataOwnerCert);
+  security::ValidatorConfig validator3(producerFace);
+  validator3.load("trust-schema.conf");
+  CacheProducer producer(producerFace, m_keyChain, validator3, producerCert, aaCert, dataOwnerCert);
   advanceClocks(time::milliseconds(20), 60);
+  producerFace.receive(aaCert);
+  advanceClocks(time::milliseconds(20), 60);
+  producerFace.receive(anchorCert);
   BOOST_CHECK(producer.m_paramFetcher.getPublicParams().m_pub != "");
 
   // set up data owner
@@ -409,6 +513,14 @@ BOOST_AUTO_TEST_CASE(KpCache)
                     }
   );
   advanceClocks(time::milliseconds(20), 60);
+  consumerFace1.receive(producerCert);
+  advanceClocks(time::milliseconds(20), 60);
+  consumerFace1.receive(anchorCert);
+  advanceClocks(time::milliseconds(20), 60);
+  consumerFace1.receive(aaCert);
+  advanceClocks(time::milliseconds(20), 60);
+  consumerFace1.receive(anchorCert);
+  advanceClocks(time::milliseconds(20), 60);
   BOOST_CHECK(isConsumeCbCalled);
 
   isConsumeCbCalled = false;
@@ -422,6 +534,14 @@ BOOST_AUTO_TEST_CASE(KpCache)
                       isConsumeCbCalled = true;
                     }
   );
+  advanceClocks(time::milliseconds(20), 60);
+  consumerFace2.receive(producerCert);
+  advanceClocks(time::milliseconds(20), 60);
+  consumerFace2.receive(anchorCert);
+  advanceClocks(time::milliseconds(20), 60);
+  consumerFace2.receive(aaCert);
+  advanceClocks(time::milliseconds(20), 60);
+  consumerFace2.receive(anchorCert);
   advanceClocks(time::milliseconds(20), 60);
   BOOST_CHECK(isConsumeCbCalled);
 }

@@ -93,14 +93,17 @@ jobs:
       run: cmake --build ${{github.workspace}}/build --config ${{env.BUILD_TYPE}}
 
     - name: Test
-      working-directory: ${{github.workspace}}/build/tests
+      working-directory: ${{github.workspace}}/build
       env:
         LD_LIBRARY_PATH: /usr/local/lib:$LD_LIBRARY_PATH
         CTEST_OUTPUT_ON_FAILURE: 1
       # Execute tests defined by the CMake configuration.
       # See https://cmake.org/cmake/help/latest/manual/ctest.1.html for more detail
-      run: ctest
-
+      run: |
+        cp ../tests/unit-tests/trust-schema.conf trust-schema.conf
+        ./tests/unit-tests
+        bash ./../examples/run-examples.sh .
+  
   macos-build:
     name: Xcode ${{ matrix.xcode }} on ${{ matrix.os }}
     strategy:
@@ -207,10 +210,13 @@ jobs:
         run: cmake --build ${{github.workspace}}/build --config ${{env.BUILD_TYPE}}
 
       - name: Test
-        working-directory: ${{github.workspace}}/build/tests
+        working-directory: ${{github.workspace}}/build
         env:
           LD_LIBRARY_PATH: /usr/local/lib:$LD_LIBRARY_PATH
           CTEST_OUTPUT_ON_FAILURE: 1
         # Execute tests defined by the CMake configuration.
         # See https://cmake.org/cmake/help/latest/manual/ctest.1.html for more detail
-        run: ctest
+        run: |
+          cp ../tests/unit-tests/trust-schema.conf trust-schema.conf
+          ./tests/unit-tests
+          bash ./../examples/run-examples.sh .

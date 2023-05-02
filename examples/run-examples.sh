@@ -4,17 +4,25 @@
 # If you would like to try on a normal user account, make sure that identity /consumerPrefix1, /aaPrefix, /producerPrefix
 # are not used, as these keys will be deleted.
 
-if ndnsec list | grep "/consumerPrefix1\|/aaPrefix\|/producerPrefix"
+if ndnsec list | grep "/example/consumer\|/example/aa\|/example/producer"
 then
-  echo "Make sure you so not have identity /consumerPrefix1, /aaPrefix, /producerPrefix in the keychain before try again"
+  echo "Make sure you do not have identity /example/consumer, /example/aa, /example/producer in the keychain before try again"
   exit 1
 fi
 
 export NDN_LOG=*=INFO
 
-ndnsec key-gen -t r /consumerPrefix1
-ndnsec key-gen /aaPrefix
-ndnsec key-gen /producerPrefix
+ndnsec key-gen /example > /dev/null
+ndnsec cert-dump -i /example > example-trust-anchor.cert
+
+ndnsec key-gen /example/aa > /dev/null
+ndnsec sign-req /example/aa | ndnsec cert-gen -s /example -i example | ndnsec cert-install -
+
+ndnsec key-gen /example/producer > /dev/null
+ndnsec sign-req /example/producer | ndnsec cert-gen -s /example -i example | ndnsec cert-install -
+
+ndnsec key-gen -t r /example/consumer > /dev/null
+ndnsec sign-req /example/consumer | ndnsec cert-gen -s /example -i example | ndnsec cert-install -
 
 $1/examples/kp-aa-example &
 aa_pid=$!
@@ -29,8 +37,8 @@ exit_val=$?
 kill $aa_pid
 kill $pro_pid
 
-ndnsec delete /consumerPrefix1
-ndnsec delete /aaPrefix
-ndnsec delete /producerPrefix
+ndnsec delete /example/consumer
+ndnsec delete /example/aa
+ndnsec delete /example/producer
 
 exit $exit_val

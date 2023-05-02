@@ -31,14 +31,16 @@ namespace nacabe {
 NDN_LOG_INIT(nacabe.Consumer);
 
 Consumer::Consumer(Face& face, KeyChain& keyChain,
+                   security::Validator& validator,
                    const security::Certificate& identityCert,
                    const security::Certificate& attrAuthorityCertificate,
                    Interest publicParamInterestTemplate)
   : m_cert(identityCert)
   , m_face(face)
   , m_keyChain(keyChain)
+  , m_validator(validator)
   , m_attrAuthorityPrefix(attrAuthorityCertificate.getIdentity())
-  , m_paramFetcher(m_face, m_attrAuthorityPrefix, m_trustConfig, publicParamInterestTemplate)
+  , m_paramFetcher(m_face, m_validator, m_attrAuthorityPrefix, m_trustConfig, publicParamInterestTemplate)
 {
   m_trustConfig.addOrUpdateCertificate(attrAuthorityCertificate);
   m_paramFetcher.fetchPublicParams();
@@ -116,8 +118,16 @@ Consumer::consume(const Interest& dataInterest,
   std::string nackMessage = "Nack for " + dataInterest.getName().toUri() + " data fetch with reason ";
   std::string timeoutMessage = "Timeout for " + dataInterest.getName().toUri() + " data fetch";
 
-  auto dataCallback = [=] (const Interest&, const Data& data) {
-    decryptContent(data, consumptionCb, errorCallback);
+  auto dataCallback = [this, consumptionCb, errorCallback] (const Interest&, const Data& data) {
+    m_validator.validate(data,
+      [this, consumptionCb, errorCallback] (const Data& data) {
+        NDN_LOG_INFO("Decryption key conforms to trust schema");
+        decryptContent(data, consumptionCb, errorCallback);
+      },
+      [] (auto&&, const ndn::security::ValidationError& error) {
+        NDN_THROW(std::runtime_error("Fetched decryption key cannot be authenticated: " + error.getInfo()));
+      }
+    );
   };
 
   NDN_LOG_INFO(m_cert.getIdentity() << " Ask for data " << dataInterest.getName() );
@@ -152,8 +162,16 @@ Consumer::decryptContent(const Data& data,
   std::string nackMessage = "Nack for " + ckName.toUri() + " content key fetch with reason ";
   std::string timeoutMessage = "Timeout for " + ckName.toUri() + " content key fetch";
 
-  auto dataCallback = [=] (const Interest&, const Data& data) {
-    onCkeyData(data, cipherText, successCallBack, errorCallback);
+  auto dataCallback = [this, cipherText, successCallBack, errorCallback] (const Interest&, const Data& data) {
+    m_validator.validate(data,
+      [this, cipherText, successCallBack, errorCallback] (const Data& data) {
+        NDN_LOG_INFO("Content key conforms to trust schema");
+        onCkeyData(data, cipherText, successCallBack, errorCallback);
+      },
+      [this] (auto&&, const ndn::security::ValidationError& error) {
+        NDN_THROW(std::runtime_error("Fetched content key cannot be authenticated: " + error.getInfo()));
+      }
+    );
   };
 
   NDN_LOG_INFO(m_cert.getIdentity() << " Ask for data " << ckInterest.getName() );

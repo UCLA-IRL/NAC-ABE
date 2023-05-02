@@ -21,6 +21,7 @@
 #ifndef NAC_ABE_PARAM_FETCHER_HPP
 #define NAC_ABE_PARAM_FETCHER_HPP
 
+#include "common.hpp"
 #include "algo/public-params.hpp"
 #include "trust-config.hpp"
 
@@ -33,7 +34,8 @@ namespace nacabe {
 class ParamFetcher
 {
 public:
-  ParamFetcher(Face& face, const Name& attrAuthorityPrefix, const TrustConfig& trustConfig,
+  ParamFetcher(Face& face, security::Validator& validator,
+               const Name& attrAuthorityPrefix, const TrustConfig& trustConfig,
                Interest interestTemplate = getDefaultInterestTemplate());
 
   void
@@ -65,6 +67,7 @@ private:
 
 private:
   Face& m_face;
+  security::Validator& m_validator;
   const Name& m_attrAuthorityPrefix;
   const TrustConfig& m_trustConfig;
 

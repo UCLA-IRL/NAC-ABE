@@ -117,7 +117,6 @@ AttributeAuthority::onPublicParamsRequest(const Interest& interest)
   result.setFreshnessPeriod(5_s);
   const auto& contentBuf = m_pubParams.toBuffer();
   result.setContent(contentBuf);
-  NDN_LOG_DEBUG("before sign");
   m_keyChain.sign(result, signingByCertificate(m_cert));
 
   NDN_LOG_TRACE("Reply public params request.");

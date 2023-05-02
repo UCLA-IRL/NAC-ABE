@@ -28,16 +28,23 @@
 namespace examples {
 
 using ndn::nacabe::KpAttributeAuthority;
-
+ndn::KeyChain m_keyChain;
+ndn::security::Certificate m_cert = m_keyChain.getPib().getIdentity("/example/aa").getDefaultKey().getDefaultCertificate();
 class AttributeAuthority
 {
 public:
   AttributeAuthority()
-    : m_aa(m_keyChain.getPib().getIdentity("/aaPrefix").getDefaultKey().getDefaultCertificate(),
-           m_face, m_keyChain)
+    : m_aa(m_cert, m_face, m_keyChain)
   {
-    auto consumerCert1 = m_keyChain.getPib().getIdentity("/consumerPrefix1").getDefaultKey().getDefaultCertificate();
+    auto consumerCert1 = m_keyChain.getPib().getIdentity("/example/consumer").getDefaultKey().getDefaultCertificate();
     m_aa.addNewPolicy(consumerCert1, "attribute");
+
+    // self certificate filter
+    m_face.setInterestFilter(m_cert.getKeyName(),
+      [this] (auto&...) {
+        m_face.put(m_cert); 
+      }
+    );
   }
 
   void
@@ -48,7 +55,6 @@ public:
 
 private:
   ndn::Face m_face;
-  ndn::KeyChain m_keyChain;
   KpAttributeAuthority m_aa;
 };
 

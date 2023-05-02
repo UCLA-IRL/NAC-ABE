@@ -34,13 +34,21 @@ class TestAttributeAuthorityFixture : public IdentityManagementTimeFixture
 {
 public:
   TestAttributeAuthorityFixture()
-    : attrAuthorityPrefix("/authority")
+    : anchorPrefix("/example")
+    , attrAuthorityPrefix("/example/aa")
   {
-    consumerCert = addIdentity("/consumer", RsaKeyParams()).getDefaultKey().getDefaultCertificate();
-    authorityCert = addIdentity("/authority").getDefaultKey().getDefaultCertificate();
+    security::pib::Identity anchorId = addIdentity("/example");
+    security::pib::Identity consumerId = addIdentity("/example/consumer", RsaKeyParams());
+    addSubCertificate("/example/consumer", anchorId);
+    consumerCert = consumerId.getDefaultKey().getDefaultCertificate();
+
+    security::pib::Identity authorityId = addIdentity(attrAuthorityPrefix);
+    addSubCertificate(attrAuthorityPrefix, anchorId);
+    authorityCert = authorityId.getDefaultKey().getDefaultCertificate();
   }
 
 protected:
+  Name anchorPrefix;
   Name attrAuthorityPrefix;
   security::Certificate consumerCert;
   security::Certificate authorityCert;
@@ -90,7 +98,6 @@ BOOST_AUTO_TEST_CASE(OnPublicParams)
 
 BOOST_AUTO_TEST_CASE(OnPrvKey)
 {
-  Name consumerName("/consumer");
   std::list<std::string> attrList = {"attr1", "attr2", "attr3", "attr4", "attr5",
                                      "attr6", "attr7", "attr8", "attr9", "attr10"};
 
@@ -127,7 +134,6 @@ BOOST_AUTO_TEST_CASE(OnPrvKey)
 
 BOOST_AUTO_TEST_CASE(OnKpPrvKey)
 {
-  Name consumerName("/consumer");
   Policy policy = "(a or b) and (c or d)";
 
   util::DummyClientFace face(io, {true, true});

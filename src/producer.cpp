@@ -34,26 +34,29 @@ namespace nacabe {
 NDN_LOG_INIT(nacabe.Producer);
 
 Producer::Producer(Face& face, KeyChain& keyChain,
+                   security::Validator& validator,
                    const security::Certificate& identityCert,
                    const security::Certificate& attrAuthorityCertificate,
                    Interest publicParamInterestTemplate)
   : m_cert(identityCert)
   , m_face(face)
+  , m_validator(validator)
   , m_keyChain(keyChain)
   , m_attrAuthorityPrefix(attrAuthorityCertificate.getIdentity())
-  , m_paramFetcher(m_face, m_attrAuthorityPrefix, m_trustConfig, publicParamInterestTemplate)
+  , m_paramFetcher(m_face, validator, m_attrAuthorityPrefix, m_trustConfig, publicParamInterestTemplate)
 {
   m_trustConfig.addOrUpdateCertificate(attrAuthorityCertificate);
   m_paramFetcher.fetchPublicParams();
   replyTemplate.setFreshnessPeriod(5_s);
 }
 
-Producer::Producer(Face& face, KeyChain& keyChain,
+Producer::Producer(Face& face, KeyChain& keyChain, 
+                   security::Validator& m_validator,
                    const security::Certificate& identityCert,
                    const security::Certificate& attrAuthorityCertificate,
                    const security::Certificate& dataOwnerCertificate,
                    Interest publicParamInterestTemplate)
-  : Producer(face, keyChain, identityCert, attrAuthorityCertificate, publicParamInterestTemplate)
+  : Producer(face, keyChain, m_validator, identityCert, attrAuthorityCertificate, publicParamInterestTemplate)
 {
   m_dataOwnerPrefix = dataOwnerCertificate.getIdentity();
   m_trustConfig.addOrUpdateCertificate(dataOwnerCertificate);

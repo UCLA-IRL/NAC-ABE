@@ -39,11 +39,18 @@ public:
   TestParamFetcherFixture()
     : c1(io, m_keyChain, {true, true})
     , c2(io, m_keyChain, {true, true})
-    , attrAuthorityPrefix("/authority")
+    , attrAuthorityPrefix("/example/authority")
   {
     c1.linkTo(c2);
-    authorityCert = addIdentity("/authority").getDefaultKey().getDefaultCertificate();
-    trustConfig.addOrUpdateCertificate(authorityCert);
+
+    security::pib::Identity anchorId = addIdentity("/example");
+    anchorCert = anchorId.getDefaultKey().getDefaultCertificate();
+    saveCertToFile(anchorCert, "example-trust-anchor.cert");
+    security::pib::Identity authorityId = addIdentity(attrAuthorityPrefix);
+    addSubCertificate(attrAuthorityPrefix, anchorId);
+    authorityCert = authorityId.getDefaultKey().getDefaultCertificate();
+    
+    trustConfig.addOrUpdateCertificate(security::Certificate(authorityCert));
   }
 
 protected:
@@ -51,6 +58,7 @@ protected:
   util::DummyClientFace c2;
   Name attrAuthorityPrefix;
   security::Certificate authorityCert;
+  security::Certificate anchorCert;
   TrustConfig trustConfig;
 };
 
@@ -59,29 +67,36 @@ BOOST_FIXTURE_TEST_SUITE(TestParamFetcher, TestParamFetcherFixture)
 BOOST_AUTO_TEST_CASE(Constructor)
 {
   algo::PublicParams m_pubParams;
-  c2.setInterestFilter(InterestFilter(attrAuthorityPrefix),
+  c2.setInterestFilter(Name(attrAuthorityPrefix).append("PUBPARAMS"),
                        [&](const ndn::InterestFilter&, const ndn::Interest& interest) {
-                         algo::MasterKey m_masterKey;
-                         algo::ABESupport::getInstance().cpInit(m_pubParams, m_masterKey);
-                         Data result;
-                         Name dataName = interest.getName();
-                         dataName.append(ABE_TYPE_CP_ABE);
-                         dataName.appendTimestamp();
-                         result.setName(dataName);
-                         result.setFreshnessPeriod(10_s);
-                         const auto& contentBuf = m_pubParams.toBuffer();
-                         result.setContent(contentBuf);
-                         m_keyChain.sign(result, signingByCertificate(authorityCert));
+                            algo::MasterKey m_masterKey;
+                            algo::ABESupport::getInstance().cpInit(m_pubParams, m_masterKey);
+                            Data result;
+                            Name dataName = interest.getName();
+                            dataName.append(ABE_TYPE_CP_ABE);
+                            dataName.appendTimestamp();
+                            result.setName(dataName);
+                            result.setFreshnessPeriod(10_s);
+                            const auto& contentBuf = m_pubParams.toBuffer();
+                            result.setContent(contentBuf);
+                            m_keyChain.sign(result, signingByCertificate(authorityCert));
 
-                         NDN_LOG_TRACE("Reply public params request.");
-                         NDN_LOG_TRACE("Pub params size: " << contentBuf.size());
+                            NDN_LOG_TRACE("Reply public params request.");
+                            NDN_LOG_TRACE("Pub params size: " << contentBuf.size());
 
-                         c2.put(result);
-                       });
+                            c2.put(result);
+                       }
+                       );
 
-  ParamFetcher paramFetcher(c1, attrAuthorityPrefix, trustConfig);
+  security::ValidatorConfig validator(c1);
+  validator.load("trust-schema.conf");
+  ParamFetcher paramFetcher(c1, validator, attrAuthorityPrefix, trustConfig);
   paramFetcher.fetchPublicParams();
-  advanceClocks(time::milliseconds(10), 100);
+  advanceClocks(time::milliseconds(20), 60);
+  c1.receive(authorityCert);
+  advanceClocks(time::milliseconds(20), 60);
+  c1.receive(anchorCert);
+  advanceClocks(time::milliseconds(20), 60);
 
   BOOST_CHECK(paramFetcher.getPublicParams().m_pub != "");
   BOOST_CHECK(paramFetcher.getAbeType() == ABE_TYPE_CP_ABE);

@@ -28,8 +28,10 @@ namespace nacabe {
 
 NDN_LOG_INIT(nacabe.ParamFetcher);
 
-ParamFetcher::ParamFetcher(Face& face, const Name& attrAuthorityPrefix, const TrustConfig& trustConfig, Interest interestTemplate)
+ParamFetcher::ParamFetcher(Face& face, security::Validator& validator, 
+                           const Name& attrAuthorityPrefix, const TrustConfig& trustConfig, Interest interestTemplate)
   : m_face(face),
+    m_validator(validator),
     m_attrAuthorityPrefix(attrAuthorityPrefix),
     m_trustConfig(trustConfig),
     m_interestTemplate(std::move(interestTemplate))
@@ -55,22 +57,22 @@ void
 ParamFetcher::onAttributePubParams(const Data& pubParamData)
 {
   NDN_LOG_INFO("[onAttributePubParams()] Get public parameters");
-  auto optionalAAKey = m_trustConfig.findCertificate(m_attrAuthorityPrefix);
+  // auto optionalAAKey = m_trustConfig.findCertificate(m_attrAuthorityPrefix);
 
-  if (optionalAAKey) {
-    if (!security::verifySignature(pubParamData, *optionalAAKey)) {
-      NDN_THROW(std::runtime_error("Fetched public parameters cannot be authenticated: bad signature"));
-    }
-  } else {
-    NDN_THROW(std::runtime_error("Fetched public parameters cannot be authenticated: no certificate"));
-  }
-
-  m_abeType = readString(pubParamData.getName().get(m_attrAuthorityPrefix.size() + 1));
-  if (m_abeType != ABE_TYPE_CP_ABE && m_abeType != ABE_TYPE_KP_ABE) {
-    NDN_THROW(std::runtime_error("Fetched public parameters with unsupported ABE type"));
-  }
-  auto block = pubParamData.getContent();
-  m_pubParamsCache.fromBuffer(Buffer(block.value(), block.value_size()));
+  m_validator.validate(pubParamData,
+    [this, pubParamData] (const Data& data) {
+      NDN_LOG_INFO("Public parameters conforms to trust schema");
+      m_abeType = readString(pubParamData.getName().get(m_attrAuthorityPrefix.size() + 1));
+      if (m_abeType != ABE_TYPE_CP_ABE && m_abeType != ABE_TYPE_KP_ABE) {
+        NDN_THROW(std::runtime_error("Fetched public parameters with unsupported ABE type"));
+      }
+      auto block = pubParamData.getContent();
+      m_pubParamsCache.fromBuffer(Buffer(block.value(), block.value_size()));
+    },
+    [] (auto&&, const ndn::security::ValidationError& error) {
+      NDN_THROW(std::runtime_error("Fetched public parameters cannot be authenticated: " + error.getInfo()));
+    }    
+  );
 }
 
 } // namespace nacabe
