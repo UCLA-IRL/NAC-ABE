@@ -28,16 +28,15 @@
 namespace ndn {
 namespace nacabe {
 
-#define MAX_SEGMENT_SIZE 1500
-
 NDN_LOG_INIT(nacabe.AttributeAuthority);
 
 AttributeAuthority::AttributeAuthority(const security::Certificate& identityCert, Face& face,
-                                       KeyChain& keyChain, const AbeType& abeType)
+                                       KeyChain& keyChain, const AbeType& abeType, size_t maxSegmentSize)
   : m_cert(identityCert)
   , m_face(face)
   , m_keyChain(keyChain)
   , m_abeType(abeType)
+  , m_maxSegmentSize(maxSegmentSize)
 {
   // ABE setup
   if (m_abeType == ABE_TYPE_CP_ABE) {
@@ -85,7 +84,7 @@ AttributeAuthority::onDecryptionKeyRequest(const Interest& request)
 
   Name supposedKeyName(request.getName().at(m_cert.getIdentity().size() + 1).blockFromValue());
   if (requestName.at(-1).isSegment() && requestName.at(-2).isVersion()) {
-    auto mapIterator = m_segmentMap.find(requestName.getPrefix(-2));
+    auto mapIterator = m_segmentMap.find(requestName.getPrefix(-1));
     if (mapIterator != m_segmentMap.end()) {
       for (auto data : mapIterator->second) {
         if (requestName == data->getName()) {
@@ -114,7 +113,8 @@ AttributeAuthority::onDecryptionKeyRequest(const Interest& request)
     result.setFreshnessPeriod(5_s);
     Block dkBlock = encryptDataContentWithCK(prvBuffer, optionalCert->getPublicKey());
     span<const uint8_t> dkSpan = make_span(dkBlock.data(), dkBlock.size());
-    auto dkSegments = m_segmenter.segment(dkSpan, resultName, MAX_SEGMENT_SIZE, 4_s);
+    // the freshness period should be configurable, but this value shouldn't affect much
+    auto dkSegments = m_segmenter.segment(dkSpan, resultName, m_maxSegmentSize, 4_s);
     m_segmentMap.emplace(resultName, dkSegments);
     m_face.put(*dkSegments.at(0));
   }
@@ -176,8 +176,8 @@ CpAttributeAuthority::getPrivateKey(Name identityName)
 }
 
 KpAttributeAuthority::KpAttributeAuthority(const security::Certificate& identityCert,
-                                           Face& face, KeyChain& keyChain)
-  : AttributeAuthority(identityCert, face, keyChain, ABE_TYPE_KP_ABE)
+                                           Face& face, KeyChain& keyChain, size_t maxSegmentSize)
+  : AttributeAuthority(identityCert, face, keyChain, ABE_TYPE_KP_ABE, maxSegmentSize)
 {
 }
 
