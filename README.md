@@ -113,15 +113,8 @@ To run tests, you must have `-DHAVE_TESTS=True` when you config the project.
 To run example, you must have `-DBUILD_EXAMPLES=True` when you config the project.
 
 ```bash
-# in the build directory of NAC-ABE
-#run all the tests (including integrate test)
-ndnsec key-gen -t r /consumerPrefix1
-ndnsec key-gen /aaPrefix
-ndnsec key-gen /producerPrefix
-
-./examples/kp-aa-example &
-./examples/kp-producer-example &
-./examples/kp-consumer-example
+# in the examples directory of NAC-ABE
+bash run-examples.sh ../build
 ```
 
 ## 3 Documentation
