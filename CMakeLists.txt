@@ -15,7 +15,7 @@ endif(HAVE_TESTS)
 
 # dependencies
 find_package(PkgConfig REQUIRED)
-pkg_check_modules(NDN_CXX REQUIRED libndn-cxx)
+pkg_check_modules(NDN_CXX REQUIRED libndn-cxx>=0.8.1)
 find_package(OpenSSL REQUIRED)
 
 find_library(openabe NAMES openabe REQUIRED)
