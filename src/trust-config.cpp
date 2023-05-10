@@ -73,7 +73,7 @@ TrustConfig::findCertificate(const Name& identityName) const
 {
   auto search = m_knownIdentities.find(identityName);
   if (search != m_knownIdentities.end()) {
-    return make_optional(search->second);
+    return search->second;
   }
   else {
     return std::nullopt;
