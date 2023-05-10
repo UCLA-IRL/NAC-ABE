@@ -7,7 +7,7 @@ project(nac-abe
         DESCRIPTION "NDN Name-based access control - attribute based encryption library")
 
 # flags
-set(CMAKE_CXX_STANDARD 14)
+set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED True)
 if (HAVE_TESTS)
     add_compile_definitions(HAVE_TESTS)

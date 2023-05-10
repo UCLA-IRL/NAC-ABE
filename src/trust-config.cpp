@@ -68,7 +68,7 @@ TrustConfig::addOrUpdateCertificate(const security::Certificate& certificate)
   }
 }
 
-optional<security::Certificate>
+std::optional<security::Certificate>
 TrustConfig::findCertificate(const Name& identityName) const
 {
   auto search = m_knownIdentities.find(identityName);
@@ -76,7 +76,7 @@ TrustConfig::findCertificate(const Name& identityName) const
     return make_optional(search->second);
   }
   else {
-    return nullopt;
+    return std::nullopt;
   }
 }
 
