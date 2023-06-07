@@ -29,6 +29,9 @@
 #include <list>
 #include <map>
 
+#include <ndn-cxx/util/segmenter.hpp>
+#include <ndn-cxx/security/signing-helpers.hpp>
+
 namespace ndn {
 namespace nacabe {
 
@@ -36,7 +39,8 @@ class AttributeAuthority : noncopyable
 {
 protected:
   AttributeAuthority(const security::Certificate& identityCert, Face& m_face,
-                     KeyChain& keyChain, const AbeType& abeType);
+                     KeyChain& keyChain, const AbeType& abeType,
+                     size_t maxSegmentSize = 1500);
 
   virtual
   ~AttributeAuthority();
@@ -56,6 +60,9 @@ protected:
   Face& m_face;
   KeyChain& m_keyChain;
   TrustConfig m_trustConfig;
+  ssize_t m_maxSegmentSize;
+  std::map<Name, std::vector<std::shared_ptr<Data>>> m_segmentMap;
+  util::Segmenter m_segmenter{m_keyChain, signingByCertificate(m_cert)};
 
 PUBLIC_WITH_TESTS_ELSE_PROTECTED:
   AbeType m_abeType;
@@ -104,7 +111,7 @@ PUBLIC_WITH_TESTS_ELSE_PRIVATE:
 class KpAttributeAuthority: public AttributeAuthority
 {
 public:
-  KpAttributeAuthority(const security::Certificate& identityCert, Face& m_face, KeyChain& keyChain);
+  KpAttributeAuthority(const security::Certificate& identityCert, Face& m_face, KeyChain& keyChain, size_t maxSegmentSize = 1500);
 
   /**
    * @brief Add a new policy <decryptor name, decryptor attributes> into the state.

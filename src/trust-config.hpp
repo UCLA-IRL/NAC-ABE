@@ -37,7 +37,7 @@ public:
   void
   addOrUpdateCertificate(const security::Certificate& certificate);
 
-  optional<security::Certificate>
+  std::optional<security::Certificate>
   findCertificate(const Name& identityName) const;
 
 private:

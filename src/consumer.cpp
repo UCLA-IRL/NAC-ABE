@@ -24,6 +24,7 @@
 #include "ndn-crypto/data-enc-dec.hpp"
 
 #include <ndn-cxx/security/verification-helpers.hpp>
+#include <ndn-cxx/util/segment-fetcher.hpp>
 
 namespace ndn {
 namespace nacabe {
@@ -62,20 +63,20 @@ Consumer::obtainDecryptionKey()
   interest.setMustBeFresh(true);
   interest.setCanBePrefix(true);
 
-  m_face.expressInterest(interest,
-    [this] (auto&&, const Data& keyData) {
-      NDN_LOG_INFO(m_cert.getIdentity() << " get decrypt key data");
-      auto prvBlock = decryptDataContent(keyData.getContent(), m_keyChain.getTpm(), m_cert.getName());
-      algo::PrivateKey prv;
-      prv.fromBuffer(Buffer(prvBlock.data(), prvBlock.size()));
-      m_keyCache = prv;
-    },
-    [this] (auto&&, const auto& nack) {
-      NDN_LOG_INFO("Nack for " << m_cert.getIdentity() << " decrypt key data with reason " << nack.getReason());
-    },
-    [this] (auto&&) {
-      NDN_LOG_INFO("Timeout for " << m_cert.getIdentity() << " decrypt key data");
-    });
+  auto fetcher = util::SegmentFetcher::start(m_face, interest, m_validator);
+  fetcher->afterSegmentValidated.connect([](Data data) {
+    NDN_LOG_DEBUG("Validated " << data.getName());
+  });
+  fetcher->onComplete.connect([this] (ConstBufferPtr contentBuffer) {
+    NDN_LOG_DEBUG("SegmentFetcher completed with total fetched size of " << contentBuffer->size());
+    auto prvBlock = decryptDataContent(Block(contentBuffer), m_keyChain.getTpm(), m_cert.getName());
+    algo::PrivateKey prv;
+    prv.fromBuffer(Buffer(prvBlock.data(), prvBlock.size()));
+    m_keyCache = prv;
+  });
+  fetcher->onError.connect([] (uint32_t errorCode, const std::string& errorMsg) {
+    NDN_LOG_ERROR("Error occurs in segment fetching: " << errorMsg);
+  });
 }
 
 bool
@@ -121,11 +122,11 @@ Consumer::consume(const Interest& dataInterest,
   auto dataCallback = [this, consumptionCb, errorCallback] (const Interest&, const Data& data) {
     m_validator.validate(data,
       [this, consumptionCb, errorCallback] (const Data& data) {
-        NDN_LOG_INFO("Decryption key conforms to trust schema");
+        NDN_LOG_INFO("Encrypted data conforms to trust schema");
         decryptContent(data, consumptionCb, errorCallback);
       },
       [] (auto&&, const ndn::security::ValidationError& error) {
-        NDN_THROW(std::runtime_error("Fetched decryption key cannot be authenticated: " + error.getInfo()));
+        NDN_THROW(std::runtime_error("Encrypted data cannot be authenticated: " + error.getInfo()));
       }
     );
   };
