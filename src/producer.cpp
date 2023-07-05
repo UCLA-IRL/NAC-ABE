@@ -113,7 +113,7 @@ Producer::ckDataGen(const Policy& accessPolicy,
     ckName.append(CONTENT_KEY).append(std::to_string(random::generateSecureWord32()));
 
     Name ckDataName = ckName;
-    ckDataName.append(ENCRYPT_BY).append(accessPolicy);
+    ckDataName.append(ENCRYPT_BY).append(accessPolicy.c_str());
     auto ckData = std::move(dataTemplate);
     ckData->setName(ckDataName);
     ckData->setContent(contentKey->makeCKContent());

@@ -261,6 +261,32 @@ BOOST_AUTO_TEST_CASE(KpEncryptContent)
   BOOST_CHECK(ckData != nullptr);
 }
 
+BOOST_AUTO_TEST_CASE(AccessPolicy)
+{
+  algo::PublicParams pubParams;
+  algo::MasterKey masterKey;
+  security::ValidatorConfig validator(c1);
+  validator.load("trust-schema.conf");
+  Producer producer(c1, m_keyChain, validator, producerCert, authorityCert);
+  advanceClocks(time::milliseconds(20), 60);
+  algo::ABESupport::getInstance().cpInit(pubParams, masterKey);
+
+  BOOST_CHECK(pubParams.m_pub != "");
+  BOOST_CHECK(masterKey.m_msk != "");
+
+  producer.m_paramFetcher.m_pubParamsCache = pubParams;
+  producer.m_paramFetcher.m_abeType = ABE_TYPE_CP_ABE;
+  // generate prv key
+  std::vector<std::string> attrList = {"attr1", "attr2", "attr3", "attr4", "attr5",
+                                       "attr6", "attr7", "attr8", "attr9", "attr10"};
+  algo::PrivateKey prvKey = algo::ABESupport::getInstance().cpPrvKeyGen(pubParams, masterKey, attrList);
+
+  std::shared_ptr<Data> data, ckData;
+  std::tie(data, ckData) = producer.produce(Name("/dataset1/example/data1"), "attr >= 629927339", PLAIN_TEXT, signingInfo);
+  BOOST_CHECK(data != nullptr);
+  BOOST_CHECK(ckData != nullptr);
+}
+
 BOOST_AUTO_TEST_SUITE_END()
 
 }  // namespace tests
