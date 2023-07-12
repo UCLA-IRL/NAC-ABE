@@ -103,9 +103,10 @@ And install by
 To run tests, you must have `-DHAVE_TESTS=True` when you config the project.
 
 ```bash
-# in the root directory of NAC-ABE
+# in the build directory of NAC-ABE
 #run all the tests (including integrate test)
-./build/bin/unit-tests
+cp ../examples/trust-schema.conf trust-schema.conf
+./tests/unit-tests
 ```
 
 ### 2.3 Run Examples
