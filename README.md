@@ -115,6 +115,7 @@ To run example, you must have `-DBUILD_EXAMPLES=True` when you config the projec
 
 ```bash
 # in the examples directory of NAC-ABE
+# nfd-start & (if your NFD has not started)
 bash run-examples.sh ../build
 ```
 
