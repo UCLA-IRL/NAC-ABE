@@ -109,7 +109,7 @@ cp ../examples/trust-schema.conf trust-schema.conf
 ./tests/unit-tests
 ```
 
-### 2.3 Run Examples
+### 2.4 Run Examples
 
 To run example, you must have `-DBUILD_EXAMPLES=True` when you config the project.
 
