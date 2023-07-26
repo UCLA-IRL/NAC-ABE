@@ -103,17 +103,19 @@ And install by
 To run tests, you must have `-DHAVE_TESTS=True` when you config the project.
 
 ```bash
-# in the root directory of NAC-ABE
+# in the build directory of NAC-ABE
 #run all the tests (including integrate test)
-./build/bin/unit-tests
+cp ../examples/trust-schema.conf trust-schema.conf
+./tests/unit-tests
 ```
 
-### 2.3 Run Examples
+### 2.4 Run Examples
 
 To run example, you must have `-DBUILD_EXAMPLES=True` when you config the project.
 
 ```bash
 # in the examples directory of NAC-ABE
+# nfd-start & (if your NFD has not started)
 bash run-examples.sh ../build
 ```
 
