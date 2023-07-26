@@ -74,90 +74,91 @@ Producer::Producer(Face& face, KeyChain& keyChain,
 
 Producer::~Producer() = default;
 
-std::tuple<std::shared_ptr<Data>, std::shared_ptr<Data>>
+std::tuple<std::vector<std::shared_ptr<Data>>, std::vector<std::shared_ptr<Data>>>
 Producer::produce(const Name& dataNameSuffix, const std::string& accessPolicy,
                   span<const uint8_t> content, const security::SigningInfo& info,
-                  std::shared_ptr<Data> ckTemplate, shared_ptr<Data> dataTemplate)
+                  std::shared_ptr<Data> ckTemplate, shared_ptr<Data> dataTemplate,
+                  size_t maxSegmentSize)
 {
 
-  auto contentKey = ckDataGen(accessPolicy, info, std::move(ckTemplate));
+  auto contentKey = ckDataGen(accessPolicy, info, std::move(ckTemplate), maxSegmentSize);
   if (contentKey.first == nullptr) {
-    return std::make_tuple(nullptr, nullptr);
+    return std::make_tuple(std::vector<std::shared_ptr<Data>>(), std::vector<std::shared_ptr<Data>>());
   }
   else {
-    auto data = produce(contentKey.first, contentKey.second->getName(), dataNameSuffix,
-                        content, info, std::move(dataTemplate));
+    // the last component should always be version number
+    Name ckObjName = contentKey.second.at(0)->getName().getPrefix(-1);
+    auto data = produce(contentKey.first, ckObjName, dataNameSuffix,
+                        content, info, std::move(dataTemplate), maxSegmentSize);
     return std::make_tuple(data, contentKey.second);
   }
 }
 
-std::pair<std::shared_ptr<algo::ContentKey>, std::shared_ptr<Data>>
+std::pair<std::shared_ptr<algo::ContentKey>, std::vector<std::shared_ptr<Data>>>
 Producer::ckDataGen(const Policy& accessPolicy,
                     const security::SigningInfo& info,
-                    std::shared_ptr<Data> dataTemplate)
+                    std::shared_ptr<Data> dataTemplate,
+                    size_t maxSegmentSize)
 {
   // do encryption
   if (m_paramFetcher.getPublicParams().m_pub == "") {
     NDN_LOG_INFO("Public parameters doesn't exist" );
-    return std::make_pair(nullptr, nullptr);
+    return std::make_pair(nullptr, std::vector<std::shared_ptr<Data>>());
   }
   else if (m_paramFetcher.getAbeType() != ABE_TYPE_CP_ABE) {
     NDN_LOG_INFO("Not a CP-ABE encrypted data" );
-    return std::make_pair(nullptr, nullptr);
+    return std::make_pair(nullptr, std::vector<std::shared_ptr<Data>>());
   }
   else {
     NDN_LOG_INFO("CK data for:" << accessPolicy);
     auto contentKey = algo::ABESupport::getInstance().cpContentKeyGen(m_paramFetcher.getPublicParams(), accessPolicy);
-
     Name ckName = security::extractIdentityFromCertName(m_cert.getName());
     ckName.append(CONTENT_KEY).append(std::to_string(random::generateSecureWord32()));
-
     Name ckDataName = ckName;
+    util::Segmenter segmenter(m_keyChain, info);
+    Block ckBlock = contentKey->makeCKContent();
+    span<const uint8_t> ckSpan = make_span(ckBlock.data(), ckBlock.size());
     ckDataName.append(ENCRYPT_BY).append(accessPolicy.c_str());
-    auto ckData = std::move(dataTemplate);
-    ckData->setName(ckDataName);
-    ckData->setContent(contentKey->makeCKContent());
-
-    m_keyChain.sign(*ckData, info);
-
-    NDN_LOG_TRACE(*ckData);
-    NDN_LOG_TRACE("CK Data length: " << ckData->wireEncode().size());
-    NDN_LOG_TRACE("CK Name length: " << ckData->getName().wireEncode().size());
-    NDN_LOG_TRACE("=================================");
-
-    return std::make_pair(contentKey, ckData);
+    auto ckSegments = segmenter.segment(ckSpan, ckDataName, maxSegmentSize,
+                                        dataTemplate->getFreshnessPeriod(),
+                                        dataTemplate->getContentType());
+    return std::make_pair(contentKey, ckSegments);
   }
 }
 
-std::tuple<std::shared_ptr<Data>, std::shared_ptr<Data>>
+std::tuple<std::vector<std::shared_ptr<Data>>, std::vector<std::shared_ptr<Data>>>
 Producer::produce(const Name& dataNameSuffix, const std::vector<std::string>& attributes,
                   span<const uint8_t> content, const security::SigningInfo& info,
-                  std::shared_ptr<Data> ckTemplate, shared_ptr<Data> dataTemplate)
+                  std::shared_ptr<Data> ckTemplate, shared_ptr<Data> dataTemplate,
+                  size_t maxSegmentSize)
 {
-  auto contentKey = ckDataGen(attributes, info, std::move(ckTemplate));
+  auto contentKey = ckDataGen(attributes, info, std::move(ckTemplate), maxSegmentSize);
   if (contentKey.first == nullptr) {
-    return std::make_tuple(nullptr, nullptr);
+    return std::make_tuple(std::vector<std::shared_ptr<Data>>(), std::vector<std::shared_ptr<Data>>());
   }
   else {
-    auto data = produce(contentKey.first, contentKey.second->getName(), dataNameSuffix,
-                        content, info, std::move(dataTemplate));
+    // the last component should always be version number
+    Name ckObjName = contentKey.second.at(0)->getName().getPrefix(-1);
+    auto data = produce(contentKey.first, ckObjName, dataNameSuffix,
+                        content, info, std::move(dataTemplate), maxSegmentSize);
     return std::make_tuple(data, contentKey.second);
   }
 }
 
-std::pair<std::shared_ptr<algo::ContentKey>, std::shared_ptr<Data>>
+std::pair<std::shared_ptr<algo::ContentKey>, std::vector<std::shared_ptr<Data>>>
 Producer::ckDataGen(const std::vector<std::string>& attributes,
                     const security::SigningInfo& info,
-                    std::shared_ptr<Data> dataTemplate)
+                    std::shared_ptr<Data> dataTemplate,
+                    size_t maxSegmentSize)
 {
   // do encryption
   if (m_paramFetcher.getPublicParams().m_pub.empty()) {
     NDN_LOG_INFO("Public parameters doesn't exist" );
-    return std::make_pair(nullptr, nullptr);
+    return std::make_pair(nullptr, std::vector<std::shared_ptr<Data>>());
   }
   else if (m_paramFetcher.getAbeType() != ABE_TYPE_KP_ABE) {
     NDN_LOG_INFO("Not a KP-ABE encrypted data" );
-    return std::make_pair(nullptr, nullptr);
+    return std::make_pair(nullptr, std::vector<std::shared_ptr<Data>>());
   }
   else {
     std::string s("|");
@@ -174,56 +175,56 @@ Producer::ckDataGen(const std::vector<std::string>& attributes,
                       .append(std::to_string(random::generateSecureWord32()))
                       .append(ENCRYPT_BY)
                       .append(nc);
-
-    auto ckData = std::move(dataTemplate);
-    ckData->setName(ckDataName);
-    ckData->setContent(contentKey->makeCKContent());
-    m_keyChain.sign(*ckData, info);
-
-    NDN_LOG_TRACE(*ckData);
-    NDN_LOG_TRACE("CK Data length: " << ckData->wireEncode().size());
-    NDN_LOG_TRACE("CK Name length: " << ckData->getName().wireEncode().size());
-    NDN_LOG_TRACE("=================================");
-
-    return std::make_pair(contentKey, ckData);
+    util::Segmenter segmenter(m_keyChain, info);
+    Block ckBlock = contentKey->makeCKContent();
+    span<const uint8_t> ckSpan = make_span(ckBlock.data(), ckBlock.size());
+    auto ckSegments = segmenter.segment(ckSpan, ckDataName, maxSegmentSize,
+                                        dataTemplate->getFreshnessPeriod(),
+                                        dataTemplate->getContentType());
+    return std::make_pair(contentKey, ckSegments);
   }
 }
 
-std::tuple<std::shared_ptr<Data>, std::shared_ptr<Data>>
+std::tuple<std::vector<std::shared_ptr<Data>>, std::vector<std::shared_ptr<Data>>>
 Producer::produce(const Name& dataNameSuffix, span<const uint8_t> content,
                   const security::SigningInfo& info,
-                  std::shared_ptr<Data> ckTemplate, shared_ptr<Data> dataTemplate)
+                  std::shared_ptr<Data> ckTemplate, shared_ptr<Data> dataTemplate,
+                  size_t maxSegmentSize)
 {
   // Encrypt data based on data prefix.
   if (m_paramFetcher.getAbeType() == ABE_TYPE_CP_ABE) {
     auto policy = findMatchedPolicy(dataNameSuffix);
     if (policy.empty()) {
-      return std::make_tuple(nullptr, nullptr);
+      return std::make_tuple(std::vector<std::shared_ptr<Data>>(), std::vector<std::shared_ptr<Data>>());
     }
-    return produce(dataNameSuffix, policy, content, info, std::move(ckTemplate), std::move(dataTemplate));
+    return produce(dataNameSuffix, policy, content, info,
+                   std::move(ckTemplate), std::move(dataTemplate),
+                   maxSegmentSize);
   }
   else if (m_paramFetcher.getAbeType() == ABE_TYPE_KP_ABE) {
     auto attributes = findMatchedAttributes(dataNameSuffix);
     if (attributes.empty()) {
-      return std::make_tuple(nullptr, nullptr);
+      return std::make_tuple(std::vector<std::shared_ptr<Data>>(), std::vector<std::shared_ptr<Data>>());
     }
-    return produce(dataNameSuffix, attributes, content, info, std::move(ckTemplate), std::move(dataTemplate));
+    return produce(dataNameSuffix, attributes, content,
+                   info, std::move(ckTemplate), std::move(dataTemplate),
+                   maxSegmentSize);
   }
   else {
-    return std::make_tuple(nullptr, nullptr);
+    return std::make_tuple(std::vector<std::shared_ptr<Data>>(), std::vector<std::shared_ptr<Data>>());
   }
 }
 
-std::shared_ptr<Data>
+std::vector<std::shared_ptr<Data>>
 Producer::produce(std::shared_ptr<algo::ContentKey> key,
                   const Name& keyName, const Name& dataNameSuffix,
                   span<const uint8_t> content, const security::SigningInfo& info,
-                  shared_ptr<Data> dataTemplate)
+                  shared_ptr<Data> dataTemplate,
+                  size_t maxSegmentSize)
 {
   NDN_LOG_INFO("Encrypt on data:" << dataNameSuffix);
-  auto cipherText = algo::ABESupport::getInstance().encrypt(std::move(key),
-                                                            Buffer(content.begin(), content.end()));
-  return getCkEncryptedData(dataNameSuffix, cipherText, keyName, info, std::move(dataTemplate));
+  auto cipherText = algo::ABESupport::getInstance().encrypt(std::move(key), Buffer(content.begin(), content.end()));
+  return getCkEncryptedData(dataNameSuffix, cipherText, keyName, info, std::move(dataTemplate), maxSegmentSize);
 }
 
 void
@@ -327,26 +328,22 @@ Producer::onPolicyInterest(const Interest& interest)
   m_face.put(reply);
 }
 
-shared_ptr<Data>
+std::vector<std::shared_ptr<Data>>
 Producer::getCkEncryptedData(const Name& dataNameSuffix, const algo::CipherText& cipherText,
                              const Name& ckName, const security::SigningInfo& info,
-                             shared_ptr<Data> dataTemplate)
+                             shared_ptr<Data> dataTemplate, size_t maxSegmentSize)
 {
   Name contentDataName = m_cert.getIdentity();
   contentDataName.append(dataNameSuffix);
-  auto data = std::move(dataTemplate);
-  data->setName(contentDataName);
   auto dataBlock = cipherText.makeDataContent();
   dataBlock.push_back(ckName.wireEncode());
   dataBlock.encode();
-  data->setContent(dataBlock);
-  m_keyChain.sign(*data, info);
-
-  NDN_LOG_TRACE(*data);
-  NDN_LOG_TRACE("Content Data length: " << data->wireEncode().size());
-  NDN_LOG_TRACE("Content Name length: " << data->getName().wireEncode().size());
-  NDN_LOG_TRACE("=================================");
-  return data;
+  util::Segmenter segmenter(m_keyChain, info);
+  span<const uint8_t> ckSpan = make_span(dataBlock.data(), dataBlock.size());
+  auto ckSegments = segmenter.segment(ckSpan, contentDataName, maxSegmentSize,
+                                      dataTemplate->getFreshnessPeriod(),
+                                      dataTemplate->getContentType());
+  return ckSegments;
 }
 
 std::shared_ptr<Data> Producer::getDefaultCkTemplate() {

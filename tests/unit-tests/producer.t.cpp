@@ -229,10 +229,10 @@ BOOST_AUTO_TEST_CASE(EncryptContent)
                                        "attr6", "attr7", "attr8", "attr9", "attr10"};
   algo::PrivateKey prvKey = algo::ABESupport::getInstance().cpPrvKeyGen(pubParams, masterKey, attrList);
 
-  std::shared_ptr<Data> data, ckData;
+  std::vector<std::shared_ptr<Data>> data, ckData;
   std::tie(data, ckData) = producer.produce(Name("/dataset1/example/data1"), "attr1 or attr2", PLAIN_TEXT, signingInfo);
-  BOOST_CHECK(data != nullptr);
-  BOOST_CHECK(ckData != nullptr);
+  BOOST_CHECK(data.size() > 0);
+  BOOST_CHECK(ckData.size() > 0);
 }
 
 BOOST_AUTO_TEST_CASE(KpEncryptContent)
@@ -255,10 +255,10 @@ BOOST_AUTO_TEST_CASE(KpEncryptContent)
                                        "attr6", "attr7", "attr8", "attr9", "attr10"};
   algo::PrivateKey prvKey = algo::ABESupport::getInstance().kpPrvKeyGen(pubParams, masterKey, "attr1 or attr2");
 
-  std::shared_ptr<Data> data, ckData;
+  std::vector<std::shared_ptr<Data>> data, ckData;
   std::tie(data, ckData) = producer.produce(Name("/dataset1/example/data1"), attrList, PLAIN_TEXT, signingInfo);
-  BOOST_CHECK(data != nullptr);
-  BOOST_CHECK(ckData != nullptr);
+  BOOST_CHECK(data.size() > 0);
+  BOOST_CHECK(ckData.size() > 0);
 }
 
 BOOST_AUTO_TEST_CASE(AccessPolicy)
@@ -281,10 +281,10 @@ BOOST_AUTO_TEST_CASE(AccessPolicy)
                                        "attr6", "attr7", "attr8", "attr9", "attr10"};
   algo::PrivateKey prvKey = algo::ABESupport::getInstance().cpPrvKeyGen(pubParams, masterKey, attrList);
 
-  std::shared_ptr<Data> data, ckData;
+  std::vector<std::shared_ptr<Data>> data, ckData;
   std::tie(data, ckData) = producer.produce(Name("/dataset1/example/data1"), "attr >= 629927339", PLAIN_TEXT, signingInfo);
-  BOOST_CHECK(data != nullptr);
-  BOOST_CHECK(ckData != nullptr);
+  BOOST_CHECK(data.size() > 0);
+  BOOST_CHECK(ckData.size() > 0);
 }
 
 BOOST_AUTO_TEST_SUITE_END()

@@ -51,11 +51,12 @@ public:
    * @param info The signing parameters
    * @return The encrypted data and the encrypted CK data
    */
-  std::tuple<std::shared_ptr<Data>, std::shared_ptr<Data>>
+  std::tuple<std::vector<std::shared_ptr<Data>>, std::vector<std::shared_ptr<Data>>>
   produce(const Name& dataName, const Policy& accessPolicy,
           span<const uint8_t> content, const security::SigningInfo& info,
           std::shared_ptr<Data> ckTemplate = getDefaultCkTemplate(),
-          shared_ptr<Data> dataTemplate = getDefaultEncryptedDataTemplate()) override;
+          shared_ptr<Data> dataTemplate = getDefaultEncryptedDataTemplate(),
+          size_t maxSegmentSize = 1500) override;
 
   /**
    * @brief Produce KP-encrypted Data and corresponding encrypted CK Data
@@ -69,15 +70,16 @@ public:
    * @param info The signing parameters
    * @return The encrypted data and the encrypted CK data
    */
-  std::tuple<std::shared_ptr<Data>, std::shared_ptr<Data>>
+  std::tuple<std::vector<std::shared_ptr<Data>>, std::vector<std::shared_ptr<Data>>>
   produce(const Name& dataName, const std::vector<std::string>& attributes,
           span<const uint8_t> content, const security::SigningInfo& info,
           std::shared_ptr<Data> ckTemplate = getDefaultCkTemplate(),
-          shared_ptr<Data> dataTemplate = getDefaultEncryptedDataTemplate()) override;
+          shared_ptr<Data> dataTemplate = getDefaultEncryptedDataTemplate(),
+          size_t maxSegmentSize = 1500) override;
 
 PUBLIC_WITH_TESTS_ELSE_PRIVATE:
-  std::map<std::string, std::pair<std::shared_ptr<algo::ContentKey>, std::shared_ptr<Data>>> m_cpKeyCache;
-  std::map<std::string, std::pair<std::shared_ptr<algo::ContentKey>, std::shared_ptr<Data>>> m_kpKeyCache;
+  std::map<std::string, std::pair<std::shared_ptr<algo::ContentKey>, std::vector<std::shared_ptr<Data>>>> m_cpKeyCache;
+  std::map<std::string, std::pair<std::shared_ptr<algo::ContentKey>, std::vector<std::shared_ptr<Data>>>> m_kpKeyCache;
 };
 
 } // namespace nacabe
