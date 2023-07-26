@@ -77,18 +77,19 @@ BOOST_AUTO_TEST_CASE(OnPublicParams)
 
   int count = 0;
   face.onSendData.connect([&] (const Data& response) {
-      count++;
-      BOOST_CHECK(security::verifySignature(response, authorityCert));
+    count++;
+    BOOST_CHECK(security::verifySignature(response, authorityCert));
 
-      auto block = response.getContent();
-      Buffer contentBuffer(block.value(), block.value_size());
-      algo::PublicParams pubParams;
-      pubParams.fromBuffer(contentBuffer);
-      auto buffer = pubParams.toBuffer();
+    auto block = response.getContent();
+    Buffer contentBuffer(block.value(), block.value_size());
+    algo::PublicParams pubParams;
+    pubParams.fromBuffer(contentBuffer);
+    auto buffer = pubParams.toBuffer();
 
-      BOOST_CHECK_EQUAL_COLLECTIONS(buffer.begin(), buffer.end(),
-                                    requiredBuffer.begin(), requiredBuffer.end());
-    });
+    BOOST_CHECK_EQUAL_COLLECTIONS(buffer.begin(), buffer.end(),
+                                  requiredBuffer.begin(), requiredBuffer.end());
+    }
+  );
   face.receive(request);
 
   advanceClocks(time::milliseconds(20), 60);

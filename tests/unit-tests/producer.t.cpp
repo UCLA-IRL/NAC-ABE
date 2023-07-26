@@ -113,12 +113,13 @@ BOOST_AUTO_TEST_CASE(OnPolicyInterest)
   NDN_LOG_DEBUG("Before receive, interest name:" << setPolicyInterest.getName());
   //dynamic_cast<util::DummyClientFace*>(&c1)->receive(setPolicyInterest);
   c2.expressInterest(setPolicyInterest,
-      [&](const Interest&, const Data& response) {
-        BOOST_CHECK(security::verifySignature(response, producerCert));
-        BOOST_CHECK(readString(response.getContent()) == "success");
-      },
-      [](const Interest&, const lp::Nack&) {},
-      [](const Interest&) {});
+    [&](const Interest&, const Data& response) {
+      BOOST_CHECK(security::verifySignature(response, producerCert));
+      BOOST_CHECK(readString(response.getContent()) == "success");
+    },
+    [](const Interest&, const lp::Nack&) {},
+    [](const Interest&) {}
+  );
 
   NDN_LOG_DEBUG("Set policy Interest:" << setPolicyInterest.getName());
   // /producer/SET_POLICY/dataPrefix/policy
@@ -134,12 +135,13 @@ BOOST_AUTO_TEST_CASE(OnPolicyInterest)
   advanceClocks(time::milliseconds(20), 60);
 
   c2.expressInterest(setPolicyInterest,
-      [&](const Interest&, const Data& response) {
-        BOOST_CHECK(security::verifySignature(response, producerCert));
-        BOOST_CHECK_EQUAL(readString(response.getContent()), "success");
-      },
-      [](const Interest&, const lp::Nack&) {},
-      [](const Interest&) {});
+    [&](const Interest&, const Data& response) {
+      BOOST_CHECK(security::verifySignature(response, producerCert));
+      BOOST_CHECK_EQUAL(readString(response.getContent()), "success");
+    },
+    [](const Interest&, const lp::Nack&) {},
+    [](const Interest&) {}
+  );
 
   advanceClocks(time::milliseconds(20), 60);
 
@@ -172,12 +174,13 @@ BOOST_AUTO_TEST_CASE(OnKpPolicyInterest)
   NDN_LOG_DEBUG("Before receive, interest name:" << setPolicyInterest.getName());
   //dynamic_cast<util::DummyClientFace*>(&c1)->receive(setPolicyInterest);
   c2.expressInterest(setPolicyInterest,
-      [&](const Interest&, const Data& response) {
-        BOOST_CHECK(security::verifySignature(response, producerCert));
-        BOOST_CHECK(readString(response.getContent()) == "success");
-      },
-      [](const Interest&, const lp::Nack&) {},
-      [](const Interest&) {});
+    [&](const Interest&, const Data& response) {
+      BOOST_CHECK(security::verifySignature(response, producerCert));
+      BOOST_CHECK(readString(response.getContent()) == "success");
+    },
+    [](const Interest&, const lp::Nack&) {},
+    [](const Interest&) {}
+  );
 
   NDN_LOG_DEBUG("set policy Interest:" << setPolicyInterest.getName());
   // /producer/SET_POLICY/dataPrefix/policy
@@ -194,12 +197,13 @@ BOOST_AUTO_TEST_CASE(OnKpPolicyInterest)
   advanceClocks(time::milliseconds(20), 60);
 
   c2.expressInterest(setPolicyInterest,
-      [&](const Interest&, const Data& response) {
-        BOOST_CHECK(security::verifySignature(response, producerCert));
-        BOOST_CHECK_EQUAL(readString(response.getContent()), "success");
-      },
-      [](const Interest&, const lp::Nack&) {},
-      [](const Interest&) {});
+    [&](const Interest&, const Data& response) {
+      BOOST_CHECK(security::verifySignature(response, producerCert));
+      BOOST_CHECK_EQUAL(readString(response.getContent()), "success");
+    },
+    [](const Interest&, const lp::Nack&) {},
+    [](const Interest&) {}
+  );
 
   advanceClocks(time::milliseconds(20), 60);
 

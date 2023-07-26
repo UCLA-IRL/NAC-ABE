@@ -13,7 +13,7 @@
  * PARTICULAR PURPOSE.  See the GNU General Public License for more details.
  *
  * You should have received copies of the GNU General Public License along with
- * NAC-ABE, e.g., in COPYING.md file.  If not,ndn see <http://www.gnu.org/licenses/>.
+ * NAC-ABE, e.g., in COPYING.md file.  If not, see <http://www.gnu.org/licenses/>.
  *
  * See AUTHORS.md for complete list of NAC-ABE authors and contributors.
  */
@@ -22,7 +22,6 @@
 #include <ndn-cxx/security/certificate.hpp>
 #include <ndn-cxx/security/key-chain.hpp>
 #include <ndn-cxx/security/signing-helpers.hpp>
-#include <ndn-cxx/util/time.hpp>
 
 #include <producer.hpp> // or <nac-abe/producer.hpp>
 
@@ -49,51 +48,45 @@ public:
   {
     const std::string plainText = "Hello world";
     const std::vector<std::string> attributes = {"attribute"};
-    auto longlivedData = std::make_shared<ndn::Data>();
-    longlivedData->setFreshnessPeriod(ndn::time::hours(1));
 
     std::vector<std::shared_ptr<ndn::Data>> contentData, ckData;
     std::tie(contentData, ckData) = m_producer.produce("/randomData", attributes,
-                                                       {reinterpret_cast<const uint8_t*>(plainText.data()),
-                                                        plainText.size()}, m_signingInfo,
-                                                        longlivedData, longlivedData, 50);
+      {reinterpret_cast<const uint8_t*>(plainText.data()), plainText.size()},
+      m_signingInfo
+    );
 
     std::cout << "Content data object name: " << contentData.at(0)->getName().getPrefix(-1) << std::endl;
+    auto putSegments = [=] (auto& interest, auto& segments) {
+      for (auto seg : segments) {
+        bool exactSeg = interest.getName() == seg->getName();
+        bool probeSeg = (interest.getName() == seg->getName().getPrefix(-1)) &&
+                         interest.getCanBePrefix();
+        if (exactSeg || probeSeg) {
+          std::cout << "<< D: " << seg->getName() << std::endl;
+          m_face.put(*seg);
+          std::cout << seg->getContent().size() << " bytes" << std::endl;
+          break;
+        }
+      }
+    };
     m_face.setInterestFilter(m_producerCert.getIdentity(),
-                              [=] (const auto&, const auto& interest) {
-                                std::cout << ">> I: " << interest << std::endl;
-                                if (interest.getName().isPrefixOf(m_cert.getName())) {
-                                  m_face.put(m_cert);
-                                }
-                                for (auto seg : contentData) {
-                                  bool exactSeg = interest.getName() == seg->getName();
-                                  bool probeSeg = (interest.getName() == seg->getName().getPrefix(-1)) &&
-                                                   interest.getCanBePrefix();
-                                  if (exactSeg || probeSeg) {
-                                    std::cout << "<< D: " << seg->getName() << std::endl;
-                                    m_face.put(*seg);
-                                    std::cout << seg->getContent().size() << " bytes" << std::endl;
-                                    break;
-                                  }
-                                }
-                                for (auto seg : ckData) {
-                                  bool exactSeg = interest.getName() == seg->getName();
-                                  bool probeSeg = (interest.getName() == seg->getName().getPrefix(-1)) &&
-                                                   interest.getCanBePrefix();
-                                  if (exactSeg || probeSeg) {
-                                    std::cout << "<< D: " << seg->getName() << std::endl;
-                                    m_face.put(*seg);
-                                    std::cout << seg->getContent().size() << " bytes" << std::endl;
-                                    break;
-                                  }
-                                }
-                              },
-                              [this] (const auto& prefix, const std::string& reason) {
-                                std::cerr << "ERROR: Failed to register prefix '" << prefix
-                                          << "' with the local forwarder (" << reason << ")" << std::endl;
-                                m_face.shutdown();
-                              });
-
+      [=] (const auto&, const auto& interest) {
+        std::cout << ">> I: " << interest << std::endl;
+        // for own certificate
+        if (interest.getName().isPrefixOf(m_cert.getName())) {
+          m_face.put(m_cert);
+        }
+        // for content data segments
+        putSegments(interest, contentData);
+        // for CK data segments
+        putSegments(interest, ckData);
+      },
+      [this] (const auto& prefix, const std::string& reason) {
+        std::cerr << "ERROR: Failed to register prefix '" << prefix
+                  << "' with the local forwarder (" << reason << ")" << std::endl;
+        m_face.shutdown();
+      }
+    );
     m_face.processEvents();
   }
 
