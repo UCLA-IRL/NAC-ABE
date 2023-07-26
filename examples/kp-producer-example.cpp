@@ -47,9 +47,8 @@ public:
   run()
   {
     const std::string plainText = "Hello world";
-    const std::vector<std::string> attributes = {"attribute"};
-
-    std::vector<std::shared_ptr<ndn::Data>> contentData, ckData;
+    const std::vector<std::string> attributes = {"attribute"}; 
+    ndn::nacabe::SPtrVector<ndn::Data> contentData, ckData;
     std::tie(contentData, ckData) = m_producer.produce("/randomData", attributes,
       {reinterpret_cast<const uint8_t*>(plainText.data()), plainText.size()},
       m_signingInfo

@@ -51,7 +51,7 @@ public:
    * @param info The signing parameters
    * @return The encrypted data and the encrypted CK data
    */
-  std::tuple<std::vector<std::shared_ptr<Data>>, std::vector<std::shared_ptr<Data>>>
+  std::tuple<SPtrVector<Data>, SPtrVector<Data>>
   produce(const Name& dataName, const Policy& accessPolicy,
           span<const uint8_t> content, const security::SigningInfo& info,
           std::shared_ptr<Data> ckTemplate = getDefaultCkTemplate(),
@@ -70,7 +70,7 @@ public:
    * @param info The signing parameters
    * @return The encrypted data and the encrypted CK data
    */
-  std::tuple<std::vector<std::shared_ptr<Data>>, std::vector<std::shared_ptr<Data>>>
+  std::tuple<SPtrVector<Data>, SPtrVector<Data>>
   produce(const Name& dataName, const std::vector<std::string>& attributes,
           span<const uint8_t> content, const security::SigningInfo& info,
           std::shared_ptr<Data> ckTemplate = getDefaultCkTemplate(),
@@ -78,8 +78,8 @@ public:
           size_t maxSegmentSize = 1500) override;
 
 PUBLIC_WITH_TESTS_ELSE_PRIVATE:
-  std::map<std::string, std::pair<std::shared_ptr<algo::ContentKey>, std::vector<std::shared_ptr<Data>>>> m_cpKeyCache;
-  std::map<std::string, std::pair<std::shared_ptr<algo::ContentKey>, std::vector<std::shared_ptr<Data>>>> m_kpKeyCache;
+  std::map<std::string, std::pair<std::shared_ptr<algo::ContentKey>, SPtrVector<Data>>> m_cpKeyCache;
+  std::map<std::string, std::pair<std::shared_ptr<algo::ContentKey>, SPtrVector<Data>>> m_kpKeyCache;
 };
 
 } // namespace nacabe

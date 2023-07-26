@@ -184,7 +184,7 @@ BOOST_AUTO_TEST_CASE(Cp)
   advanceClocks(time::milliseconds(20), 60);
   BOOST_CHECK(isPolicySet);
 
-  std::vector<std::shared_ptr<Data>> contentData, ckData;
+  SPtrVector<ndn::Data> contentData, ckData;
   auto policyFound = producer.findMatchedPolicy(dataName);
 
   std::tie(contentData, ckData) = producer.produce(dataName, policyFound, PLAIN_TEXT, signingInfo);
@@ -338,7 +338,7 @@ BOOST_AUTO_TEST_CASE(Kp)
   advanceClocks(time::milliseconds(20), 60);
   BOOST_CHECK(isPolicySet);
 
-  std::vector<std::shared_ptr<Data>> contentData, ckData;
+  SPtrVector<ndn::Data> contentData, ckData;
   auto attributeFound = producer.findMatchedAttributes(dataName);
   std::tie(contentData, ckData) = producer.produce(dataName, attributeFound, PLAIN_TEXT, signingInfo);
   BOOST_CHECK(contentData.size() > 0);
@@ -482,7 +482,7 @@ BOOST_AUTO_TEST_CASE(KpCache)
   NDN_LOG_DEBUG("Before policy set");
   advanceClocks(time::milliseconds(20), 60);
   BOOST_CHECK(isPolicySet);
-  std::vector<std::shared_ptr<Data>>  contentData, ckData;
+  SPtrVector<ndn::Data>  contentData, ckData;
   auto attributeFound = producer.findMatchedAttributes(dataName);
   BOOST_CHECK(producer.m_kpKeyCache.size() == 0);
   std::tie(contentData, ckData) = producer.produce(dataName, attributeFound, PLAIN_TEXT, signingInfo);

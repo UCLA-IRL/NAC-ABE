@@ -30,7 +30,7 @@ CacheProducer::clearCache()
   m_kpKeyCache.clear();
 }
 
-std::tuple<std::vector<std::shared_ptr<Data>>, std::vector<std::shared_ptr<Data>>>
+std::tuple<SPtrVector<Data>, SPtrVector<Data>>
 CacheProducer::produce(const Name& dataName, const Policy& accessPolicy,
                        span<const uint8_t> content, const security::SigningInfo& info,
                        std::shared_ptr<Data> ckTemplate, shared_ptr<Data> dataTemplate,
@@ -39,7 +39,7 @@ CacheProducer::produce(const Name& dataName, const Policy& accessPolicy,
   if (m_cpKeyCache.count(accessPolicy) == 0) {
     auto k = ckDataGen(accessPolicy, info, ckTemplate);
     if (k.first == nullptr || k.second.size() == 0) {
-      return std::make_tuple(std::vector<std::shared_ptr<Data>>(), std::vector<std::shared_ptr<Data>>());
+      return std::make_tuple(SPtrVector<Data>(), SPtrVector<Data>());
     }
     m_cpKeyCache.emplace(accessPolicy, k);
   }
@@ -50,7 +50,7 @@ CacheProducer::produce(const Name& dataName, const Policy& accessPolicy,
   return std::make_tuple(data, key.second);
 }
 
-std::tuple<std::vector<std::shared_ptr<Data>>, std::vector<std::shared_ptr<Data>>>
+std::tuple<SPtrVector<Data>, SPtrVector<Data>>
 CacheProducer::produce(const Name& dataName, const std::vector<std::string>& attributes,
                        span<const uint8_t> content, const security::SigningInfo& info,
                        std::shared_ptr<Data> ckTemplate, shared_ptr<Data> dataTemplate,
@@ -62,7 +62,7 @@ CacheProducer::produce(const Name& dataName, const std::vector<std::string>& att
   if (m_kpKeyCache.count(attStr) == 0) {
     auto k = ckDataGen(attributes, info, ckTemplate);
     if (k.first == nullptr || k.second.size() == 0) {
-      return std::make_tuple(std::vector<std::shared_ptr<Data>>(), std::vector<std::shared_ptr<Data>>());
+      return std::make_tuple(SPtrVector<Data>(), SPtrVector<Data>());
     }
     m_kpKeyCache.emplace(attStr, k);
   }

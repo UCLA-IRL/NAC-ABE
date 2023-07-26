@@ -61,7 +61,7 @@ protected:
   KeyChain& m_keyChain;
   TrustConfig m_trustConfig;
   ssize_t m_maxSegmentSize;
-  std::map<Name, std::vector<std::shared_ptr<Data>>> m_segmentMap;
+  std::map<Name, SPtrVector<ndn::Data>> m_segmentMap;
   util::Segmenter m_segmenter{m_keyChain, signingByCertificate(m_cert)};
 
 PUBLIC_WITH_TESTS_ELSE_PROTECTED:
