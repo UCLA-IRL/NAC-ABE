@@ -46,12 +46,13 @@ public:
   {
     ndn::Name dataName("/randomData");
     m_consumer.consume(m_producerCert.getIdentity().append(dataName),
-                       [] (const auto& result) {
-                         std::cout << "Received data: " << std::string(result.begin(), result.end()) << std::endl;
-                       },
-                       [] (const auto& error) {
-                         std::cout << "Error: " << error << std::endl;
-                       });
+      [] (const auto& result) {
+        std::cout << "Received data: " << std::string(result.begin(), result.end()) << std::endl;
+      },
+      [] (const auto& error) {
+        std::cout << "Error: " << error << std::endl;
+      }
+    );
 
     m_face.processEvents();
   }

@@ -67,33 +67,35 @@ BOOST_AUTO_TEST_CASE(CpSetPolicy)
   advanceClocks(time::milliseconds(1), 10);
 
   auto f1 = c2.setInterestFilter(Name("/producer1"),
-                                 [&] (auto&&, const auto& interest) {
-                                   BOOST_CHECK_EQUAL(interest.getName().getSubName(0, 1), producerPrefix);
-                                   BOOST_CHECK_EQUAL(interest.getName().get(1).toUri(), SET_POLICY);
-                                   BOOST_CHECK_EQUAL(Name(interest.getName().get(2).blockFromValue()), dataPrefix);
-                                   BOOST_CHECK_EQUAL(readString(interest.getName().get(3)), policy);
+    [&] (auto&&, const auto& interest) {
+      BOOST_CHECK_EQUAL(interest.getName().getSubName(0, 1), producerPrefix);
+      BOOST_CHECK_EQUAL(interest.getName().get(1).toUri(), SET_POLICY);
+      BOOST_CHECK_EQUAL(Name(interest.getName().get(2).blockFromValue()), dataPrefix);
+      BOOST_CHECK_EQUAL(readString(interest.getName().get(3)), policy);
 
-                                   BOOST_CHECK(security::verifySignature(interest, cert));
+      BOOST_CHECK(security::verifySignature(interest, cert));
 
-                                   Data reply;
-                                   reply.setName(interest.getName());
-                                   reply.setContent(makeStringBlock(tlv::Content, "success"));
-                                   reply.setFreshnessPeriod(time::seconds(1));
-                                   m_keyChain.sign(reply, signingByCertificate(cert));
-                                   c2.put(reply);
-                                 });
+      Data reply;
+      reply.setName(interest.getName());
+      reply.setContent(makeStringBlock(tlv::Content, "success"));
+      reply.setFreshnessPeriod(time::seconds(1));
+      m_keyChain.sign(reply, signingByCertificate(cert));
+      c2.put(reply);
+    }
+  );
 
   advanceClocks(time::milliseconds(1), 100);
 
   bool getItem = false;
   dataowner.commandProducerPolicy(producerPrefix, dataPrefix, policy,
-                                  [&] (const Data& data) {
-                                    BOOST_CHECK(interestName.isPrefixOf(data.getName()));
-                                    getItem = true;
-                                  },
-                                  [] (auto&&) {
-                                    BOOST_CHECK(false);
-                                  });
+    [&] (const Data& data) {
+      BOOST_CHECK(interestName.isPrefixOf(data.getName()));
+      getItem = true;
+    },
+    [] (auto&&) {
+      BOOST_CHECK(false);
+    }
+  );
 
   advanceClocks(time::milliseconds(1), 10);
   BOOST_CHECK(getItem);
@@ -101,33 +103,35 @@ BOOST_AUTO_TEST_CASE(CpSetPolicy)
 
   // bad reply check
   auto f2 = c2.setInterestFilter(Name("/producer1"),
-                                 [&] (auto&&, const auto& interest) {
-                                   BOOST_CHECK_EQUAL(interest.getName().getSubName(0, 1), producerPrefix);
-                                   BOOST_CHECK_EQUAL(interest.getName().get(1).toUri(), SET_POLICY);
-                                   BOOST_CHECK_EQUAL(Name(interest.getName().get(2).blockFromValue()), dataPrefix);
-                                   BOOST_CHECK_EQUAL(readString(interest.getName().get(3)), policy);
+    [&] (auto&&, const auto& interest) {
+      BOOST_CHECK_EQUAL(interest.getName().getSubName(0, 1), producerPrefix);
+      BOOST_CHECK_EQUAL(interest.getName().get(1).toUri(), SET_POLICY);
+      BOOST_CHECK_EQUAL(Name(interest.getName().get(2).blockFromValue()), dataPrefix);
+      BOOST_CHECK_EQUAL(readString(interest.getName().get(3)), policy);
 
-                                   BOOST_CHECK(security::verifySignature(interest, cert));
+      BOOST_CHECK(security::verifySignature(interest, cert));
 
-                                   Data reply;
-                                   reply.setName(interest.getName());
-                                   reply.setContent(makeStringBlock(tlv::Content, "failure"));
-                                   reply.setFreshnessPeriod(time::seconds(1));
-                                   m_keyChain.sign(reply, signingByCertificate(cert));
-                                   c2.put(reply);
-                                 });
+      Data reply;
+      reply.setName(interest.getName());
+      reply.setContent(makeStringBlock(tlv::Content, "failure"));
+      reply.setFreshnessPeriod(time::seconds(1));
+      m_keyChain.sign(reply, signingByCertificate(cert));
+      c2.put(reply);
+    }
+  );
 
   advanceClocks(time::milliseconds(1), 100);
 
   getItem = false;
   dataowner.commandProducerPolicy(producerPrefix, dataPrefix, policy,
-                                  [] (auto&&) {
-                                    BOOST_CHECK(false);
-                                  },
-                                  [&] (const std::string& s) {
-                                    BOOST_CHECK_EQUAL(s, "register failed");
-                                    getItem = true;
-                                  });
+    [] (auto&&) {
+      BOOST_CHECK(false);
+    },
+    [&] (const std::string& s) {
+      BOOST_CHECK_EQUAL(s, "register failed");
+      getItem = true;
+    }
+  );
 
   advanceClocks(time::milliseconds(1), 10);
   BOOST_CHECK(getItem);
@@ -135,26 +139,28 @@ BOOST_AUTO_TEST_CASE(CpSetPolicy)
 
   // timeout check
   auto f3 = c2.setInterestFilter(Name("/producer1"),
-                                 [&] (auto&&, const auto& interest) {
-                                   BOOST_CHECK_EQUAL(interest.getName().getSubName(0, 1), producerPrefix);
-                                   BOOST_CHECK_EQUAL(interest.getName().get(1).toUri(), SET_POLICY);
-                                   BOOST_CHECK_EQUAL(Name(interest.getName().get(2).blockFromValue()), dataPrefix);
-                                   BOOST_CHECK_EQUAL(readString(interest.getName().get(3)), policy);
+    [&] (auto&&, const auto& interest) {
+      BOOST_CHECK_EQUAL(interest.getName().getSubName(0, 1), producerPrefix);
+      BOOST_CHECK_EQUAL(interest.getName().get(1).toUri(), SET_POLICY);
+      BOOST_CHECK_EQUAL(Name(interest.getName().get(2).blockFromValue()), dataPrefix);
+      BOOST_CHECK_EQUAL(readString(interest.getName().get(3)), policy);
 
-                                   BOOST_CHECK(security::verifySignature(interest, cert));
-                                 });
+      BOOST_CHECK(security::verifySignature(interest, cert));
+    }
+  );
 
   advanceClocks(time::milliseconds(1), 100);
 
   getItem = false;
   dataowner.commandProducerPolicy(producerPrefix, dataPrefix, policy,
-                                  [] (auto&&) {
-                                    BOOST_CHECK(false);
-                                  },
-                                  [&] (const std::string& s) {
-                                    BOOST_CHECK_EQUAL(s, "time out");
-                                    getItem = true;
-                                  });
+    [] (auto&&) {
+      BOOST_CHECK(false);
+    },
+    [&] (const std::string& s) {
+      BOOST_CHECK_EQUAL(s, "time out");
+      getItem = true;
+    }
+  );
 
   advanceClocks(time::milliseconds(100), 20);
   BOOST_CHECK(getItem);
@@ -162,30 +168,32 @@ BOOST_AUTO_TEST_CASE(CpSetPolicy)
 
   // nack check
   auto f4 = c2.setInterestFilter(Name("/producer1"),
-                                 [&] (auto&&, const auto& interest) {
-                                   BOOST_CHECK_EQUAL(interest.getName().getSubName(0, 1), producerPrefix);
-                                   BOOST_CHECK_EQUAL(interest.getName().get(1).toUri(), SET_POLICY);
-                                   BOOST_CHECK_EQUAL(Name(interest.getName().get(2).blockFromValue()), dataPrefix);
-                                   BOOST_CHECK_EQUAL(readString(interest.getName().get(3)), policy);
+    [&] (auto&&, const auto& interest) {
+      BOOST_CHECK_EQUAL(interest.getName().getSubName(0, 1), producerPrefix);
+      BOOST_CHECK_EQUAL(interest.getName().get(1).toUri(), SET_POLICY);
+      BOOST_CHECK_EQUAL(Name(interest.getName().get(2).blockFromValue()), dataPrefix);
+      BOOST_CHECK_EQUAL(readString(interest.getName().get(3)), policy);
 
-                                   BOOST_CHECK(security::verifySignature(interest, cert));
+      BOOST_CHECK(security::verifySignature(interest, cert));
 
-                                   lp::Nack nack(interest);
-                                   nack.setReason(lp::NackReason::NO_ROUTE);
-                                   c2.put(nack);
-                                 });
+      lp::Nack nack(interest);
+      nack.setReason(lp::NackReason::NO_ROUTE);
+      c2.put(nack);
+    }
+  );
 
   advanceClocks(time::milliseconds(1), 100);
 
   getItem = false;
   dataowner.commandProducerPolicy(producerPrefix, dataPrefix, policy,
-                                  [] (auto&&) {
-                                    BOOST_CHECK(false);
-                                  },
-                                  [&] (const std::string& s) {
-                                    BOOST_CHECK_EQUAL(s, "nack");
-                                    getItem = true;
-                                  });
+    [] (auto&&) {
+      BOOST_CHECK(false);
+    },
+    [&] (const std::string& s) {
+      BOOST_CHECK_EQUAL(s, "nack");
+      getItem = true;
+    }
+  );
 
   advanceClocks(time::milliseconds(1), 20);
   BOOST_CHECK(getItem);
@@ -215,33 +223,35 @@ BOOST_AUTO_TEST_CASE(KpSetPolicy)
   advanceClocks(time::milliseconds(1), 10);
 
   auto f1 = c2.setInterestFilter(Name("/producer1"),
-                       [&] (auto&&, const auto& interest) {
-                         BOOST_CHECK_EQUAL(interest.getName().getSubName(0, 1), producerPrefix);
-                         BOOST_CHECK_EQUAL(interest.getName().get(1).toUri(), SET_POLICY);
-                         BOOST_CHECK_EQUAL(Name(interest.getName().get(2).blockFromValue()), dataPrefix);
-                         BOOST_CHECK_EQUAL(interest.getName().get(3), attrComp);
+    [&] (auto&&, const auto& interest) {
+      BOOST_CHECK_EQUAL(interest.getName().getSubName(0, 1), producerPrefix);
+      BOOST_CHECK_EQUAL(interest.getName().get(1).toUri(), SET_POLICY);
+      BOOST_CHECK_EQUAL(Name(interest.getName().get(2).blockFromValue()), dataPrefix);
+      BOOST_CHECK_EQUAL(interest.getName().get(3), attrComp);
 
-                         BOOST_CHECK(security::verifySignature(interest, cert));
+      BOOST_CHECK(security::verifySignature(interest, cert));
 
-                         Data reply;
-                         reply.setName(interest.getName());
-                         reply.setContent(makeStringBlock(tlv::Content, "success"));
-                         reply.setFreshnessPeriod(time::seconds(1));
-                         m_keyChain.sign(reply, signingByCertificate(cert));
-                         c2.put(reply);
-                       });
+      Data reply;
+      reply.setName(interest.getName());
+      reply.setContent(makeStringBlock(tlv::Content, "success"));
+      reply.setFreshnessPeriod(time::seconds(1));
+      m_keyChain.sign(reply, signingByCertificate(cert));
+      c2.put(reply);
+    }
+  );
 
   advanceClocks(time::milliseconds(1), 100);
 
   bool getItem = false;
   dataowner.commandProducerPolicy(producerPrefix, dataPrefix, attributes,
-                                  [&] (const Data& data) {
-                                    BOOST_CHECK(interestName.isPrefixOf(data.getName()));
-                                    getItem = true;
-                                  },
-                                  [] (auto&&) {
-                                    BOOST_CHECK(false);
-                                  });
+    [&] (const Data& data) {
+      BOOST_CHECK(interestName.isPrefixOf(data.getName()));
+      getItem = true;
+    },
+    [] (auto&&) {
+      BOOST_CHECK(false);
+    }
+  );
 
   advanceClocks(time::milliseconds(1), 10);
   BOOST_CHECK(getItem);
@@ -249,33 +259,35 @@ BOOST_AUTO_TEST_CASE(KpSetPolicy)
 
   // bad reply check
   auto f2 = c2.setInterestFilter(Name("/producer1"),
-                       [&] (auto&&, const auto& interest) {
-                         BOOST_CHECK_EQUAL(interest.getName().getSubName(0, 1), producerPrefix);
-                         BOOST_CHECK_EQUAL(interest.getName().get(1).toUri(), SET_POLICY);
-                         BOOST_CHECK_EQUAL(Name(interest.getName().get(2).blockFromValue()), dataPrefix);
-                         BOOST_CHECK_EQUAL(interest.getName().get(3), attrComp);
+    [&] (auto&&, const auto& interest) {
+      BOOST_CHECK_EQUAL(interest.getName().getSubName(0, 1), producerPrefix);
+      BOOST_CHECK_EQUAL(interest.getName().get(1).toUri(), SET_POLICY);
+      BOOST_CHECK_EQUAL(Name(interest.getName().get(2).blockFromValue()), dataPrefix);
+      BOOST_CHECK_EQUAL(interest.getName().get(3), attrComp);
 
-                         BOOST_CHECK(security::verifySignature(interest, cert));
+      BOOST_CHECK(security::verifySignature(interest, cert));
 
-                         Data reply;
-                         reply.setName(interest.getName());
-                         reply.setContent(makeStringBlock(tlv::Content, "failure"));
-                         reply.setFreshnessPeriod(time::seconds(1));
-                         m_keyChain.sign(reply, signingByCertificate(cert));
-                         c2.put(reply);
-                       });
+      Data reply;
+      reply.setName(interest.getName());
+      reply.setContent(makeStringBlock(tlv::Content, "failure"));
+      reply.setFreshnessPeriod(time::seconds(1));
+      m_keyChain.sign(reply, signingByCertificate(cert));
+      c2.put(reply);
+    }
+  );
 
   advanceClocks(time::milliseconds(1), 100);
 
   getItem = false;
   dataowner.commandProducerPolicy(producerPrefix, dataPrefix, attributes,
-                                  [] (auto&&) {
-                                    BOOST_CHECK(false);
-                                  },
-                                  [&] (const std::string& s) {
-                                    BOOST_CHECK_EQUAL(s, "register failed");
-                                    getItem = true;
-                                  });
+    [] (auto&&) {
+      BOOST_CHECK(false);
+    },
+    [&] (const std::string& s) {
+      BOOST_CHECK_EQUAL(s, "register failed");
+      getItem = true;
+    }
+  );
 
   advanceClocks(time::milliseconds(1), 10);
   BOOST_CHECK(getItem);
@@ -283,26 +295,28 @@ BOOST_AUTO_TEST_CASE(KpSetPolicy)
 
   // timeout check
   auto f3 = c2.setInterestFilter(Name("/producer1"),
-                                 [&] (auto&&, const auto& interest) {
-                                   BOOST_CHECK_EQUAL(interest.getName().getSubName(0, 1), producerPrefix);
-                                   BOOST_CHECK_EQUAL(interest.getName().get(1).toUri(), SET_POLICY);
-                                   BOOST_CHECK_EQUAL(Name(interest.getName().get(2).blockFromValue()), dataPrefix);
-                                   BOOST_CHECK_EQUAL(interest.getName().get(3), attrComp);
+    [&] (auto&&, const auto& interest) {
+      BOOST_CHECK_EQUAL(interest.getName().getSubName(0, 1), producerPrefix);
+      BOOST_CHECK_EQUAL(interest.getName().get(1).toUri(), SET_POLICY);
+      BOOST_CHECK_EQUAL(Name(interest.getName().get(2).blockFromValue()), dataPrefix);
+      BOOST_CHECK_EQUAL(interest.getName().get(3), attrComp);
 
-                                   BOOST_CHECK(security::verifySignature(interest, cert));
-                                 });
+      BOOST_CHECK(security::verifySignature(interest, cert));
+    }
+  );
 
   advanceClocks(time::milliseconds(1), 100);
 
   getItem = false;
   dataowner.commandProducerPolicy(producerPrefix, dataPrefix, attributes,
-                                  [] (auto&&) {
-                                    BOOST_CHECK(false);
-                                  },
-                                  [&] (const std::string& s) {
-                                    BOOST_CHECK_EQUAL(s, "time out");
-                                    getItem = true;
-                                  });
+    [] (auto&&) {
+      BOOST_CHECK(false);
+    },
+    [&] (const std::string& s) {
+      BOOST_CHECK_EQUAL(s, "time out");
+      getItem = true;
+    }
+  );
 
   advanceClocks(time::milliseconds(100), 20);
   BOOST_CHECK(getItem);
@@ -310,30 +324,32 @@ BOOST_AUTO_TEST_CASE(KpSetPolicy)
 
   // nack check
   auto f4 = c2.setInterestFilter(Name("/producer1"),
-                                 [&] (auto&&, const auto& interest) {
-                                   BOOST_CHECK_EQUAL(interest.getName().getSubName(0, 1), producerPrefix);
-                                   BOOST_CHECK_EQUAL(interest.getName().get(1).toUri(), SET_POLICY);
-                                   BOOST_CHECK_EQUAL(Name(interest.getName().get(2).blockFromValue()), dataPrefix);
-                                   BOOST_CHECK_EQUAL(interest.getName().get(3), attrComp);
+    [&] (auto&&, const auto& interest) {
+      BOOST_CHECK_EQUAL(interest.getName().getSubName(0, 1), producerPrefix);
+      BOOST_CHECK_EQUAL(interest.getName().get(1).toUri(), SET_POLICY);
+      BOOST_CHECK_EQUAL(Name(interest.getName().get(2).blockFromValue()), dataPrefix);
+      BOOST_CHECK_EQUAL(interest.getName().get(3), attrComp);
 
-                                   BOOST_CHECK(security::verifySignature(interest, cert));
+      BOOST_CHECK(security::verifySignature(interest, cert));
 
-                                   lp::Nack nack(interest);
-                                   nack.setReason(lp::NackReason::NO_ROUTE);
-                                   c2.put(nack);
-                                 });
+      lp::Nack nack(interest);
+      nack.setReason(lp::NackReason::NO_ROUTE);
+      c2.put(nack);
+    }
+  );
 
   advanceClocks(time::milliseconds(1), 100);
 
   getItem = false;
   dataowner.commandProducerPolicy(producerPrefix, dataPrefix, attributes,
-                                  [] (auto&&) {
-                                    BOOST_CHECK(false);
-                                  },
-                                  [&] (const std::string& s) {
-                                    BOOST_CHECK_EQUAL(s, "nack");
-                                    getItem = true;
-                                  });
+    [] (auto&&) {
+      BOOST_CHECK(false);
+    },
+    [&] (const std::string& s) {
+      BOOST_CHECK_EQUAL(s, "nack");
+      getItem = true;
+    }
+  );
 
   advanceClocks(time::milliseconds(1), 20);
   BOOST_CHECK(getItem);

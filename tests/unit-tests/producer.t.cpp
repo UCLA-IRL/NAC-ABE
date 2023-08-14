@@ -113,12 +113,13 @@ BOOST_AUTO_TEST_CASE(OnPolicyInterest)
   NDN_LOG_DEBUG("Before receive, interest name:" << setPolicyInterest.getName());
   //dynamic_cast<util::DummyClientFace*>(&c1)->receive(setPolicyInterest);
   c2.expressInterest(setPolicyInterest,
-      [&](const Interest&, const Data& response) {
-        BOOST_CHECK(security::verifySignature(response, producerCert));
-        BOOST_CHECK(readString(response.getContent()) == "success");
-      },
-      [](const Interest&, const lp::Nack&) {},
-      [](const Interest&) {});
+    [&](const Interest&, const Data& response) {
+      BOOST_CHECK(security::verifySignature(response, producerCert));
+      BOOST_CHECK(readString(response.getContent()) == "success");
+    },
+    [](const Interest&, const lp::Nack&) {},
+    [](const Interest&) {}
+  );
 
   NDN_LOG_DEBUG("Set policy Interest:" << setPolicyInterest.getName());
   // /producer/SET_POLICY/dataPrefix/policy
@@ -134,12 +135,13 @@ BOOST_AUTO_TEST_CASE(OnPolicyInterest)
   advanceClocks(time::milliseconds(20), 60);
 
   c2.expressInterest(setPolicyInterest,
-      [&](const Interest&, const Data& response) {
-        BOOST_CHECK(security::verifySignature(response, producerCert));
-        BOOST_CHECK_EQUAL(readString(response.getContent()), "success");
-      },
-      [](const Interest&, const lp::Nack&) {},
-      [](const Interest&) {});
+    [&](const Interest&, const Data& response) {
+      BOOST_CHECK(security::verifySignature(response, producerCert));
+      BOOST_CHECK_EQUAL(readString(response.getContent()), "success");
+    },
+    [](const Interest&, const lp::Nack&) {},
+    [](const Interest&) {}
+  );
 
   advanceClocks(time::milliseconds(20), 60);
 
@@ -172,12 +174,13 @@ BOOST_AUTO_TEST_CASE(OnKpPolicyInterest)
   NDN_LOG_DEBUG("Before receive, interest name:" << setPolicyInterest.getName());
   //dynamic_cast<util::DummyClientFace*>(&c1)->receive(setPolicyInterest);
   c2.expressInterest(setPolicyInterest,
-      [&](const Interest&, const Data& response) {
-        BOOST_CHECK(security::verifySignature(response, producerCert));
-        BOOST_CHECK(readString(response.getContent()) == "success");
-      },
-      [](const Interest&, const lp::Nack&) {},
-      [](const Interest&) {});
+    [&](const Interest&, const Data& response) {
+      BOOST_CHECK(security::verifySignature(response, producerCert));
+      BOOST_CHECK(readString(response.getContent()) == "success");
+    },
+    [](const Interest&, const lp::Nack&) {},
+    [](const Interest&) {}
+  );
 
   NDN_LOG_DEBUG("set policy Interest:" << setPolicyInterest.getName());
   // /producer/SET_POLICY/dataPrefix/policy
@@ -194,12 +197,13 @@ BOOST_AUTO_TEST_CASE(OnKpPolicyInterest)
   advanceClocks(time::milliseconds(20), 60);
 
   c2.expressInterest(setPolicyInterest,
-      [&](const Interest&, const Data& response) {
-        BOOST_CHECK(security::verifySignature(response, producerCert));
-        BOOST_CHECK_EQUAL(readString(response.getContent()), "success");
-      },
-      [](const Interest&, const lp::Nack&) {},
-      [](const Interest&) {});
+    [&](const Interest&, const Data& response) {
+      BOOST_CHECK(security::verifySignature(response, producerCert));
+      BOOST_CHECK_EQUAL(readString(response.getContent()), "success");
+    },
+    [](const Interest&, const lp::Nack&) {},
+    [](const Interest&) {}
+  );
 
   advanceClocks(time::milliseconds(20), 60);
 
@@ -229,10 +233,10 @@ BOOST_AUTO_TEST_CASE(EncryptContent)
                                        "attr6", "attr7", "attr8", "attr9", "attr10"};
   algo::PrivateKey prvKey = algo::ABESupport::getInstance().cpPrvKeyGen(pubParams, masterKey, attrList);
 
-  std::shared_ptr<Data> data, ckData;
+  SPtrVector<ndn::Data> data, ckData;
   std::tie(data, ckData) = producer.produce(Name("/dataset1/example/data1"), "attr1 or attr2", PLAIN_TEXT, signingInfo);
-  BOOST_CHECK(data != nullptr);
-  BOOST_CHECK(ckData != nullptr);
+  BOOST_CHECK(data.size() > 0);
+  BOOST_CHECK(ckData.size() > 0);
 }
 
 BOOST_AUTO_TEST_CASE(KpEncryptContent)
@@ -255,10 +259,10 @@ BOOST_AUTO_TEST_CASE(KpEncryptContent)
                                        "attr6", "attr7", "attr8", "attr9", "attr10"};
   algo::PrivateKey prvKey = algo::ABESupport::getInstance().kpPrvKeyGen(pubParams, masterKey, "attr1 or attr2");
 
-  std::shared_ptr<Data> data, ckData;
+  SPtrVector<ndn::Data> data, ckData;
   std::tie(data, ckData) = producer.produce(Name("/dataset1/example/data1"), attrList, PLAIN_TEXT, signingInfo);
-  BOOST_CHECK(data != nullptr);
-  BOOST_CHECK(ckData != nullptr);
+  BOOST_CHECK(data.size() > 0);
+  BOOST_CHECK(ckData.size() > 0);
 }
 
 BOOST_AUTO_TEST_CASE(AccessPolicy)
@@ -281,10 +285,10 @@ BOOST_AUTO_TEST_CASE(AccessPolicy)
                                        "attr6", "attr7", "attr8", "attr9", "attr10"};
   algo::PrivateKey prvKey = algo::ABESupport::getInstance().cpPrvKeyGen(pubParams, masterKey, attrList);
 
-  std::shared_ptr<Data> data, ckData;
+  SPtrVector<ndn::Data> data, ckData;
   std::tie(data, ckData) = producer.produce(Name("/dataset1/example/data1"), "attr >= 629927339", PLAIN_TEXT, signingInfo);
-  BOOST_CHECK(data != nullptr);
-  BOOST_CHECK(ckData != nullptr);
+  BOOST_CHECK(data.size() > 0);
+  BOOST_CHECK(ckData.size() > 0);
 }
 
 BOOST_AUTO_TEST_SUITE_END()

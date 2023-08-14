@@ -73,11 +73,12 @@ public:
    * @param content The payload
    * @return The encrypted data and the encrypted CK data
    */
-  virtual std::tuple<std::shared_ptr<Data>, std::shared_ptr<Data>>
+  virtual std::tuple<SPtrVector<Data>, SPtrVector<Data>>
   produce(const Name& dataNameSuffix, const Policy& accessPolicy, 
           span<const uint8_t> content, const security::SigningInfo& info,
           std::shared_ptr<Data> ckTemplate = getDefaultCkTemplate(), 
-          shared_ptr<Data> dataTemplate = getDefaultEncryptedDataTemplate());
+          shared_ptr<Data> dataTemplate = getDefaultEncryptedDataTemplate(),
+          size_t maxSegmentSize = 1500);
 
   /**
    * @brief Produce CP-encrypted CK Data
@@ -87,9 +88,10 @@ public:
    * @param accessPolicy The encryption policy, e.g., (ucla or mit) and professor
    * @return The content key and the encrypted CK data
    */
-  std::pair<std::shared_ptr<algo::ContentKey>, std::shared_ptr<Data>>
+  std::pair<std::shared_ptr<algo::ContentKey>, SPtrVector<Data>>
   ckDataGen(const Policy& accessPolicy, const security::SigningInfo& info,
-            std::shared_ptr<Data> dataTemplate = getDefaultCkTemplate());
+            std::shared_ptr<Data> dataTemplate = getDefaultCkTemplate(),
+            size_t maxSegmentSize = 1500);
 
   /**
    * @brief Produce KP-encrypted Data and corresponding encrypted CK Data
@@ -102,11 +104,12 @@ public:
    * @param content The payload
    * @return The encrypted data and the encrypted CK data
    */
-  virtual std::tuple<std::shared_ptr<Data>, std::shared_ptr<Data>>
+  virtual std::tuple<SPtrVector<Data>, SPtrVector<Data>>
   produce(const Name& dataNameSuffix, const std::vector<std::string>& attributes,
           span<const uint8_t> content, const security::SigningInfo& info,
           std::shared_ptr<Data> ckTemplate = getDefaultCkTemplate(),
-          shared_ptr<Data> dataTemplate = getDefaultEncryptedDataTemplate());
+          shared_ptr<Data> dataTemplate = getDefaultEncryptedDataTemplate(),
+          size_t maxSegmentSize = 1500);
 
   /**
    * @brief Produce KP-encrypted CK Data
@@ -116,9 +119,10 @@ public:
    * @param attributes The encryption policy, e.g., (ucla or mit) and professor
    * @return The content key and the encrypted CK data
    */
-  std::pair<std::shared_ptr<algo::ContentKey>, std::shared_ptr<Data>>
+  std::pair<std::shared_ptr<algo::ContentKey>, SPtrVector<Data>>
   ckDataGen(const std::vector<std::string>& attributes, const security::SigningInfo& info,
-            std::shared_ptr<Data> dataTemplate = getDefaultCkTemplate());
+            std::shared_ptr<Data> dataTemplate = getDefaultCkTemplate(),
+            size_t maxSegmentSize = 1500);
 
   /**
    * @brief Produce encrypted Data and corresponding encrypted CK Data
@@ -130,11 +134,12 @@ public:
    * @param info  The signing parameters
    * @return The encrypted data and the encrypted CK data
    */
-  std::tuple<std::shared_ptr<Data>, std::shared_ptr<Data>>
+  std::tuple<SPtrVector<Data>, SPtrVector<Data>>
   produce(const Name& dataNameSuffix,
           span<const uint8_t> content, const security::SigningInfo& info,
           std::shared_ptr<Data> ckTemplate = getDefaultCkTemplate(),
-          shared_ptr<Data> dataTemplate = getDefaultEncryptedDataTemplate());
+          shared_ptr<Data> dataTemplate = getDefaultEncryptedDataTemplate(),
+          size_t maxSegmentSize = 1500);
 
   /**
    * @brief Produce encrypted Data and from CK Data
@@ -146,11 +151,12 @@ public:
    * @param info  The signing parameters
    * @return The encrypted data and the encrypted CK data
    */
-  std::shared_ptr<Data>
+  SPtrVector<Data>
   produce(std::shared_ptr<algo::ContentKey> key,
           const Name& keyName, const Name& dataNameSuffix,
           span<const uint8_t> content, const security::SigningInfo& info,
-          shared_ptr<Data> dataTemplate = getDefaultEncryptedDataTemplate());
+          shared_ptr<Data> dataTemplate = getDefaultEncryptedDataTemplate(),
+          size_t maxSegmentSize = 1500);
 
 private:
   void
@@ -162,10 +168,11 @@ private:
   void
   addNewAttributes(const Name& dataPrefix, const std::vector<std::string>& attributes);
 
-  shared_ptr<Data>
+  SPtrVector<Data>
   getCkEncryptedData(const Name& dataNameSuffix, const algo::CipherText& cipherText,
                      const Name& ckName, const security::SigningInfo& info,
-                     shared_ptr<Data> dataTemplate = getDefaultEncryptedDataTemplate());
+                     shared_ptr<Data> dataTemplate = getDefaultEncryptedDataTemplate(),
+                     size_t maxSegmentSize = 1500);
 
 PUBLIC_WITH_TESTS_ELSE_PRIVATE:
   std::string

@@ -63,7 +63,8 @@ BOOST_AUTO_TEST_CASE(Constructor)
 {
   bool commandReceived = false;
   c2.setInterestFilter(Name(attrAuthorityPrefix).append("PUBPARAMS"),
-                       [&] (auto&&...) { commandReceived = true; });
+    [&] (auto&&...) { commandReceived = true; }
+  );
 
   advanceClocks(time::milliseconds(20), 60);
 

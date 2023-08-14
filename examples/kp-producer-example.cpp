@@ -47,36 +47,45 @@ public:
   run()
   {
     const std::string plainText = "Hello world";
-    const std::vector<std::string> attributes = {"attribute"};
-
-    std::shared_ptr<ndn::Data> contentData, ckData;
+    const std::vector<std::string> attributes = {"attribute"}; 
+    ndn::nacabe::SPtrVector<ndn::Data> contentData, ckData;
     std::tie(contentData, ckData) = m_producer.produce("/randomData", attributes,
-                                                       {reinterpret_cast<const uint8_t*>(plainText.data()),
-                                                        plainText.size()}, m_signingInfo);
+      {reinterpret_cast<const uint8_t*>(plainText.data()), plainText.size()},
+      m_signingInfo
+    );
 
-    std::cout << "Content data name: " << contentData->getName() << std::endl;
-
+    std::cout << "Content data object name: " << contentData.at(0)->getName().getPrefix(-1) << std::endl;
+    auto putSegments = [=] (auto& interest, auto& segments) {
+      for (auto seg : segments) {
+        bool exactSeg = interest.getName() == seg->getName();
+        bool probeSeg = (interest.getName() == seg->getName().getPrefix(-1)) &&
+                         interest.getCanBePrefix();
+        if (exactSeg || probeSeg) {
+          std::cout << "<< D: " << seg->getName() << std::endl;
+          m_face.put(*seg);
+          std::cout << seg->getContent().size() << " bytes" << std::endl;
+          break;
+        }
+      }
+    };
     m_face.setInterestFilter(m_producerCert.getIdentity(),
-                             [=] (const auto&, const auto& interest) {
-                               std::cout << ">> I: " << interest << std::endl;
-                               if (interest.getName().isPrefixOf(m_cert.getName())) {
-                                 m_face.put(m_cert);
-                               }
-                               if (interest.getName().isPrefixOf(contentData->getName())) {
-                                 std::cout << "<< D: " << contentData->getName() << std::endl;
-                                 m_face.put(*contentData);
-                               }
-                               if (interest.getName().isPrefixOf(ckData->getName())) {
-                                 std::cout << "<< D: " << ckData->getName() << std::endl;
-                                 m_face.put(*ckData);
-                               }
-                             },
-                             [this] (const auto& prefix, const std::string& reason) {
-                               std::cerr << "ERROR: Failed to register prefix '" << prefix
-                                         << "' with the local forwarder (" << reason << ")" << std::endl;
-                               m_face.shutdown();
-                             });
-
+      [=] (const auto&, const auto& interest) {
+        std::cout << ">> I: " << interest << std::endl;
+        // for own certificate
+        if (interest.getName().isPrefixOf(m_cert.getName())) {
+          m_face.put(m_cert);
+        }
+        // for content data segments
+        putSegments(interest, contentData);
+        // for CK data segments
+        putSegments(interest, ckData);
+      },
+      [this] (const auto& prefix, const std::string& reason) {
+        std::cerr << "ERROR: Failed to register prefix '" << prefix
+                  << "' with the local forwarder (" << reason << ")" << std::endl;
+        m_face.shutdown();
+      }
+    );
     m_face.processEvents();
   }
 

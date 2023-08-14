@@ -108,6 +108,8 @@ static const std::string ABE_TYPE_KP_ABE = "KP-ABE";
  */
 using Policy = std::string;
 
+template<class T>
+using SPtrVector = std::vector<std::shared_ptr<T>>;
 } // namespace nacabe
 } // namespace ndn
 

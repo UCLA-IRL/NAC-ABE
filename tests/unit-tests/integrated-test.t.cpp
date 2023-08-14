@@ -184,23 +184,27 @@ BOOST_AUTO_TEST_CASE(Cp)
   advanceClocks(time::milliseconds(20), 60);
   BOOST_CHECK(isPolicySet);
 
-  std::shared_ptr<Data> contentData, ckData;
+  SPtrVector<ndn::Data> contentData, ckData;
   auto policyFound = producer.findMatchedPolicy(dataName);
 
   std::tie(contentData, ckData) = producer.produce(dataName, policyFound, PLAIN_TEXT, signingInfo);
-
-  BOOST_CHECK(contentData != nullptr);
-  BOOST_CHECK(ckData != nullptr);
-  NDN_LOG_DEBUG("Content data name: " << contentData->getName());
-
+  BOOST_CHECK(contentData.size() > 0);
+  BOOST_CHECK(ckData.size() > 0);
+  NDN_LOG_DEBUG("Content data name: " << contentData.at(0)->getName());
   producerFace.setInterestFilter(producerCert.getIdentity(),
     [&] (const ndn::InterestFilter&, const ndn::Interest& interest) {
-      NDN_LOG_INFO("Consumer request for"<<interest.toUri());
-      if (interest.getName().isPrefixOf(contentData->getName())) {
-        producerFace.put(*contentData);
+      NDN_LOG_INFO("Consumer request for " << interest.toUri());
+      for (auto seg : contentData) {
+        bool exactSeg = interest.getName() == seg->getName();
+        bool probeSeg = (interest.getName() == seg->getName().getPrefix(-1)) &&
+                         interest.getCanBePrefix();
+        if (exactSeg || probeSeg) {
+          producerFace.put(*seg);
+          break;
+        }
       }
-      if (interest.getName().isPrefixOf(ckData->getName())) {
-        producerFace.put(*ckData);
+      if (interest.getName().isPrefixOf(ckData.at(0)->getName())) {
+        producerFace.put(*ckData.at(0));
       }
     }
   );
@@ -318,52 +322,53 @@ BOOST_AUTO_TEST_CASE(Kp)
 
   bool isPolicySet = false;
   dataOwner.commandProducerPolicy(producerCert.getIdentity(), dataName, attr,
-                                  [&] (const Data& response) {
-                                    NDN_LOG_DEBUG("on policy set data callback");
-                                    isPolicySet = true;
-                                    BOOST_CHECK_EQUAL(readString(response.getContent()), "success");
-                                    auto attrFound = producer.findMatchedAttributes(dataName);
-                                    BOOST_CHECK_EQUAL_COLLECTIONS(attrFound.begin(), attrFound.end(), attr.begin(), attr.end());
-                                  },
-                                  [] (const std::string&) {
-                                    BOOST_CHECK(false);
-                                  });
+    [&] (const Data& response) {
+      NDN_LOG_DEBUG("on policy set data callback");
+      isPolicySet = true;
+      BOOST_CHECK_EQUAL(readString(response.getContent()), "success");
+      auto attrFound = producer.findMatchedAttributes(dataName);
+      BOOST_CHECK_EQUAL_COLLECTIONS(attrFound.begin(), attrFound.end(), attr.begin(), attr.end());
+    },
+    [] (const std::string&) {
+      BOOST_CHECK(false);
+    }
+  );
 
   NDN_LOG_DEBUG("Before policy set");
   advanceClocks(time::milliseconds(20), 60);
   BOOST_CHECK(isPolicySet);
 
-  std::shared_ptr<Data> contentData, ckData;
+  SPtrVector<ndn::Data> contentData, ckData;
   auto attributeFound = producer.findMatchedAttributes(dataName);
   std::tie(contentData, ckData) = producer.produce(dataName, attributeFound, PLAIN_TEXT, signingInfo);
-  BOOST_CHECK(contentData != nullptr);
-  BOOST_CHECK(ckData != nullptr);
-  NDN_LOG_DEBUG("Content data name: " << contentData->getName());
+  BOOST_CHECK(contentData.size() > 0);
+  BOOST_CHECK(ckData.size() > 0);
+  NDN_LOG_DEBUG("Content data name: " << contentData.at(0)->getName());
 
   producerFace.setInterestFilter(producerCert.getIdentity(),
-                                 [&] (const ndn::InterestFilter&, const ndn::Interest& interest) {
-                                   NDN_LOG_INFO("consumer request for"<<interest.toUri());
-                                   if (interest.getName().isPrefixOf(contentData->getName())) {
-                                     producerFace.put(*contentData);
-                                   }
-                                   if (interest.getName().isPrefixOf(ckData->getName())) {
-                                     producerFace.put(*ckData);
-                                   }
-                                 }
+    [&] (const ndn::InterestFilter&, const ndn::Interest& interest) {
+      NDN_LOG_INFO("consumer request for" << interest.toUri());
+      if (interest.getName().isPrefixOf(contentData.at(0)->getName())) {
+        producerFace.put(*contentData.at(0));
+      }
+      if (interest.getName().isPrefixOf(ckData.at(0)->getName())) {
+        producerFace.put(*ckData.at(0));
+      }
+    }
   );
 
   bool isConsumeCbCalled = false;
   consumer1.obtainDecryptionKey();
   advanceClocks(time::milliseconds(20), 60);
   consumer1.consume(producerCert.getIdentity().append(dataName),
-                    [&] (const Buffer& result) {
-                      isConsumeCbCalled = true;
-                      BOOST_CHECK_EQUAL_COLLECTIONS(result.begin(), result.end(),
-                                                    PLAIN_TEXT, PLAIN_TEXT + sizeof(PLAIN_TEXT));
-                    },
-                    [] (const std::string&) {
-                      BOOST_CHECK(false);
-                    }
+    [&] (const Buffer& result) {
+      isConsumeCbCalled = true;
+      BOOST_CHECK_EQUAL_COLLECTIONS(result.begin(), result.end(),
+                                    PLAIN_TEXT, PLAIN_TEXT + sizeof(PLAIN_TEXT));
+    },
+    [] (const std::string&) {
+      BOOST_CHECK(false);
+    }
   );
   advanceClocks(time::milliseconds(20), 60);
   consumerFace1.receive(producerCert);
@@ -380,12 +385,12 @@ BOOST_AUTO_TEST_CASE(Kp)
   consumer2.obtainDecryptionKey();
   advanceClocks(time::milliseconds(20), 60);
   consumer2.consume(producerCert.getIdentity().append(dataName),
-                    [] (const Buffer&) {
-                      BOOST_CHECK(false);
-                    },
-                    [&] (const std::string&) {
-                      isConsumeCbCalled = true;
-                    }
+    [] (const Buffer&) {
+      BOOST_CHECK(false);
+    },
+    [&] (const std::string&) {
+      isConsumeCbCalled = true;
+    }
   );
   advanceClocks(time::milliseconds(20), 60);
   consumerFace2.receive(producerCert);
@@ -462,55 +467,56 @@ BOOST_AUTO_TEST_CASE(KpCache)
 
   bool isPolicySet = false;
   dataOwner.commandProducerPolicy(producerCert.getIdentity(), dataName, attr,
-                                  [&] (const Data& response) {
-                                    NDN_LOG_DEBUG("on policy set data callback");
-                                    isPolicySet = true;
-                                    BOOST_CHECK_EQUAL(readString(response.getContent()), "success");
-                                    auto attrFound = producer.findMatchedAttributes(dataName);
-                                    BOOST_CHECK_EQUAL_COLLECTIONS(attrFound.begin(), attrFound.end(), attr.begin(), attr.end());
-                                  },
-                                  [] (const std::string&) {
-                                    BOOST_CHECK(false);
-                                  });
+    [&] (const Data& response) {
+      NDN_LOG_DEBUG("on policy set data callback");
+      isPolicySet = true;
+      BOOST_CHECK_EQUAL(readString(response.getContent()), "success");
+      auto attrFound = producer.findMatchedAttributes(dataName);
+      BOOST_CHECK_EQUAL_COLLECTIONS(attrFound.begin(), attrFound.end(), attr.begin(), attr.end());
+    },
+    [] (const std::string&) {
+      BOOST_CHECK(false);
+    }
+  );
 
   NDN_LOG_DEBUG("Before policy set");
   advanceClocks(time::milliseconds(20), 60);
   BOOST_CHECK(isPolicySet);
-  std::shared_ptr<Data> contentData, ckData;
+  SPtrVector<ndn::Data>  contentData, ckData;
   auto attributeFound = producer.findMatchedAttributes(dataName);
   BOOST_CHECK(producer.m_kpKeyCache.size() == 0);
   std::tie(contentData, ckData) = producer.produce(dataName, attributeFound, PLAIN_TEXT, signingInfo);
   BOOST_CHECK(producer.m_kpKeyCache.size() == 1);
   std::tie(contentData, ckData) = producer.produce(dataName, attributeFound, PLAIN_TEXT, signingInfo);
   BOOST_CHECK(producer.m_kpKeyCache.size() == 1);
-  BOOST_CHECK(contentData != nullptr);
-  BOOST_CHECK(ckData != nullptr);
-  NDN_LOG_DEBUG("Content data name: " << contentData->getName());
+  BOOST_CHECK(contentData.size() > 0);
+  BOOST_CHECK(ckData.size() > 0);
+  NDN_LOG_DEBUG("Content data name: " << contentData.at(0)->getName());
 
   producerFace.setInterestFilter(producerCert.getIdentity(),
-                                 [&] (const ndn::InterestFilter&, const ndn::Interest& interest) {
-                                   NDN_LOG_INFO("consumer request for"<<interest.toUri());
-                                   if (interest.getName().isPrefixOf(contentData->getName())) {
-                                     producerFace.put(*contentData);
-                                   }
-                                   if (interest.getName().isPrefixOf(ckData->getName())) {
-                                     producerFace.put(*ckData);
-                                   }
-                                 }
+    [&] (const ndn::InterestFilter&, const ndn::Interest& interest) {
+      NDN_LOG_INFO("consumer request for" << interest.toUri());
+      if (interest.getName().isPrefixOf(contentData.at(0)->getName())) {
+        producerFace.put(*contentData.at(0));
+      }
+      if (interest.getName().isPrefixOf(ckData.at(0)->getName())) {
+        producerFace.put(*ckData.at(0));
+      }
+    }
   );
 
   bool isConsumeCbCalled = false;
   consumer1.obtainDecryptionKey();
   advanceClocks(time::milliseconds(20), 60);
   consumer1.consume(producerCert.getIdentity().append(dataName),
-                    [&] (const Buffer& result) {
-                      isConsumeCbCalled = true;
-                      BOOST_CHECK_EQUAL_COLLECTIONS(result.begin(), result.end(),
-                                                    PLAIN_TEXT, PLAIN_TEXT + sizeof(PLAIN_TEXT));
-                    },
-                    [] (const std::string&) {
-                      BOOST_CHECK(false);
-                    }
+    [&] (const Buffer& result) {
+      isConsumeCbCalled = true;
+      BOOST_CHECK_EQUAL_COLLECTIONS(result.begin(), result.end(),
+                                    PLAIN_TEXT, PLAIN_TEXT + sizeof(PLAIN_TEXT));
+    },
+    [] (const std::string&) {
+      BOOST_CHECK(false);
+    }
   );
   advanceClocks(time::milliseconds(20), 60);
   consumerFace1.receive(producerCert);
@@ -527,12 +533,12 @@ BOOST_AUTO_TEST_CASE(KpCache)
   consumer2.obtainDecryptionKey();
   advanceClocks(time::milliseconds(20), 60);
   consumer2.consume(producerCert.getIdentity().append(dataName),
-                    [] (const Buffer&) {
-                      BOOST_CHECK(false);
-                    },
-                    [&] (const std::string&) {
-                      isConsumeCbCalled = true;
-                    }
+    [] (const Buffer&) {
+      BOOST_CHECK(false);
+    },
+    [&] (const std::string&) {
+      isConsumeCbCalled = true;
+    }
   );
   advanceClocks(time::milliseconds(20), 60);
   consumerFace2.receive(producerCert);

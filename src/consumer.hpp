@@ -88,12 +88,15 @@ public:
 
 private:
   void
-  decryptContent(const Data& data,
+  decryptContent(const Name& dataObjName,
+                 const Block& content,
                  const ConsumptionCallback& successCallBack,
                  const ErrorCallback& errorCallback);
 
   void
-  onCkeyData(const Data& data, std::shared_ptr<algo::CipherText> cipherText,
+  onCkeyData(const Name& ckObjName,
+             const Block& content,
+             std::shared_ptr<algo::CipherText> cipherText,
              const ConsumptionCallback& successCallBack,
              const ErrorCallback& errorCallback);
 

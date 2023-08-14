@@ -64,8 +64,8 @@ Consumer::obtainDecryptionKey()
   interest.setCanBePrefix(true);
 
   auto fetcher = util::SegmentFetcher::start(m_face, interest, m_validator);
-  fetcher->afterSegmentValidated.connect([](Data data) {
-    NDN_LOG_DEBUG("Validated " << data.getName());
+  fetcher->afterSegmentValidated.connect([](Data seg) {
+    NDN_LOG_DEBUG("Validated " << seg.getName());
   });
   fetcher->onComplete.connect([this] (ConstBufferPtr contentBuffer) {
     NDN_LOG_DEBUG("SegmentFetcher completed with total fetched size of " << contentBuffer->size());
@@ -119,16 +119,34 @@ Consumer::consume(const Interest& dataInterest,
   std::string nackMessage = "Nack for " + dataInterest.getName().toUri() + " data fetch with reason ";
   std::string timeoutMessage = "Timeout for " + dataInterest.getName().toUri() + " data fetch";
 
-  auto dataCallback = [this, consumptionCb, errorCallback] (const Interest&, const Data& data) {
-    m_validator.validate(data,
-      [this, consumptionCb, errorCallback] (const Data& data) {
-        NDN_LOG_INFO("Encrypted data conforms to trust schema");
-        decryptContent(data, consumptionCb, errorCallback);
-      },
-      [] (auto&&, const ndn::security::ValidationError& error) {
-        NDN_THROW(std::runtime_error("Encrypted data cannot be authenticated: " + error.getInfo()));
-      }
-    );
+  auto dataCallback = [=] (const Interest&, const Data& data) {
+    Name dataName = data.getName();
+    // if segmentation
+    if (dataName.get(-1).isSegment()) {
+      auto fetcher = util::SegmentFetcher::start(m_face, dataInterest, m_validator);
+      fetcher->afterSegmentValidated.connect([](Data seg) {
+        NDN_LOG_DEBUG("Validated " << seg.getName());
+      });
+      fetcher->onComplete.connect([=] (ConstBufferPtr contentBuffer) {
+        NDN_LOG_DEBUG("SegmentFetcher completed with total fetched size of " << contentBuffer->size());
+        decryptContent(dataName.getPrefix(-1), Block(contentBuffer), consumptionCb, errorCallback);
+      });
+      fetcher->onError.connect([] (uint32_t errorCode, const std::string& errorMsg) {
+        NDN_LOG_ERROR("Error occurs in segment fetching: " << errorMsg);
+      });
+    }
+    // if no segmentation
+    else {
+      m_validator.validate(data,
+        [=] (const Data& data) {
+          NDN_LOG_INFO("Encrypted data conforms to trust schema");
+          decryptContent(data.getName(), data.getContent(), consumptionCb, errorCallback);
+        },
+        [] (auto&&, const ndn::security::ValidationError& error) {
+          NDN_THROW(std::runtime_error("Encrypted data cannot be authenticated: " + error.getInfo()));
+        }
+      );      
+    }
   };
 
   NDN_LOG_INFO(m_cert.getIdentity() << " Ask for data " << dataInterest.getName() );
@@ -140,22 +158,22 @@ Consumer::consume(const Interest& dataInterest,
 }
 
 void
-Consumer::decryptContent(const Data& data,
+Consumer::decryptContent(const Name& dataObjName,
+                         const Block& content,
                          const ConsumptionCallback& successCallBack,
                          const ErrorCallback& errorCallback)
 {
   // get encrypted content
-  NDN_LOG_INFO(m_cert.getIdentity() << " Get content data " << data.getName());
-  Block encryptedContent = data.getContent();
-  encryptedContent.parse();
-  auto encryptedContentTLV = encryptedContent.get(TLV_EncryptedContent);
+  NDN_LOG_INFO(m_cert.getIdentity() << " Get content data " << dataObjName);
+  content.parse();
+  auto encryptedContentTLV = content.get(TLV_EncryptedContent);
 
   NDN_LOG_INFO("Encrypted Content size is " << encryptedContentTLV.value_size());
   auto cipherText = std::make_shared<algo::CipherText>();
   cipherText->m_content = Buffer(encryptedContentTLV.value(), encryptedContentTLV.value_size());
-  cipherText->m_plainTextSize = readNonNegativeInteger(encryptedContent.get(TLV_PlainTextSize));
+  cipherText->m_plainTextSize = readNonNegativeInteger(content.get(TLV_PlainTextSize));
 
-  Name ckName(encryptedContent.get(tlv::Name));
+  Name ckName(content.get(tlv::Name));
   NDN_LOG_INFO("CK Name is " << ckName);
   Interest ckInterest(ckName);
   ckInterest.setCanBePrefix(true);
@@ -163,19 +181,38 @@ Consumer::decryptContent(const Data& data,
   std::string nackMessage = "Nack for " + ckName.toUri() + " content key fetch with reason ";
   std::string timeoutMessage = "Timeout for " + ckName.toUri() + " content key fetch";
 
-  auto dataCallback = [this, cipherText, successCallBack, errorCallback] (const Interest&, const Data& data) {
-    m_validator.validate(data,
-      [this, cipherText, successCallBack, errorCallback] (const Data& data) {
-        NDN_LOG_INFO("Content key conforms to trust schema");
-        onCkeyData(data, cipherText, successCallBack, errorCallback);
-      },
-      [this] (auto&&, const ndn::security::ValidationError& error) {
-        NDN_THROW(std::runtime_error("Fetched content key cannot be authenticated: " + error.getInfo()));
-      }
-    );
+  auto dataCallback = [=] (const Interest&, const Data& data) {
+    Name dataName = data.getName();
+    // if segmentation
+    if (dataName.get(-1).isSegment()) {
+      auto fetcher = util::SegmentFetcher::start(m_face, ckInterest, m_validator);
+      fetcher->afterSegmentValidated.connect([](Data seg) {
+        NDN_LOG_DEBUG("Validated " << seg.getName());
+      });
+      fetcher->onComplete.connect([=] (ConstBufferPtr contentBuffer) {
+        NDN_LOG_DEBUG("SegmentFetcher completed with total fetched size of " << contentBuffer->size());
+        onCkeyData(dataName.getPrefix(-1), Block(contentBuffer), cipherText, successCallBack, errorCallback);
+      });
+      fetcher->onError.connect([] (uint32_t errorCode, const std::string& errorMsg) {
+        NDN_LOG_ERROR("Error occurs in segment fetching: " << errorMsg);
+      });
+    }
+    // if no segmentation
+    else {
+      m_validator.validate(data,
+        [=] (const Data& data) {
+          NDN_LOG_INFO("Content key conforms to trust schema");
+          onCkeyData(data.getName(), data.getContent(), cipherText, successCallBack, errorCallback);
+        },
+        [] (auto&&, const ndn::security::ValidationError& error) {
+          NDN_THROW(std::runtime_error("Fetched content key cannot be authenticated: " + error.getInfo()));
+        }
+      );
+    }
   };
 
-  NDN_LOG_INFO(m_cert.getIdentity() << " Ask for data " << ckInterest.getName() );
+  // probe segmentation
+  NDN_LOG_INFO(m_cert.getIdentity() << " Ask for data " << ckInterest.getName());
   m_face.expressInterest(ckInterest,
                          dataCallback,
                          std::bind(&Consumer::handleNack, this, _1, _2, errorCallback, nackMessage),
@@ -184,15 +221,15 @@ Consumer::decryptContent(const Data& data,
 }
 
 void
-Consumer::onCkeyData(const Data& data, std::shared_ptr<algo::CipherText> cipherText,
-                         const ConsumptionCallback& successCallBack,
-                         const ErrorCallback& errorCallback)
+Consumer::onCkeyData(const Name& ckObjName, const Block& content,
+                     std::shared_ptr<algo::CipherText> cipherText,
+                     const ConsumptionCallback& successCallBack,
+                     const ErrorCallback& errorCallback)
 {
-  NDN_LOG_INFO(m_cert.getIdentity() << " Get CKEY data " << data.getName());
-  Block ckContent = data.getContent();
-  ckContent.parse();
+  NDN_LOG_INFO(m_cert.getIdentity() << " Get CKEY data " << ckObjName);
+  content.parse();
 
-  auto encryptedAESKeyTLV = ckContent.get(TLV_EncryptedAesKey);
+  auto encryptedAESKeyTLV = content.get(TLV_EncryptedAesKey);
   cipherText->m_contentKey = std::make_shared<algo::ContentKey>();
   cipherText->m_contentKey->m_encAesKey = Buffer(encryptedAESKeyTLV.value(), encryptedAESKeyTLV.value_size());
 
