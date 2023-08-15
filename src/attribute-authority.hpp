@@ -39,8 +39,8 @@ class AttributeAuthority : noncopyable
 {
 protected:
   AttributeAuthority(const security::Certificate& identityCert, Face& m_face,
-                     KeyChain& keyChain, const AbeType& abeType,
-                     size_t maxSegmentSize = 1500);
+                     security::Validator& validator, KeyChain& keyChain,
+                     const AbeType& abeType, size_t maxSegmentSize = 1500);
 
   virtual
   ~AttributeAuthority();
@@ -49,6 +49,9 @@ protected:
   getPrivateKey(Name identityName) = 0;
 
 private:
+  SPtrVector<Data>
+  generateDecryptionKeySegments(const Name& objName, const security::Certificate& cert);
+
   void
   onDecryptionKeyRequest(const Interest& interest);
 
@@ -59,6 +62,7 @@ protected:
   security::Certificate m_cert;
   Face& m_face;
   KeyChain& m_keyChain;
+  security::Validator& m_validator;
   TrustConfig m_trustConfig;
   ssize_t m_maxSegmentSize;
   std::map<Name, SPtrVector<ndn::Data>> m_segmentMap;
@@ -77,7 +81,8 @@ private:
 class CpAttributeAuthority: public AttributeAuthority
 {
 public:
-  CpAttributeAuthority(const security::Certificate& identityCert, Face& m_face, KeyChain& keyChain);
+  CpAttributeAuthority(const security::Certificate& identityCert, Face& m_face, 
+                       security::Validator& validator, KeyChain& keyChain);
 
   /**
    * @brief Add a new policy <decryptor name, decryptor attributes> into the state.
@@ -111,7 +116,9 @@ PUBLIC_WITH_TESTS_ELSE_PRIVATE:
 class KpAttributeAuthority: public AttributeAuthority
 {
 public:
-  KpAttributeAuthority(const security::Certificate& identityCert, Face& m_face, KeyChain& keyChain, size_t maxSegmentSize = 1500);
+  KpAttributeAuthority(const security::Certificate& identityCert, Face& m_face,
+                       security::Validator& validator, KeyChain& keyChain,
+                       size_t maxSegmentSize = 1500);
 
   /**
    * @brief Add a new policy <decryptor name, decryptor attributes> into the state.

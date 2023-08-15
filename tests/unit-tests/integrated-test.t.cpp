@@ -107,7 +107,9 @@ BOOST_AUTO_TEST_CASE(Cp)
 {
   // set up AA
   NDN_LOG_INFO("Create Attribute Authority. AA prefix: " << aaCert.getIdentity());
-  CpAttributeAuthority aa(aaCert, aaFace, m_keyChain);
+  security::ValidatorConfig validator(aaFace);
+  validator.load("trust-schema.conf");
+  CpAttributeAuthority aa(aaCert, aaFace, validator, m_keyChain);
   advanceClocks(time::milliseconds(20), 60);
 
   // define attr list for consumer rights
@@ -158,7 +160,7 @@ BOOST_AUTO_TEST_CASE(Cp)
   BOOST_CHECK(producer.m_paramFetcher.getPublicParams().m_pub != "");
 
   // set up data owner
-  NDN_LOG_INFO("Create Data Owner. Data Owner prefix:"<<dataOwnerCert.getIdentity());
+  NDN_LOG_INFO("Create Data Owner. Data Owner prefix:" << dataOwnerCert.getIdentity());
   DataOwner dataOwner(dataOwnerCert, dataOwnerFace, m_keyChain);
   advanceClocks(time::milliseconds(20), 60);
 
@@ -169,16 +171,17 @@ BOOST_AUTO_TEST_CASE(Cp)
 
   bool isPolicySet = false;
   dataOwner.commandProducerPolicy(producerCert.getIdentity(), dataName, policy,
-                                   [&] (const Data& response) {
-                                     NDN_LOG_DEBUG("on policy set data callback");
-                                     isPolicySet = true;
-                                     BOOST_CHECK_EQUAL(readString(response.getContent()), "success");
-                                     auto policyFound = producer.findMatchedPolicy(dataName);
-                                     BOOST_CHECK(policyFound == policy);
-                                   },
-                                   [] (const std::string&) {
-                                     BOOST_CHECK(false);
-                                   });
+    [&] (const Data& response) {
+      NDN_LOG_DEBUG("on policy set data callback");
+      isPolicySet = true;
+      BOOST_CHECK_EQUAL(readString(response.getContent()), "success");
+      auto policyFound = producer.findMatchedPolicy(dataName);
+      BOOST_CHECK(policyFound == policy);
+    },
+    [] (const std::string&) {
+      BOOST_CHECK(false);
+    }
+  );
 
   NDN_LOG_DEBUG("Before policy set");
   advanceClocks(time::milliseconds(20), 60);
@@ -260,7 +263,9 @@ BOOST_AUTO_TEST_CASE(Kp)
 {
   // set up AA
   NDN_LOG_INFO("Create Attribute Authority. AA prefix: " << aaCert.getIdentity());
-  KpAttributeAuthority aa(aaCert, aaFace, m_keyChain);
+  security::ValidatorConfig validator(aaFace);
+  validator.load("trust-schema.conf");
+  KpAttributeAuthority aa(aaCert, aaFace, validator, m_keyChain);
   advanceClocks(time::milliseconds(20), 60);
 
   // define attr list for consumer rights
@@ -408,7 +413,9 @@ BOOST_AUTO_TEST_CASE(KpCache)
 {
   // set up AA
   NDN_LOG_INFO("Create Attribute Authority. AA prefix: " << aaCert.getIdentity());
-  KpAttributeAuthority aa(aaCert, aaFace, m_keyChain);
+  security::ValidatorConfig validator(aaFace);
+  validator.load("trust-schema.conf");
+  KpAttributeAuthority aa(aaCert, aaFace, validator, m_keyChain);
   advanceClocks(time::milliseconds(20), 60);
 
   // define attr list for consumer rights

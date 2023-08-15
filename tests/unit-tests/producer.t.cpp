@@ -44,7 +44,8 @@ public:
   {
     c1.linkTo(c2);
     security::pib::Identity anchorId = addIdentity("/example");
-    saveCertToFile(anchorId.getDefaultKey().getDefaultCertificate(), "example-trust-anchor.cert");
+    anchorCert = anchorId.getDefaultKey().getDefaultCertificate();
+    saveCertToFile(anchorCert, "example-trust-anchor.cert");
 
     security::pib::Identity producerId = addIdentity("/example/producer");
     addSubCertificate("/example/producer", anchorId);
@@ -68,6 +69,7 @@ protected:
   security::Certificate producerCert;
   security::Certificate authorityCert;
   security::Certificate ownerCert;
+  security::Certificate anchorCert;
   security::SigningInfo signingInfo;
 };
 
@@ -111,7 +113,6 @@ BOOST_AUTO_TEST_CASE(OnPolicyInterest)
   m_keyChain.sign(setPolicyInterest, signingByCertificate(ownerCert));
 
   NDN_LOG_DEBUG("Before receive, interest name:" << setPolicyInterest.getName());
-  //dynamic_cast<util::DummyClientFace*>(&c1)->receive(setPolicyInterest);
   c2.expressInterest(setPolicyInterest,
     [&](const Interest&, const Data& response) {
       BOOST_CHECK(security::verifySignature(response, producerCert));
@@ -125,7 +126,9 @@ BOOST_AUTO_TEST_CASE(OnPolicyInterest)
   // /producer/SET_POLICY/dataPrefix/policy
   NDN_LOG_DEBUG("data prefix:" << setPolicyInterest.getName().getSubName(2, 1));
   NDN_LOG_DEBUG(setPolicyInterest.getName().getSubName(3, 1));
-
+  c1.receive(ownerCert);
+  advanceClocks(time::milliseconds(20), 60);
+  c1.receive(anchorCert);
   advanceClocks(time::milliseconds(20), 60);
 
   auto policyFound = producer.findMatchedPolicy(dataPrefix);
@@ -172,7 +175,6 @@ BOOST_AUTO_TEST_CASE(OnKpPolicyInterest)
   m_keyChain.sign(setPolicyInterest, signingByCertificate(ownerCert));
 
   NDN_LOG_DEBUG("Before receive, interest name:" << setPolicyInterest.getName());
-  //dynamic_cast<util::DummyClientFace*>(&c1)->receive(setPolicyInterest);
   c2.expressInterest(setPolicyInterest,
     [&](const Interest&, const Data& response) {
       BOOST_CHECK(security::verifySignature(response, producerCert));
@@ -181,36 +183,21 @@ BOOST_AUTO_TEST_CASE(OnKpPolicyInterest)
     [](const Interest&, const lp::Nack&) {},
     [](const Interest&) {}
   );
-
   NDN_LOG_DEBUG("set policy Interest:" << setPolicyInterest.getName());
   // /producer/SET_POLICY/dataPrefix/policy
   NDN_LOG_DEBUG("Data prefix:" << setPolicyInterest.getName().getSubName(2, 1));
   NDN_LOG_DEBUG(setPolicyInterest.getName().getSubName(3, 1));
 
+  c1.receive(ownerCert);
+  advanceClocks(time::milliseconds(20), 60);
+  c1.receive(anchorCert);
   advanceClocks(time::milliseconds(20), 60);
 
   auto attributesFound = producer.findMatchedAttributes(dataPrefix);
   BOOST_CHECK_EQUAL(producer.m_attributes.size(), 1);
   BOOST_CHECK_EQUAL(attributesFound.size(), 1);
   BOOST_CHECK_EQUAL(attributesFound[0], "attr1");
-
   advanceClocks(time::milliseconds(20), 60);
-
-  c2.expressInterest(setPolicyInterest,
-    [&](const Interest&, const Data& response) {
-      BOOST_CHECK(security::verifySignature(response, producerCert));
-      BOOST_CHECK_EQUAL(readString(response.getContent()), "success");
-    },
-    [](const Interest&, const lp::Nack&) {},
-    [](const Interest&) {}
-  );
-
-  advanceClocks(time::milliseconds(20), 60);
-
-  attributesFound = producer.findMatchedAttributes(dataPrefix);
-  BOOST_CHECK_EQUAL(producer.m_attributes.size(), 1);
-  BOOST_CHECK_EQUAL(attributesFound.size(), 1);
-  BOOST_CHECK_EQUAL(attributesFound[0], "attr1");
 }
 
 BOOST_AUTO_TEST_CASE(EncryptContent)

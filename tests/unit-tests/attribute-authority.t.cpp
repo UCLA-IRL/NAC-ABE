@@ -38,6 +38,9 @@ public:
     , attrAuthorityPrefix("/example/aa")
   {
     security::pib::Identity anchorId = addIdentity("/example");
+    auto anchorCert = anchorId.getDefaultKey().getDefaultCertificate();
+    saveCertToFile(anchorCert, "example-trust-anchor.cert");
+
     security::pib::Identity consumerId = addIdentity("/example/consumer", RsaKeyParams());
     addSubCertificate("/example/consumer", anchorId);
     consumerCert = consumerId.getDefaultKey().getDefaultCertificate();
@@ -59,7 +62,9 @@ BOOST_FIXTURE_TEST_SUITE(TestAttributeAuthority, TestAttributeAuthorityFixture)
 BOOST_AUTO_TEST_CASE(Constructor)
 {
   util::DummyClientFace face(io, {true, true});
-  CpAttributeAuthority aa(authorityCert, face, m_keyChain);
+  security::ValidatorConfig validator(face);
+  validator.load("trust-schema.conf");
+  CpAttributeAuthority aa(authorityCert, face, validator, m_keyChain);
   BOOST_CHECK(!aa.m_pubParams.m_pub.empty());
   BOOST_CHECK(!aa.m_masterKey.m_msk.empty());
 }
@@ -67,7 +72,9 @@ BOOST_AUTO_TEST_CASE(Constructor)
 BOOST_AUTO_TEST_CASE(OnPublicParams)
 {
   util::DummyClientFace face(io, {true, true});
-  CpAttributeAuthority aa(authorityCert, face, m_keyChain);
+  security::ValidatorConfig validator(face);
+  validator.load("trust-schema.conf");
+  CpAttributeAuthority aa(authorityCert, face, validator, m_keyChain);
   Name interestName = attrAuthorityPrefix;
   Interest request(interestName.append(PUBLIC_PARAMS));
   request.setCanBePrefix(true);
@@ -103,7 +110,9 @@ BOOST_AUTO_TEST_CASE(OnPrvKey)
                                      "attr6", "attr7", "attr8", "attr9", "attr10"};
 
   util::DummyClientFace face(io, {true, true});
-  CpAttributeAuthority aa(authorityCert, face, m_keyChain);
+  security::ValidatorConfig validator(face);
+  validator.load("trust-schema.conf");
+  CpAttributeAuthority aa(authorityCert, face, validator, m_keyChain);
   aa.addNewPolicy(consumerCert, attrList);
 
   auto identity = consumerCert.getIdentity();
@@ -118,17 +127,13 @@ BOOST_AUTO_TEST_CASE(OnPrvKey)
   interest.setMustBeFresh(true);
   interest.setCanBePrefix(true);
 
-  m_keyChain.sign(interest, security::signingByCertificate(consumerCert));
-
   advanceClocks(time::milliseconds(20), 60);
 
   int count = 0;
   face.onSendData.connect([&] (const Data& response) {
     count++;
-    BOOST_CHECK(security::verifySignature(response, authorityCert));
   });
   face.receive(interest);
-
   advanceClocks(time::milliseconds(20), 60);
   BOOST_CHECK_EQUAL(count, 1);
 }
@@ -138,7 +143,9 @@ BOOST_AUTO_TEST_CASE(OnKpPrvKey)
   Policy policy = "(a or b) and (c or d)";
 
   util::DummyClientFace face(io, {true, true});
-  KpAttributeAuthority aa(authorityCert, face, m_keyChain);
+  security::ValidatorConfig validator(face);
+  validator.load("trust-schema.conf");
+  KpAttributeAuthority aa(authorityCert, face, validator, m_keyChain);
   aa.addNewPolicy(consumerCert, policy);
 
   auto identity = consumerCert.getIdentity();

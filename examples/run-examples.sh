@@ -4,11 +4,12 @@
 # If you would like to try on a normal user account, make sure that identity /consumerPrefix1, /aaPrefix, /producerPrefix
 # are not used, as these keys will be deleted.
 
-if ndnsec list | grep "/example/consumer\|/example/aa\|/example/producer"
+if ndnsec list | grep "/example"
 then
   echo "cleaning example identities"
-  ndnsec delete /example/consumer
+  ndnsec delete /example
   ndnsec delete /example/aa
+  ndnsec delete /example/consumer
   ndnsec delete /example/producer
 fi
 
@@ -26,6 +27,9 @@ ndnsec sign-req /example/producer | ndnsec cert-gen -s /example -i example | ndn
 ndnsec key-gen -t r /example/consumer > /dev/null
 ndnsec sign-req /example/consumer | ndnsec cert-gen -s /example -i example | ndnsec cert-install -
 
+# cp example-trust-anchor.cert $1/examples/example-trust-anchor.cert
+# cp trust-schema.conf $1/examples/trust-schema.conf
+nfdc cs erase /example
 $1/examples/kp-aa-example &
 aa_pid=$!
 sleep 1
@@ -39,6 +43,7 @@ exit_val=$?
 kill $aa_pid
 kill $pro_pid
 
+ndnsec delete /example
 ndnsec delete /example/consumer
 ndnsec delete /example/aa
 ndnsec delete /example/producer

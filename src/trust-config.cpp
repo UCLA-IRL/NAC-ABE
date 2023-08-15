@@ -19,7 +19,6 @@
  */
 
 #include "trust-config.hpp"
-
 #include <boost/property_tree/json_parser.hpp>
 #include <ndn-cxx/util/io.hpp>
 
@@ -46,38 +45,58 @@ TrustConfig::load(const std::string& fileName)
 void
 TrustConfig::parse(const JsonSection& jsonConfig)
 {
-  m_knownIdentities.clear();
+  m_knownKeys.clear();
   auto caList = jsonConfig.get_child("certificate-list");
   auto it = caList.begin();
   for (; it != caList.end(); it++) {
     std::istringstream ss(it->second.get<std::string>("certificate"));
     auto certItem = *io::load<security::Certificate>(ss);
-    m_knownIdentities.insert(std::make_pair(certItem.getIdentity(), certItem));
+    m_knownKeys.insert(std::make_pair(certItem.getKeyName(), certItem));
   }
 }
 
 void
 TrustConfig::addOrUpdateCertificate(const security::Certificate& certificate)
 {
-  auto search = m_knownIdentities.find(certificate.getIdentity());
-  if (search != m_knownIdentities.end()) {
+  auto search = m_knownKeys.find(certificate.getKeyName());
+  if (search != m_knownKeys.end()) {
     search->second = certificate;
   }
   else {
-    m_knownIdentities.insert(std::make_pair(certificate.getIdentity(), certificate));
+    m_knownKeys.insert(std::make_pair(certificate.getKeyName(), certificate));
   }
 }
 
 std::optional<security::Certificate>
-TrustConfig::findCertificate(const Name& identityName) const
+TrustConfig::findCertificateFromLocal(const Name& KeyName) const
 {
-  auto search = m_knownIdentities.find(identityName);
-  if (search != m_knownIdentities.end()) {
+  auto search = m_knownKeys.find(KeyName);
+  if (search != m_knownKeys.end()) {
     return search->second;
   }
   else {
     return std::nullopt;
   }
+}
+
+void
+TrustConfig::findCertificateFromNetwork(Face& face, security::Validator& validator,
+                                        const Name& KeyName,
+                                        const FetchCertSuccessCb& onSuccess,
+                                        const FetchCertFailureCb& onFailure)
+{
+  Interest interest(KeyName);
+  interest.setCanBePrefix(true);
+  face.expressInterest(interest,
+    [=, &validator](const Interest&, const Data& data) {
+      validator.validate(data,
+        [onSuccess] (const Data& data) {onSuccess(security::Certificate(data));},
+        [onFailure] (auto&&, const ndn::security::ValidationError& error) {onFailure(error.getInfo());}
+      );
+    },
+    [onFailure](auto&&...) {onFailure("nack");}, 
+    [onFailure](auto&&...) {onFailure("timeout");}
+  );
 }
 
 } // namespace nacabe

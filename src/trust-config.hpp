@@ -27,10 +27,11 @@
 
 namespace ndn {
 namespace nacabe {
-
 class TrustConfig
 {
 public:
+  using FetchCertSuccessCb = std::function<void(const security::Certificate&)>;
+  using FetchCertFailureCb = std::function<void(const std::string)>;
   void
   load(const std::string& fileName);
 
@@ -38,14 +39,20 @@ public:
   addOrUpdateCertificate(const security::Certificate& certificate);
 
   std::optional<security::Certificate>
-  findCertificate(const Name& identityName) const;
+  findCertificateFromLocal(const Name& KeyName) const;
+
+  void
+  findCertificateFromNetwork(Face& face, security::Validator& validator,
+                             const Name& KeyName,
+                             const FetchCertSuccessCb& onSuccess,
+                             const FetchCertFailureCb& onFailure);
 
 private:
   void
   parse(const JsonSection& jsonConfig);
 
 private:
-  std::map<Name, security::Certificate> m_knownIdentities;
+  std::map<Name, security::Certificate> m_knownKeys;
 };
 
 } // namespace nacabe

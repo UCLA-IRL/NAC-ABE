@@ -58,7 +58,7 @@ Producer::Producer(Face& face, KeyChain& keyChain,
                    Interest publicParamInterestTemplate)
   : Producer(face, keyChain, m_validator, identityCert, attrAuthorityCertificate, publicParamInterestTemplate)
 {
-  m_dataOwnerPrefix = dataOwnerCertificate.getIdentity();
+  m_dataOwnerKeyName = dataOwnerCertificate.getKeyName();
   m_trustConfig.addOrUpdateCertificate(dataOwnerCertificate);
 
   // prefix registration
@@ -291,41 +291,52 @@ Producer::findMatchedAttributes(const Name& dataName)
 void
 Producer::onPolicyInterest(const Interest& interest)
 {
-  NDN_LOG_DEBUG("On policy Interest:"<<interest.getName());
+  NDN_LOG_DEBUG("On policy Interest:"<< interest.getName());
   auto dataPrefixBlock = interest.getName().at(m_cert.getIdentity().size() + 1);
   auto dataPrefix = Name(dataPrefixBlock.blockFromValue());
   NDN_LOG_DEBUG("Policy applies to data prefix" << dataPrefix);
-  auto optionalDataOwnerKey = m_trustConfig.findCertificate(m_dataOwnerPrefix);
+  auto optionalDataOwnerKey = m_trustConfig.findCertificateFromLocal(m_dataOwnerKeyName);
+  auto generateReply = [&] (const Interest& interest) {
+    bool success = false;
+    if (m_paramFetcher.getAbeType() == ABE_TYPE_CP_ABE) {
+      addNewPolicy(dataPrefix, encoding::readString(interest.getName().at(m_cert.getIdentity().size() + 2)));
+      success = true;
+    }
+    else if (m_paramFetcher.getAbeType() == ABE_TYPE_KP_ABE) {
+      auto& attrBlock = interest.getName().at(m_cert.getIdentity().size() + 2);
+      attrBlock.parse();
+      std::vector<std::string> attrs;
+      for (const auto& e: attrBlock.elements()) {
+        attrs.emplace_back(readString(e));
+      }
+      addNewAttributes(dataPrefix, attrs);
+      success = true;
+    }
+    Data reply = replyTemplate;
+    reply.setName(interest.getName());
+    reply.setContent(makeStringBlock(tlv::Content, success ? "success" : "failure"));
+    m_keyChain.sign(reply, signingByCertificate(m_cert));
+    m_face.put(reply);
+  };
   if (optionalDataOwnerKey) {
     if (!security::verifySignature(interest, *optionalDataOwnerKey)) {
       NDN_LOG_INFO("Policy interest cannot be authenticated: bad signature");
       return;
     }
+    generateReply(interest);
   }
   else {
-    NDN_LOG_INFO("Policy interest cannot be authenticated: no certificate");
-    return;
+    // Policy Interest is signed, using validator instead.
+    m_validator.validate(interest, 
+      [&] (const Interest& interest) {
+        NDN_LOG_INFO("Policy interest validated");
+        generateReply(interest);
+      },
+      [] (auto&&, const ndn::security::ValidationError& error) {
+        NDN_LOG_INFO("Policy interest validator failure: " << error.getInfo());
+      }
+    );
   }
-  bool success = false;
-  if (m_paramFetcher.getAbeType() == ABE_TYPE_CP_ABE) {
-    addNewPolicy(dataPrefix, encoding::readString(interest.getName().at(m_cert.getIdentity().size() + 2)));
-    success = true;
-  }
-  else if (m_paramFetcher.getAbeType() == ABE_TYPE_KP_ABE) {
-    auto& attrBlock = interest.getName().at(m_cert.getIdentity().size() + 2);
-    attrBlock.parse();
-    std::vector<std::string> attrs;
-    for (const auto& e: attrBlock.elements()) {
-      attrs.emplace_back(readString(e));
-    }
-    addNewAttributes(dataPrefix, attrs);
-    success = true;
-  }
-  Data reply = replyTemplate;
-  reply.setName(interest.getName());
-  reply.setContent(makeStringBlock(tlv::Content, success ? "success" : "failure"));
-  m_keyChain.sign(reply, signingByCertificate(m_cert));
-  m_face.put(reply);
 }
 
 SPtrVector<Data>
