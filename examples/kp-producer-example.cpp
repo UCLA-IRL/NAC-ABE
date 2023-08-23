@@ -29,13 +29,11 @@
 
 namespace examples {
 
-ndn::KeyChain m_keyChain;
-ndn::security::Certificate m_cert = m_keyChain.getPib().getIdentity("/example/producer").getDefaultKey().getDefaultCertificate();
 class Producer
 {
 public:
   Producer()
-    : m_producerCert(m_cert)
+    : m_producerCert(m_keyChain.getPib().getIdentity("/example/producer").getDefaultKey().getDefaultCertificate())
     , m_producer(m_face, m_keyChain, m_validator, m_producerCert,
                  m_keyChain.getPib().getIdentity("/example/aa").getDefaultKey().getDefaultCertificate())
   {
@@ -72,8 +70,8 @@ public:
       [=] (const auto&, const auto& interest) {
         std::cout << ">> I: " << interest << std::endl;
         // for own certificate
-        if (interest.getName().isPrefixOf(m_cert.getName())) {
-          m_face.put(m_cert);
+        if (interest.getName().isPrefixOf(m_producerCert.getName())) {
+          m_face.put(m_producerCert);
         }
         // for content data segments
         putSegments(interest, contentData);
@@ -96,6 +94,7 @@ public:
 
 private:
   ndn::Face m_face;
+  ndn::KeyChain m_keyChain;
   ndn::ValidatorConfig m_validator{m_face};
   ndn::security::Certificate m_producerCert;
   ndn::nacabe::Producer m_producer;

@@ -31,9 +31,11 @@ namespace nacabe {
 NDN_LOG_INIT(nacabe.AttributeAuthority);
 
 AttributeAuthority::AttributeAuthority(const security::Certificate& identityCert, Face& face,
-                                       KeyChain& keyChain, const AbeType& abeType, size_t maxSegmentSize)
+                                       security::Validator& validator, KeyChain& keyChain,
+                                       const AbeType& abeType, size_t maxSegmentSize)
   : m_cert(identityCert)
   , m_face(face)
+  , m_validator(validator)
   , m_keyChain(keyChain)
   , m_abeType(abeType)
   , m_maxSegmentSize(maxSegmentSize)
@@ -50,7 +52,7 @@ AttributeAuthority::AttributeAuthority(const security::Certificate& identityCert
     NDN_THROW(std::runtime_error("Unsupported ABE type: " + m_abeType));
   }
 
-  // prefix registration
+  // prefix registrationexport NDN_LOG="nacabe.*=TRACE:ndn.security.Validator=DEBUG"
   m_registeredPrefix = m_face.registerPrefix(m_cert.getIdentity(),
     [this] (const Name& name) {
       NDN_LOG_TRACE("Prefix " << name << " registered successfully");
@@ -84,6 +86,7 @@ AttributeAuthority::onDecryptionKeyRequest(const Interest& request)
 
   Name supposedKeyName(request.getName().at(m_cert.getIdentity().size() + 1).blockFromValue());
   if (requestName.at(-1).isSegment() && requestName.at(-2).isVersion()) {
+    NDN_LOG_DEBUG("For DKEY segment --------> " << requestName);
     auto mapIterator = m_segmentMap.find(requestName.getPrefix(-1));
     if (mapIterator != m_segmentMap.end()) {
       for (auto data : mapIterator->second) {
@@ -97,30 +100,47 @@ AttributeAuthority::onDecryptionKeyRequest(const Interest& request)
     NDN_LOG_DEBUG("KeyName --------> " << supposedKeyName);
     Name identityName = security::extractIdentityFromKeyName(supposedKeyName);
     // verify request and generate token
-    auto optionalCert = m_trustConfig.findCertificate(identityName);
-    if (!optionalCert) {
-      NDN_LOG_INFO("DKEY Request Interest cannot be authenticated: no certificate for " << identityName);
-      return;
+    auto optionalCert = m_trustConfig.findCertificateFromLocal(supposedKeyName);
+    if (optionalCert) {
+      NDN_LOG_INFO("Found local certificate for " << supposedKeyName << ", bypass certificate fetching...");
+      auto dkSegments = generateDecryptionKeySegments(Name(request.getName()).appendVersion(), *optionalCert);
+      if (dkSegments.size() > 0) {
+        m_face.put(*dkSegments.at(0));
+      }
     }
-    NDN_LOG_INFO("Find consumer(decryptor) certificate: " << optionalCert->getName());
-    auto ABEPrvKey = getPrivateKey(identityName);
-    auto prvBuffer = ABEPrvKey.toBuffer();
-
-    // prepare segments
-    Data result;
-    Name resultName = Name(request.getName()).appendVersion();
-    result.setName(resultName);
-    result.setFreshnessPeriod(5_s);
-    Block dkBlock = encryptDataContentWithCK(prvBuffer, optionalCert->getPublicKey());
-    span<const uint8_t> dkSpan = make_span(dkBlock.data(), dkBlock.size());
-    // the freshness period should be configurable, but this value shouldn't affect much
-    auto dkSegments = m_segmenter.segment(dkSpan, resultName, m_maxSegmentSize, 4_s);
-    m_segmentMap.emplace(resultName, dkSegments);
-    m_face.put(*dkSegments.at(0));
+    else {
+      m_trustConfig.findCertificateFromNetwork(m_face, m_validator, supposedKeyName,
+        [&] (const security::Certificate& cert) {
+          NDN_LOG_INFO("Validated consumer(decryptor) certificate: " << cert.getName());
+          auto dkSegments = generateDecryptionKeySegments(Name(request.getName()).appendVersion(), cert);
+          if (dkSegments.size() > 0) {
+            m_face.put(*dkSegments.at(0));
+          }
+        },
+        [supposedKeyName] (const std::string& errorInfo) {
+          NDN_LOG_INFO("Cannot encrypt DKEY: no verified certificate for " << supposedKeyName << ", errorInfo:" << errorInfo);
+        }
+      );
+    };
   }
   else {
     // ignore
   }
+}
+
+SPtrVector<Data>
+AttributeAuthority::generateDecryptionKeySegments(const Name& objName, const security::Certificate& cert)
+{
+  // prepare segments
+  auto ABEPrvKey = getPrivateKey(cert.getIdentity());
+  auto prvBuffer = ABEPrvKey.toBuffer();
+  Block dkBlock = encryptDataContentWithCK(prvBuffer, cert.getPublicKey());
+  span<const uint8_t> dkSpan = make_span(dkBlock.data(), dkBlock.size());
+  // the freshness period should be configurable, but this value shouldn't affect much
+  auto dkSegments = m_segmenter.segment(dkSpan, objName, m_maxSegmentSize, 4_s);
+
+  m_segmentMap.emplace(objName, dkSegments);
+  return dkSegments;
 }
 
 void
@@ -144,9 +164,9 @@ AttributeAuthority::onPublicParamsRequest(const Interest& interest)
   m_face.put(result);
 }
 
-CpAttributeAuthority::CpAttributeAuthority(const security::Certificate& identityCert,
-                                           Face& face, KeyChain& keyChain)
-  : AttributeAuthority(identityCert, face, keyChain, ABE_TYPE_CP_ABE)
+CpAttributeAuthority::CpAttributeAuthority(const security::Certificate& identityCert, Face& face,
+                                           security::Validator& validator, KeyChain& keyChain)
+  : AttributeAuthority(identityCert, face, validator, keyChain, ABE_TYPE_CP_ABE)
 {
 }
 
@@ -175,9 +195,10 @@ CpAttributeAuthority::getPrivateKey(Name identityName)
   return algo::ABESupport::getInstance().cpPrvKeyGen(m_pubParams, m_masterKey, attrs);
 }
 
-KpAttributeAuthority::KpAttributeAuthority(const security::Certificate& identityCert,
-                                           Face& face, KeyChain& keyChain, size_t maxSegmentSize)
-  : AttributeAuthority(identityCert, face, keyChain, ABE_TYPE_KP_ABE, maxSegmentSize)
+KpAttributeAuthority::KpAttributeAuthority(const security::Certificate& identityCert, Face& face,
+                                           security::Validator& validator, KeyChain& keyChain,
+                                           size_t maxSegmentSize)
+  : AttributeAuthority(identityCert, face, validator, keyChain, ABE_TYPE_KP_ABE, maxSegmentSize)
 {
 }
 

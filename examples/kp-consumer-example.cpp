@@ -26,26 +26,43 @@
 
 #include <iostream>
 
+using namespace ndn::time_literals;
 namespace examples {
 
 class Consumer
 {
 public:
   Consumer()
-    : m_producerCert(m_keyChain.getPib().getIdentity("/example/producer").getDefaultKey().getDefaultCertificate())
-    , m_consumerCert(m_keyChain.getPib().getIdentity("/example/consumer").getDefaultKey().getDefaultCertificate())
-    , m_consumer(m_face, m_keyChain, m_validator, m_consumerCert,
-                 m_keyChain.getPib().getIdentity("/example/aa").getDefaultKey().getDefaultCertificate())
+    : m_consumerCert(m_keyChain.getPib().getIdentity("/example/consumer").getDefaultKey().getDefaultCertificate())
   {
     m_validator.load("trust-schema.conf");
-    m_consumer.obtainDecryptionKey();
+    m_face.registerPrefix(m_consumerCert.getIdentity(),
+      [this] (const ndn::Name& name) {
+        m_face.setInterestFilter(m_consumerCert.getKeyName(),
+          [=] (const auto&, const auto& interest) {
+            std::cout << ">> I: " << interest << std::endl;
+            // for own certificate
+            m_face.put(m_consumerCert);
+          }
+        );
+        m_consumer = std::make_shared<ndn::nacabe::Consumer>(
+          m_face, m_keyChain, m_validator, m_consumerCert,
+          m_keyChain.getPib().getIdentity("/example/aa").getDefaultKey().getDefaultCertificate()
+        );
+        m_consumer->obtainDecryptionKey();
+      },
+      [this] (const auto& prefix, const std::string& reason) {
+        std::cerr << "ERROR: Failed to register prefix '" << prefix
+                  << "' with the local forwarder (" << reason << ")" << std::endl;
+        m_face.shutdown();
+      }
+    );
   }
 
   void
   run()
   {
-    ndn::Name dataName("/randomData");
-    m_consumer.consume(m_producerCert.getIdentity().append(dataName),
+    m_consumer->consume("/example/producer/randomData",
       [] (const auto& result) {
         std::cout << "Received data: " << std::string(result.begin(), result.end()) << std::endl;
       },
@@ -53,8 +70,7 @@ public:
         std::cout << "Error: " << error << std::endl;
       }
     );
-
-    m_face.processEvents();
+    processEvents(1_s);
   }
 
   void processEvents(ndn::time::milliseconds ms)
@@ -66,9 +82,8 @@ private:
   ndn::Face m_face;
   ndn::KeyChain m_keyChain;
   ndn::ValidatorConfig m_validator{m_face};
-  ndn::security::Certificate m_producerCert;
   ndn::security::Certificate m_consumerCert;
-  ndn::nacabe::Consumer m_consumer;
+  std::shared_ptr<ndn::nacabe::Consumer> m_consumer;
 };
 
 } // namespace examples
@@ -76,11 +91,10 @@ private:
 int
 main(int argc, char** argv)
 {
-  using namespace ndn::time_literals;
 
   try {
     examples::Consumer consumer;
-    consumer.processEvents(5_s);
+    consumer.processEvents(1_s);
     consumer.run();
     return 0;
   }

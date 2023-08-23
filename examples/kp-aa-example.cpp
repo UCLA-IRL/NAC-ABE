@@ -28,21 +28,25 @@
 namespace examples {
 
 using ndn::nacabe::KpAttributeAuthority;
-ndn::KeyChain m_keyChain;
-ndn::security::Certificate m_cert = m_keyChain.getPib().getIdentity("/example/aa").getDefaultKey().getDefaultCertificate();
 class AttributeAuthority
 {
 public:
   AttributeAuthority()
-    : m_aa(m_cert, m_face, m_keyChain)
+    : m_aaCert(m_keyChain.getPib().getIdentity("/example/aa").getDefaultKey().getDefaultCertificate())
+    , m_aa(m_aaCert, m_face, m_validator, m_keyChain)
   {
     auto consumerCert1 = m_keyChain.getPib().getIdentity("/example/consumer").getDefaultKey().getDefaultCertificate();
-    m_aa.addNewPolicy(consumerCert1, "attribute");
+    // 1. this approach will directly use the certificate passed in without validation
+    // m_aa.addNewPolicy(consumerCert1, "attribute");
+    // 2. this approach will try fetch corresponding certificate when receiving 
+    //    corresponding DKEY Interest
+    m_aa.addNewPolicy("/example/consumer", "attribute");
+    m_validator.load("trust-schema.conf");
 
     // self certificate filter
-    m_face.setInterestFilter(m_cert.getKeyName(),
+    m_face.setInterestFilter(m_aaCert.getKeyName(),
       [this] (auto&...) {
-        m_face.put(m_cert); 
+        m_face.put(m_aaCert); 
       }
     );
   }
@@ -55,6 +59,9 @@ public:
 
 private:
   ndn::Face m_face;
+  ndn::KeyChain m_keyChain;
+  ndn::ValidatorConfig m_validator{m_face};
+  ndn::security::Certificate m_aaCert;
   KpAttributeAuthority m_aa;
 };
 

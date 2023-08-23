@@ -195,7 +195,7 @@ private:
   KeyChain& m_keyChain;
   security::Validator& m_validator;
   Name m_attrAuthorityPrefix;
-  Name m_dataOwnerPrefix;
+  Name m_dataOwnerKeyName;
   TrustConfig m_trustConfig;
   ScopedRegisteredPrefixHandle m_registeredPrefix;
 

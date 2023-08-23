@@ -57,7 +57,6 @@ void
 ParamFetcher::onAttributePubParams(const Data& pubParamData)
 {
   NDN_LOG_INFO("[onAttributePubParams()] Get public parameters");
-  // auto optionalAAKey = m_trustConfig.findCertificate(m_attrAuthorityPrefix);
 
   m_validator.validate(pubParamData,
     [this, pubParamData] (const Data& data) {
