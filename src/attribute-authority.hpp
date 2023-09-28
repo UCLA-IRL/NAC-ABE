@@ -53,12 +53,12 @@ private:
   generateDecryptionKeySegments(const Name& objName, const security::Certificate& cert);
 
   void
-  onDecryptionKeyRequest(const Interest& interest);
-
-  void
   onPublicParamsRequest(const Interest& interest);
 
 protected:
+  void
+  onDecryptionKeyRequest(const Interest& interest);
+
   security::Certificate m_cert;
   Face& m_face;
   KeyChain& m_keyChain;
@@ -110,6 +110,9 @@ protected:
   getPrivateKey(Name identityName) override;
 
 PUBLIC_WITH_TESTS_ELSE_PRIVATE:
+  void
+  onDecryptionKeyRequest(const Interest& interest);
+
   std::map<Name/* Consumer Identity */, std::list<std::string>/* Attr */> m_tokens;
 };
 
@@ -146,6 +149,9 @@ protected:
   getPrivateKey(Name identityName) override;
 
 PUBLIC_WITH_TESTS_ELSE_PRIVATE:
+  void
+  onDecryptionKeyRequest(const Interest& interest);
+
   std::map<Name/* Consumer Identity */, Policy> m_tokens;
 };
 
