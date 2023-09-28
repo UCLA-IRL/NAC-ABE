@@ -52,22 +52,19 @@ AttributeAuthority::AttributeAuthority(const security::Certificate& identityCert
     NDN_THROW(std::runtime_error("Unsupported ABE type: " + m_abeType));
   }
 
-  // prefix registrationexport NDN_LOG="nacabe.*=TRACE:ndn.security.Validator=DEBUG"
+  // prefix registration
   m_registeredPrefix = m_face.registerPrefix(m_cert.getIdentity(),
     [this] (const Name& name) {
       NDN_LOG_TRACE("Prefix " << name << " registered successfully");
 
       // public parameters filter
       auto hdl1 = m_face.setInterestFilter(Name(name).append(PUBLIC_PARAMS),
-                                           std::bind(&CpAttributeAuthority::onPublicParamsRequest, this, _2));
+                                           std::bind(&AttributeAuthority::onPublicParamsRequest, this, _2));
       m_interestFilters.emplace_back(hdl1);
       NDN_LOG_TRACE("InterestFilter " << Name(name).append(PUBLIC_PARAMS) << " set");
 
       // decryption key filter
-      auto hdl2 = m_face.setInterestFilter(Name(name).append(DECRYPT_KEY),
-                                           std::bind(&CpAttributeAuthority::onDecryptionKeyRequest, this, _2));
-      m_interestFilters.emplace_back(hdl2);
-      NDN_LOG_TRACE("InterestFilter " << Name(name).append(DECRYPT_KEY) << " set");
+      // this filter registration has been moved to the children constructors.
     },
     [] (const Name&, const auto& reason) {
       NDN_LOG_ERROR("Failed to register prefix: " << reason);
@@ -82,8 +79,6 @@ AttributeAuthority::onDecryptionKeyRequest(const Interest& request)
   // naming1: /AA-prefix/DKEY/<key name block>
   // naming2: /AA-prefix/DKEY/<key name block>/<version>/<segment>
   Name requestName = request.getName();
-  NDN_LOG_INFO("Got DKEY request: " << requestName);
-
   Name supposedKeyName(request.getName().at(m_cert.getIdentity().size() + 1).blockFromValue());
   if (requestName.at(-1).isSegment() && requestName.at(-2).isVersion()) {
     NDN_LOG_DEBUG("For DKEY segment --------> " << requestName);
@@ -99,7 +94,7 @@ AttributeAuthority::onDecryptionKeyRequest(const Interest& request)
   else if (security::isValidKeyName(supposedKeyName)) {
     NDN_LOG_DEBUG("KeyName --------> " << supposedKeyName);
     Name identityName = security::extractIdentityFromKeyName(supposedKeyName);
-    // verify request and generate token
+    // fetch corresponding certificate
     auto optionalCert = m_trustConfig.findCertificateFromLocal(supposedKeyName);
     if (optionalCert) {
       NDN_LOG_INFO("Found local certificate for " << supposedKeyName << ", bypass certificate fetching...");
@@ -168,6 +163,9 @@ CpAttributeAuthority::CpAttributeAuthority(const security::Certificate& identity
                                            security::Validator& validator, KeyChain& keyChain)
   : AttributeAuthority(identityCert, face, validator, keyChain, ABE_TYPE_CP_ABE)
 {
+  // decryption key filter
+  m_face.setInterestFilter(Name(m_cert.getIdentity()).append(DECRYPT_KEY),
+                           std::bind(&CpAttributeAuthority::onDecryptionKeyRequest, this, _2));
 }
 
 void
@@ -195,11 +193,27 @@ CpAttributeAuthority::getPrivateKey(Name identityName)
   return algo::ABESupport::getInstance().cpPrvKeyGen(m_pubParams, m_masterKey, attrs);
 }
 
+void
+CpAttributeAuthority::onDecryptionKeyRequest(const Interest& request)
+{
+  Name requestName = request.getName();
+  NDN_LOG_INFO("CpAA Got DKEY request: " << requestName);
+
+  Name supposedKeyName(request.getName().at(m_cert.getIdentity().size() + 1).blockFromValue());
+  Name identityName = security::extractIdentityFromKeyName(supposedKeyName);
+  if (m_tokens.find(identityName) != m_tokens.end()) {
+    AttributeAuthority::onDecryptionKeyRequest(request);
+  }
+}
+
 KpAttributeAuthority::KpAttributeAuthority(const security::Certificate& identityCert, Face& face,
                                            security::Validator& validator, KeyChain& keyChain,
                                            size_t maxSegmentSize)
   : AttributeAuthority(identityCert, face, validator, keyChain, ABE_TYPE_KP_ABE, maxSegmentSize)
 {
+  // decryption key filter
+  m_face.setInterestFilter(Name(m_cert.getIdentity()).append(DECRYPT_KEY),
+                           std::bind(&KpAttributeAuthority::onDecryptionKeyRequest, this, _2));
 }
 
 void
@@ -222,6 +236,19 @@ KpAttributeAuthority::getPrivateKey(Name identityName)
 
   // generate ABE private key and do encryption
   return algo::ABESupport::getInstance().kpPrvKeyGen(m_pubParams, m_masterKey, policy);
+}
+
+void
+KpAttributeAuthority::onDecryptionKeyRequest(const Interest& request)
+{
+  Name requestName = request.getName();
+  NDN_LOG_INFO("KpAA Got DKEY request: " << requestName);
+
+  Name supposedKeyName(request.getName().at(m_cert.getIdentity().size() + 1).blockFromValue());
+  Name identityName = security::extractIdentityFromKeyName(supposedKeyName);
+  if (m_tokens.find(identityName) != m_tokens.end()) {
+    AttributeAuthority::onDecryptionKeyRequest(request);
+  }
 }
 
 } // namespace nacabe
