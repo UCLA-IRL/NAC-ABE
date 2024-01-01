@@ -74,7 +74,7 @@ jobs:
     - name: Configure NFD
       run: |
         cd ..
-        git clone -b NFD-22.12 --depth=1 https://github.com/named-data/NFD
+        git clone --depth=1 https://github.com/named-data/NFD
         cd NFD
         git submodule update --init
         ./waf --color=yes configure
