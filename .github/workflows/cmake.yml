@@ -63,7 +63,7 @@ jobs:
     - name: Configure ndn-cxx
       run: |
         cd ..
-        git clone -b ndn-cxx-0.8.1 --depth=1 https://github.com/named-data/ndn-cxx
+        git clone --depth=1 https://github.com/named-data/ndn-cxx
         cd ndn-cxx
         ./waf --color=yes configure --disable-static --enable-shared --without-osx-keychain
         ./waf --color=yes build
