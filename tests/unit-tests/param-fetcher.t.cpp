@@ -54,8 +54,8 @@ public:
   }
 
 protected:
-  util::DummyClientFace c1;
-  util::DummyClientFace c2;
+  DummyClientFace c1;
+  DummyClientFace c2;
   Name attrAuthorityPrefix;
   security::Certificate authorityCert;
   security::Certificate anchorCert;

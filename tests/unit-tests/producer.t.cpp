@@ -38,8 +38,8 @@ class TestProducerFixture : public IdentityManagementTimeFixture
 {
 public:
   TestProducerFixture()
-    : c1(io, m_keyChain, util::DummyClientFace::Options{true, true})
-    , c2(io, m_keyChain, util::DummyClientFace::Options{true, true})
+    : c1(io, m_keyChain, DummyClientFace::Options{true, true})
+    , c2(io, m_keyChain, DummyClientFace::Options{true, true})
     , attrAuthorityPrefix("/example/authority")
   {
     c1.linkTo(c2);
@@ -63,8 +63,8 @@ public:
   }
 
 protected:
-  util::DummyClientFace c1;
-  util::DummyClientFace c2;
+  DummyClientFace c1;
+  DummyClientFace c2;
   Name attrAuthorityPrefix;
   security::Certificate producerCert;
   security::Certificate authorityCert;

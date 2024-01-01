@@ -63,7 +63,7 @@ Consumer::obtainDecryptionKey()
   interest.setMustBeFresh(true);
   interest.setCanBePrefix(true);
 
-  auto fetcher = util::SegmentFetcher::start(m_face, interest, m_validator);
+  auto fetcher = SegmentFetcher::start(m_face, interest, m_validator);
   fetcher->afterSegmentValidated.connect([](Data seg) {
     NDN_LOG_DEBUG("Validated " << seg.getName());
   });
@@ -123,7 +123,7 @@ Consumer::consume(const Interest& dataInterest,
     Name dataName = data.getName();
     // if segmentation
     if (dataName.get(-1).isSegment()) {
-      auto fetcher = util::SegmentFetcher::start(m_face, dataInterest, m_validator);
+      auto fetcher = SegmentFetcher::start(m_face, dataInterest, m_validator);
       fetcher->afterSegmentValidated.connect([](Data seg) {
         NDN_LOG_DEBUG("Validated " << seg.getName());
       });
@@ -185,7 +185,7 @@ Consumer::decryptContent(const Name& dataObjName,
     Name dataName = data.getName();
     // if segmentation
     if (dataName.get(-1).isSegment()) {
-      auto fetcher = util::SegmentFetcher::start(m_face, ckInterest, m_validator);
+      auto fetcher = SegmentFetcher::start(m_face, ckInterest, m_validator);
       fetcher->afterSegmentValidated.connect([](Data seg) {
         NDN_LOG_DEBUG("Validated " << seg.getName());
       });

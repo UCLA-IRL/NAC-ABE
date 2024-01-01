@@ -84,12 +84,12 @@ public:
   }
 
 protected:
-  util::DummyClientFace producerFace;
-  util::DummyClientFace aaFace;
-  util::DummyClientFace tokenIssuerFace;
-  util::DummyClientFace consumerFace1;
-  util::DummyClientFace consumerFace2;
-  util::DummyClientFace dataOwnerFace;
+  DummyClientFace producerFace;
+  DummyClientFace aaFace;
+  DummyClientFace tokenIssuerFace;
+  DummyClientFace consumerFace1;
+  DummyClientFace consumerFace2;
+  DummyClientFace dataOwnerFace;
 
   security::Certificate aaCert;
   security::Certificate anchorCert;

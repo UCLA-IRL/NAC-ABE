@@ -115,7 +115,7 @@ Producer::ckDataGen(const Policy& accessPolicy,
     Name ckName = security::extractIdentityFromCertName(m_cert.getName());
     ckName.append(CONTENT_KEY).append(std::to_string(random::generateSecureWord32()));
     Name ckDataName = ckName;
-    util::Segmenter segmenter(m_keyChain, info);
+    Segmenter segmenter(m_keyChain, info);
     Block ckBlock = contentKey->makeCKContent();
     span<const uint8_t> ckSpan = make_span(ckBlock.data(), ckBlock.size());
     ckDataName.append(ENCRYPT_BY).append(accessPolicy.c_str());
@@ -175,7 +175,7 @@ Producer::ckDataGen(const std::vector<std::string>& attributes,
                       .append(std::to_string(random::generateSecureWord32()))
                       .append(ENCRYPT_BY)
                       .append(nc);
-    util::Segmenter segmenter(m_keyChain, info);
+    Segmenter segmenter(m_keyChain, info);
     Block ckBlock = contentKey->makeCKContent();
     span<const uint8_t> ckSpan = make_span(ckBlock.data(), ckBlock.size());
     auto ckSegments = segmenter.segment(ckSpan, ckDataName, maxSegmentSize,
@@ -349,7 +349,7 @@ Producer::getCkEncryptedData(const Name& dataNameSuffix, const algo::CipherText&
   auto dataBlock = cipherText.makeDataContent();
   dataBlock.push_back(ckName.wireEncode());
   dataBlock.encode();
-  util::Segmenter segmenter(m_keyChain, info);
+  Segmenter segmenter(m_keyChain, info);
   span<const uint8_t> ckSpan = make_span(dataBlock.data(), dataBlock.size());
   auto ckSegments = segmenter.segment(ckSpan, contentDataName, maxSegmentSize,
                                       dataTemplate->getFreshnessPeriod(),

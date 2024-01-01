@@ -61,7 +61,7 @@ BOOST_FIXTURE_TEST_SUITE(TestAttributeAuthority, TestAttributeAuthorityFixture)
 
 BOOST_AUTO_TEST_CASE(Constructor)
 {
-  util::DummyClientFace face(io, {true, true});
+  DummyClientFace face(io, {true, true});
   security::ValidatorConfig validator(face);
   validator.load("trust-schema.conf");
   CpAttributeAuthority aa(authorityCert, face, validator, m_keyChain);
@@ -71,7 +71,7 @@ BOOST_AUTO_TEST_CASE(Constructor)
 
 BOOST_AUTO_TEST_CASE(OnPublicParams)
 {
-  util::DummyClientFace face(io, {true, true});
+  DummyClientFace face(io, {true, true});
   security::ValidatorConfig validator(face);
   validator.load("trust-schema.conf");
   CpAttributeAuthority aa(authorityCert, face, validator, m_keyChain);
@@ -109,7 +109,7 @@ BOOST_AUTO_TEST_CASE(OnPrvKey)
   std::list<std::string> attrList = {"attr1", "attr2", "attr3", "attr4", "attr5",
                                      "attr6", "attr7", "attr8", "attr9", "attr10"};
 
-  util::DummyClientFace face(io, {true, true});
+  DummyClientFace face(io, {true, true});
   security::ValidatorConfig validator(face);
   validator.load("trust-schema.conf");
   CpAttributeAuthority aa(authorityCert, face, validator, m_keyChain);
@@ -142,7 +142,7 @@ BOOST_AUTO_TEST_CASE(OnKpPrvKey)
 {
   Policy policy = "(a or b) and (c or d)";
 
-  util::DummyClientFace face(io, {true, true});
+  DummyClientFace face(io, {true, true});
   security::ValidatorConfig validator(face);
   validator.load("trust-schema.conf");
   KpAttributeAuthority aa(authorityCert, face, validator, m_keyChain);
