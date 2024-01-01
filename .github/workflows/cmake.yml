@@ -180,7 +180,7 @@ jobs:
       - name: Configure ndn-cxx
         run: |
           cd ..
-          git clone -depth=1 https://github.com/named-data/ndn-cxx
+          git clone --depth=1 https://github.com/named-data/ndn-cxx
           cd ndn-cxx
           # git checkout 535bd33223a63f7ec4820d90db2f8764ffb635f8
           ./waf --color=yes configure --with-tests --without-osx-keychain
