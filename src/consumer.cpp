@@ -290,7 +290,7 @@ Consumer::handleTimeout(const Interest& interest, int nRetrials,
     int factor = static_cast<int>(std::pow(2, m_maxRetries + 1 - nRetrials));
     interestRetry.setCanBePrefix(true);
     interestRetry.setInterestLifetime(ndn::time::milliseconds(m_defaultTimeout*factor));
-    interestRetry.setNonce(std::nullopt);
+    interestRetry.refreshNonce();
     m_face.expressInterest(interestRetry, dataCallback,
                            std::bind(&Consumer::handleNack, this, _1, _2, errorCallback, nackMessage),
                            std::bind(&Consumer::handleTimeout, this, _1, nRetrials - 1,
