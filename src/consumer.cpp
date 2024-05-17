@@ -286,11 +286,12 @@ Consumer::handleTimeout(const Interest& interest, int nRetrials,
 {
   if (nRetrials > 0) {
     NDN_LOG_INFO("Timeout for: " << interest << ", retrying");
-    auto interestNew = const_cast<Interest&>(interest);
-    int factor = (int) std::pow(2, m_maxRetries+1-nRetrials);
-    interestNew.setInterestLifetime(ndn::time::milliseconds(m_defaultTimeout*factor));
-    interestNew.setNonce(std::nullopt);
-    m_face.expressInterest(interestNew, dataCallback,
+    Interest interestRetry(interest);
+    int factor = static_cast<int>(std::pow(2, m_maxRetries + 1 - nRetrials));
+    interestRetry.setCanBePrefix(true);
+    interestRetry.setInterestLifetime(ndn::time::milliseconds(m_defaultTimeout*factor));
+    interestRetry.setNonce(std::nullopt);
+    m_face.expressInterest(interestRetry, dataCallback,
                            std::bind(&Consumer::handleNack, this, _1, _2, errorCallback, nackMessage),
                            std::bind(&Consumer::handleTimeout, this, _1, nRetrials - 1,
                                      dataCallback, errorCallback, nackMessage, timeoutMessage));
