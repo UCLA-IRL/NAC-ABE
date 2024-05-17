@@ -86,6 +86,20 @@ public:
           const ConsumptionCallback& consumptionCb,
           const ErrorCallback& errorCallback);
 
+  /**
+   * @brief Set the maximum number of retries for fetching data packets.
+   * @param maxRetries The maximum number of retries.
+  */
+  void
+  setMaxRetries(int maxRetries);
+
+  /**
+   * @brief Set the default timeout for fetching data packets.
+   * @param defaultTimeout The default timeout in milliseconds.
+  */
+  void
+  setDefaultTimeout(int defaultTimeout);
+
 private:
   void
   decryptContent(const Name& dataObjName,
@@ -118,6 +132,9 @@ private:
 
   TrustConfig m_trustConfig;
   algo::PrivateKey m_keyCache;
+
+  int m_maxRetries = 3;
+  int m_defaultTimeout = 200;
 
 PUBLIC_WITH_TESTS_ELSE_PRIVATE:
   ParamFetcher m_paramFetcher;

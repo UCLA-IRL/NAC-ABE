@@ -26,6 +26,8 @@
 #include <ndn-cxx/security/verification-helpers.hpp>
 #include <ndn-cxx/util/segment-fetcher.hpp>
 
+#include <cmath>
+
 namespace ndn {
 namespace nacabe {
 
@@ -102,6 +104,7 @@ Consumer::consume(const Name& dataName,
   // Application data can be fetched long after they have been published,
   // so we should not set the MustBeFresh flag.
   interest.setCanBePrefix(true);
+  interest.setInterestLifetime(ndn::time::milliseconds(m_defaultTimeout));
   consume(interest, consumptionCb, errorCallback);
 }
 
@@ -153,8 +156,20 @@ Consumer::consume(const Interest& dataInterest,
   m_face.expressInterest(dataInterest,
                          dataCallback,
                          std::bind(&Consumer::handleNack, this, _1, _2, errorCallback, nackMessage),
-                         std::bind(&Consumer::handleTimeout, this, _1, 3,
+                         std::bind(&Consumer::handleTimeout, this, _1, m_maxRetries,
                                    dataCallback, errorCallback, nackMessage, timeoutMessage));
+}
+
+void
+Consumer::setMaxRetries(int maxRetries)
+{
+  m_maxRetries = maxRetries;
+}
+
+void
+Consumer::setDefaultTimeout(int defaultTimeout)
+{
+  m_defaultTimeout = defaultTimeout;
 }
 
 void
@@ -176,6 +191,7 @@ Consumer::decryptContent(const Name& dataObjName,
   Name ckName(content.get(tlv::Name));
   NDN_LOG_INFO("CK Name is " << ckName);
   Interest ckInterest(ckName);
+  ckInterest.setInterestLifetime(ndn::time::milliseconds(m_defaultTimeout));
   ckInterest.setCanBePrefix(true);
 
   std::string nackMessage = "Nack for " + ckName.toUri() + " content key fetch with reason ";
@@ -216,7 +232,7 @@ Consumer::decryptContent(const Name& dataObjName,
   m_face.expressInterest(ckInterest,
                          dataCallback,
                          std::bind(&Consumer::handleNack, this, _1, _2, errorCallback, nackMessage),
-                         std::bind(&Consumer::handleTimeout, this, _1, 3,
+                         std::bind(&Consumer::handleTimeout, this, _1, m_maxRetries,
                                    dataCallback, errorCallback, nackMessage, timeoutMessage));
 }
 
@@ -270,7 +286,12 @@ Consumer::handleTimeout(const Interest& interest, int nRetrials,
 {
   if (nRetrials > 0) {
     NDN_LOG_INFO("Timeout for: " << interest << ", retrying");
-    m_face.expressInterest(interest, dataCallback,
+    Interest interestRetry(interest);
+    int factor = static_cast<int>(std::pow(2, m_maxRetries + 1 - nRetrials));
+    interestRetry.setCanBePrefix(true);
+    interestRetry.setInterestLifetime(ndn::time::milliseconds(m_defaultTimeout*factor));
+    interestRetry.refreshNonce();
+    m_face.expressInterest(interestRetry, dataCallback,
                            std::bind(&Consumer::handleNack, this, _1, _2, errorCallback, nackMessage),
                            std::bind(&Consumer::handleTimeout, this, _1, nRetrials - 1,
                                      dataCallback, errorCallback, nackMessage, timeoutMessage));
