@@ -65,7 +65,7 @@ jobs:
         cd ..
         git clone --depth=1 https://github.com/named-data/ndn-cxx
         cd ndn-cxx
-        ./waf --color=yes configure --disable-static --enable-shared --without-osx-keychain
+        ./waf --color=yes configure --disable-static --enable-shared
         ./waf --color=yes build
         sudo ./waf install
         sudo ldconfig
@@ -183,7 +183,7 @@ jobs:
           git clone --depth=1 https://github.com/named-data/ndn-cxx
           cd ndn-cxx
           # git checkout 535bd33223a63f7ec4820d90db2f8764ffb635f8
-          ./waf --color=yes configure --with-tests --without-osx-keychain
+          ./waf --color=yes configure --with-tests
           ./waf --color=yes build
           sudo ./waf --color=yes install
           ./build/unit-tests
