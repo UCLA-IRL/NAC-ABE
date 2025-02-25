@@ -126,7 +126,8 @@ Consumer::consume(const Interest& dataInterest,
     Name dataName = data.getName();
     // if segmentation
     if (dataName.get(-1).isSegment()) {
-      SegmentFetcher::Options fetchOptions.probeLatestVersion = false; // Disable MustBeFresh flag
+      ndn::SegmentFetcher::Options fetchOptions;
+      fetchOptions.probeLatestVersion = false; // Disable MustBeFresh flag
       auto fetcher = SegmentFetcher::start(m_face, dataInterest, m_validator, fetchOptions);
       fetcher->afterSegmentValidated.connect([](Data seg) {
         NDN_LOG_DEBUG("Validated " << seg.getName());
@@ -202,8 +203,8 @@ Consumer::decryptContent(const Name& dataObjName,
     Name dataName = data.getName();
     // if segmentation
     if (dataName.get(-1).isSegment()) {
-      
-      SegmentFetcher::Options fetchOptions.probeLatestVersion = false; // Disable MustBeFresh flag
+      ndn::SegmentFetcher::Options fetchOptions;
+      fetchOptions.probeLatestVersion = false; // Disable MustBeFresh flag
       auto fetcher = SegmentFetcher::start(m_face, ckInterest, m_validator, fetchOptions);
       fetcher->afterSegmentValidated.connect([](Data seg) {
         NDN_LOG_DEBUG("Validated " << seg.getName());
