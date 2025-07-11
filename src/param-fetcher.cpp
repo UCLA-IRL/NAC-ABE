@@ -45,13 +45,24 @@ ParamFetcher::fetchPublicParams()
   interestName.append(PUBLIC_PARAMS);
   Interest interest(m_interestTemplate);
   interest.setName(interestName);
+  interest.refreshNonce();
 
   NDN_LOG_INFO("Request public parameters: " << interest.getName());
-  m_face.expressInterest(interest,
-                         [this](const Interest &, const Data &data) { onAttributePubParams(data); },
-                         [](auto&&...) { NDN_LOG_INFO("NACK"); },
-                         [](auto&&...) { NDN_LOG_INFO("Timeout"); });
+  m_face.expressInterest(
+    interest,
+    [this](const Interest&, const Data& data) {
+      onAttributePubParams(data);
+    },
+    [this](const Interest&, const lp::Nack&) {
+      NDN_LOG_WARN("Received NACK, never giving up.");
+      fetchPublicParams(); // Always retry
+    },
+    [this](const Interest&) {
+      NDN_LOG_WARN("Request public parameters Timeout, retrying...");
+      fetchPublicParams(); // Always retry
+    });
 }
+
 
 void
 ParamFetcher::onAttributePubParams(const Data& pubParamData)
