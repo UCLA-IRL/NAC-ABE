@@ -284,6 +284,11 @@ ABESupport::decrypt(oabe::OpenABECryptoContext& context, const PublicParams &pub
   }
 }
 
+void ABESupport::clearCachedContentKeys()
+{
+  m_decryptedContentKeyMap.clear();
+}
+
 } // namespace algo
 } // namespace nacabe
 } // namespace ndn

@@ -90,6 +90,8 @@ public:
   kpDecrypt(const PublicParams &pubParams,
             const PrivateKey &prvKey, CipherText cipherText);
 
+  void
+  clearCachedContentKeys();
 
 private:
   void

@@ -118,6 +118,7 @@ BOOST_AUTO_TEST_CASE(CpEncryptionDecryption)
   BOOST_CHECK_EQUAL_COLLECTIONS(result4.begin(), result4.end(), random1024, random1024 + sizeof(random1024));
 
   // encryption/decryption test case 5: access forbidden
+  ABESupport::getInstance().clearCachedContentKeys();
   std::vector<std::string> wrongKeyAttrList = { "mit", "professor" };
   auto anotherPrvKey = ABESupport::getInstance().cpPrvKeyGen(pubParams, masterKey, wrongKeyAttrList);
   // cannot decrypt because of the wrong decryption key attribute set
