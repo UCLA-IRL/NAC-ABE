@@ -192,6 +192,31 @@ BOOST_AUTO_TEST_CASE(KpEncryptionDecryption)
                     std::runtime_error);
 }
 
+BOOST_AUTO_TEST_CASE(DecryptWithCache)
+{
+  // Init
+  PublicParams pubParams;
+  MasterKey masterKey;
+  ABESupport::getInstance().cpInit(pubParams, masterKey);
+
+  // keyGen + Encrypt
+  uint8_t plain[32];
+  random::generateSecureBytes(plain);
+  auto prvKey = ABESupport::getInstance().cpPrvKeyGen(pubParams, masterKey, { "cs", "homework" });
+
+  auto cipherText = ABESupport::getInstance().cpEncrypt(pubParams, "cs and homework",
+                                                        Buffer(plain, sizeof(plain)));
+
+  // First decryption (should trigger real decryption and populate cache)
+  auto result1 = ABESupport::getInstance().cpDecrypt(pubParams, prvKey, cipherText);
+  BOOST_CHECK_EQUAL_COLLECTIONS(result1.begin(), result1.end(), plain, plain + sizeof(plain));
+
+  // Second decryption (should hit cache)
+  auto result2 = ABESupport::getInstance().cpDecrypt(pubParams, prvKey, cipherText);
+  BOOST_CHECK_EQUAL_COLLECTIONS(result2.begin(), result2.end(), plain, plain + sizeof(plain));
+}
+
+
 BOOST_AUTO_TEST_SUITE_END()
 
 } // namespace tests

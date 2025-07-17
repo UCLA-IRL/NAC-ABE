@@ -70,6 +70,8 @@ private:
   security::Validator& m_validator;
   const Name& m_attrAuthorityPrefix;
   const TrustConfig& m_trustConfig;
+  int m_retryCount = 0;
+  const int MAX_RETRIES = 10;
 
 PUBLIC_WITH_TESTS_ELSE_PRIVATE:
   AbeType m_abeType;
