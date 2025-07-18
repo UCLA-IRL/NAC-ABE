@@ -102,6 +102,96 @@ BOOST_AUTO_TEST_CASE(Constructor)
   BOOST_CHECK(paramFetcher.getAbeType() == ABE_TYPE_CP_ABE);
 }
 
+BOOST_AUTO_TEST_CASE(FetchPublicParamsSuccessWithinRetryLimit)
+{
+  algo::PublicParams m_pubParams;
+  int attemptCount = 0;
+
+  c2.setInterestFilter(Name(attrAuthorityPrefix).append("PUBPARAMS"),
+    [&](const ndn::InterestFilter&, const ndn::Interest& interest) {
+      ++attemptCount;
+
+      algo::MasterKey m_masterKey;
+      algo::ABESupport::getInstance().cpInit(m_pubParams, m_masterKey);
+
+      Data result;
+      Name dataName = interest.getName();
+      dataName.append(ABE_TYPE_CP_ABE);
+      dataName.appendTimestamp();
+      result.setName(dataName);
+      result.setFreshnessPeriod(10_s);
+
+      const auto& contentBuf = m_pubParams.toBuffer();
+      result.setContent(contentBuf);
+
+
+      m_keyChain.sign(result, signingByCertificate(authorityCert));
+      c2.put(result);
+    });
+
+
+  security::ValidatorConfig validator(c1);
+  validator.load("trust-schema.conf");
+
+
+  ParamFetcher paramFetcher(c1, validator, attrAuthorityPrefix, trustConfig);
+
+  paramFetcher.fetchPublicParams();
+
+  advanceClocks(time::milliseconds(20), 60);
+  c1.receive(authorityCert);
+  advanceClocks(time::milliseconds(20), 60);
+  c1.receive(anchorCert);
+  advanceClocks(time::milliseconds(20), 60);
+
+
+
+  for (int i = 0; i < 10; ++i) {
+    advanceClocks(time::seconds(1), 20);
+  }
+
+  BOOST_CHECK(paramFetcher.getPublicParams().m_pub != "");
+  BOOST_CHECK(paramFetcher.getAbeType() == ABE_TYPE_CP_ABE);
+  BOOST_CHECK_EQUAL(attemptCount, 1);
+}
+
+
+BOOST_AUTO_TEST_CASE(FetchPublicParamsFailsAfterMaxRetries)
+{
+  int attemptCount = 0;
+
+  c2.setInterestFilter(Name(attrAuthorityPrefix).append("PUBPARAMS"),
+    [&](const ndn::InterestFilter&, const ndn::Interest& interest) {
+      ++attemptCount;
+    });
+
+  security::ValidatorConfig validator(c1);
+  validator.load("trust-schema.conf");
+
+  ParamFetcher paramFetcher(c1, validator, attrAuthorityPrefix, trustConfig);
+
+  advanceClocks(time::milliseconds(20), 60);
+  c1.receive(authorityCert);
+  advanceClocks(time::milliseconds(20), 60);
+  c1.receive(anchorCert);
+  advanceClocks(time::milliseconds(20), 60);
+
+  BOOST_CHECK_THROW(
+    [&] {
+      paramFetcher.fetchPublicParams();
+      for (int i = 0; i < 20; ++i) {
+        advanceClocks(time::seconds(1), 60);
+      }
+    }(),
+    std::runtime_error
+  );
+
+  BOOST_CHECK_GE(attemptCount, 10);
+}
+
+
+
+
 BOOST_AUTO_TEST_SUITE_END()
 
 }  // namespace tests

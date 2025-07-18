@@ -23,6 +23,7 @@
 #include "data-owner.hpp"
 #include "producer.hpp"
 #include "cache-producer.hpp"
+#include "algo/abe-support.hpp"
 
 #include "test-common.hpp"
 
@@ -236,6 +237,7 @@ BOOST_AUTO_TEST_CASE(Cp)
   advanceClocks(time::milliseconds(20), 60);
   BOOST_CHECK(isConsumeCbCalled);
 
+  ndn::nacabe::algo::ABESupport::getInstance().clearCachedContentKeys();
   isConsumeCbCalled = false;
   consumer2.obtainDecryptionKey();
   advanceClocks(time::milliseconds(20), 60);
@@ -386,6 +388,7 @@ BOOST_AUTO_TEST_CASE(Kp)
   advanceClocks(time::milliseconds(20), 60);
   BOOST_CHECK(isConsumeCbCalled);
 
+  ndn::nacabe::algo::ABESupport::getInstance().clearCachedContentKeys();
   isConsumeCbCalled = false;
   consumer2.obtainDecryptionKey();
   advanceClocks(time::milliseconds(20), 60);
@@ -536,6 +539,7 @@ BOOST_AUTO_TEST_CASE(KpCache)
   advanceClocks(time::milliseconds(20), 60);
   BOOST_CHECK(isConsumeCbCalled);
 
+  ndn::nacabe::algo::ABESupport::getInstance().clearCachedContentKeys();
   isConsumeCbCalled = false;
   consumer2.obtainDecryptionKey();
   advanceClocks(time::milliseconds(20), 60);

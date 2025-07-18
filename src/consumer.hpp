@@ -87,6 +87,23 @@ public:
           const ErrorCallback& errorCallback);
 
   /**
+   * @brief Consume an encrypted data block
+   *
+   * The function will directly use the dataBlock to retrive the CK.
+   * After decrypting CK with cached DKEY, the CK will be used to cpDecrypt the data packet.
+   *
+   * @param dataName The packet name.
+   * @param Block Its type is ndn::tlv::content
+   * @param consumptionCb The success callback.
+   * @param errorCallback The failure callback.
+   */
+  void
+  consume(const Name& dataName,
+          const Block& dataBlock,
+          const ConsumptionCallback& consumptionCb,
+          const ErrorCallback& errorCallback);  
+
+  /**
    * @brief Set the maximum number of retries for fetching data packets.
    * @param maxRetries The maximum number of retries.
   */

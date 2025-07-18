@@ -239,22 +239,35 @@ ABESupport::decrypt(oabe::OpenABECryptoContext& context, const PublicParams &pub
         const PrivateKey &prvKey, CipherText cipherText)
 {
   try {
-    // step 0: set up ABE Context
-    context.importPublicParams(pubParams.m_pub);
-
-    // step 1: import prvKey into OpenABE
-    context.enableKeyManager("user1");
-    context.importUserKey("key1", prvKey.m_prv);
-
-    // step 2: cpDecrypt cipherText.aesKey, which is the encrypted symmetric key
+    // search in std::map<std::string, std::string> m_decryptedContentKeyMap for encryptedSymmetricKey and get the decrypted symmetric key and skip step 0,1,2 if exists
+    std::string decryptedSymmetricKey;
     std::string encryptedSymmetricKey(reinterpret_cast<char*>(cipherText.m_contentKey->m_encAesKey.data()));
-    bool result = context.decrypt(encryptedSymmetricKey, cipherText.m_contentKey->m_aesKey);
-    if (!result) {
-      BOOST_THROW_EXCEPTION(NacAlgoError("Decryption error!"));
+    auto it = m_decryptedContentKeyMap.find(encryptedSymmetricKey);
+    if (it != m_decryptedContentKeyMap.end()) {
+        // found in cache
+        decryptedSymmetricKey = m_decryptedContentKeyMap[encryptedSymmetricKey];
+    } else {
+        // step 0: set up ABE Context
+        context.importPublicParams(pubParams.m_pub);
+
+        // step 1: import prvKey into OpenABE
+        context.enableKeyManager("user1");
+        context.importUserKey("key1", prvKey.m_prv);
+
+        // step 2: cpDecrypt cipherText.aesKey, which is the encrypted symmetric key
+        // not found in cache, decrypt it and cache it
+        bool result = context.decrypt(encryptedSymmetricKey, cipherText.m_contentKey->m_aesKey);
+        if (!result)
+        {
+          BOOST_THROW_EXCEPTION(NacAlgoError("Decryption error!"));
+        }
+        // put the decrypted key in cache
+        m_decryptedContentKeyMap[encryptedSymmetricKey] = cipherText.m_contentKey->m_aesKey;
+        decryptedSymmetricKey = cipherText.m_contentKey->m_aesKey;
     }
 
     // step 3: use the decrypted symmetricKey to AES cpDecrypt cipherText.m_content
-    OpenABESymKeyEnc aes(cipherText.m_contentKey->m_aesKey);
+    OpenABESymKeyEnc aes(decryptedSymmetricKey);
     std::string cipherContentStr(reinterpret_cast<char*>(cipherText.m_content.data()));
     std::string recoveredContent = aes.decrypt(cipherContentStr);
 
@@ -269,6 +282,11 @@ ABESupport::decrypt(oabe::OpenABECryptoContext& context, const PublicParams &pub
     BOOST_THROW_EXCEPTION(NacAlgoError(
         "cannot encrypt the ciphertext using given private key."));
   }
+}
+
+void ABESupport::clearCachedContentKeys()
+{
+  m_decryptedContentKeyMap.clear();
 }
 
 } // namespace algo

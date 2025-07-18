@@ -118,6 +118,7 @@ BOOST_AUTO_TEST_CASE(CpEncryptionDecryption)
   BOOST_CHECK_EQUAL_COLLECTIONS(result4.begin(), result4.end(), random1024, random1024 + sizeof(random1024));
 
   // encryption/decryption test case 5: access forbidden
+  ABESupport::getInstance().clearCachedContentKeys();
   std::vector<std::string> wrongKeyAttrList = { "mit", "professor" };
   auto anotherPrvKey = ABESupport::getInstance().cpPrvKeyGen(pubParams, masterKey, wrongKeyAttrList);
   // cannot decrypt because of the wrong decryption key attribute set
@@ -191,6 +192,31 @@ BOOST_AUTO_TEST_CASE(KpEncryptionDecryption)
   BOOST_CHECK_THROW(ABESupport::getInstance().cpDecrypt(pubParams, prvKey, cipherText6),
                     std::runtime_error);
 }
+
+BOOST_AUTO_TEST_CASE(DecryptWithCache)
+{
+  // Init
+  PublicParams pubParams;
+  MasterKey masterKey;
+  ABESupport::getInstance().cpInit(pubParams, masterKey);
+
+  // keyGen + Encrypt
+  uint8_t plain[32];
+  random::generateSecureBytes(plain);
+  auto prvKey = ABESupport::getInstance().cpPrvKeyGen(pubParams, masterKey, { "cs", "homework" });
+
+  auto cipherText = ABESupport::getInstance().cpEncrypt(pubParams, "cs and homework",
+                                                        Buffer(plain, sizeof(plain)));
+
+  // First decryption (should trigger real decryption and populate cache)
+  auto result1 = ABESupport::getInstance().cpDecrypt(pubParams, prvKey, cipherText);
+  BOOST_CHECK_EQUAL_COLLECTIONS(result1.begin(), result1.end(), plain, plain + sizeof(plain));
+
+  // Second decryption (should hit cache)
+  auto result2 = ABESupport::getInstance().cpDecrypt(pubParams, prvKey, cipherText);
+  BOOST_CHECK_EQUAL_COLLECTIONS(result2.begin(), result2.end(), plain, plain + sizeof(plain));
+}
+
 
 BOOST_AUTO_TEST_SUITE_END()
 

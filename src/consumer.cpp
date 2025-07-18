@@ -160,6 +160,20 @@ Consumer::consume(const Interest& dataInterest,
                                    dataCallback, errorCallback, nackMessage, timeoutMessage));
 }
 
+void 
+Consumer::consume(const Name &dataName,
+                  const Block &dataBlock,
+                  const ConsumptionCallback &consumptionCb,
+                  const ErrorCallback &errorCallback)
+{
+  // ready for decryption
+  if (!readyForDecryption()) {
+    errorCallback("Public params or private decryption key doesn't exist");
+    return;
+  }
+  decryptContent(dataName, dataBlock, consumptionCb, errorCallback);
+}
+
 void
 Consumer::setMaxRetries(int maxRetries)
 {

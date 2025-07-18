@@ -41,17 +41,37 @@ ParamFetcher::ParamFetcher(Face& face, security::Validator& validator,
 void
 ParamFetcher::fetchPublicParams()
 {
+  if (m_retryCount >= MAX_RETRIES) {
+    throw std::runtime_error("Failed to fetch public parameters after multiple attempts.");
+  }
+
+  ++m_retryCount;
+
   Name interestName = m_attrAuthorityPrefix;
   interestName.append(PUBLIC_PARAMS);
   Interest interest(m_interestTemplate);
   interest.setName(interestName);
+  interest.refreshNonce();
 
-  NDN_LOG_INFO("Request public parameters: " << interest.getName());
-  m_face.expressInterest(interest,
-                         [this](const Interest &, const Data &data) { onAttributePubParams(data); },
-                         [](auto&&...) { NDN_LOG_INFO("NACK"); },
-                         [](auto&&...) { NDN_LOG_INFO("Timeout"); });
+  NDN_LOG_INFO("Request public parameters (attempt " << m_retryCount << "): " << interest.getName());
+
+  m_face.expressInterest(
+    interest,
+    [this](const Interest&, const Data& data) {
+      m_retryCount = 0;
+      onAttributePubParams(data);
+    },
+    [this](const Interest&, const lp::Nack&) {
+      NDN_LOG_WARN("Received NACK, retrying...");
+      fetchPublicParams(); // Retry
+    },
+    [this](const Interest&) {
+      NDN_LOG_WARN("Timeout, retrying...");
+      fetchPublicParams(); // Retry
+    });
 }
+
+
 
 void
 ParamFetcher::onAttributePubParams(const Data& pubParamData)

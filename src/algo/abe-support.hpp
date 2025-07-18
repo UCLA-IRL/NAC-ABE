@@ -90,6 +90,8 @@ public:
   kpDecrypt(const PublicParams &pubParams,
             const PrivateKey &prvKey, CipherText cipherText);
 
+  void
+  clearCachedContentKeys();
 
 private:
   void
@@ -110,6 +112,9 @@ private:
 private:
   static const char *SCHEMA_CPABE;
   static const char *SCHEMA_KPABE;
+  // cache the decrypted AES content key (std::string) in a map and use the encrypted AES content key as the key
+  std::map<std::string, std::string> m_decryptedContentKeyMap;
+
 
 private:
   ABESupport();
