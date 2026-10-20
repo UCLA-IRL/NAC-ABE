@@ -253,6 +253,15 @@ contentData = producer.produce(contentKey, ckData.getName(), dataName, {"ucla","
 
 You can also use CacheProducer, which will automatically cache and reuse all the keys generated.
 
+#### Produce data asynchronously
+
+```c++
+producer.produceAsync(dataName, {"ucla", "cs", "exam"}, PLAIN_TEXT, signingInfo, onSuccess, onError);
+```
+
+Same as `produce()`, but the ABE encryption runs on a background thread (`CryptoExecutor`) so it doesn't block the Face.
+Callbacks run on the producer's Face thread.
+
 ### 3.4 Decryptor (Data Consumer)
 
 #### Instantiate a new decryptor
@@ -279,6 +288,7 @@ consumer.consume(dataName, successCallback, failCallback);
 
 This function will fetch the content Data packet by the name, fetch the corresponding encrypted CK Data packet.
 Then it uses its decryption key (DKEY) to cpDecrypt the CK, then use the CK to cpDecrypt the content Data packet.
+Decryption runs on the `CryptoExecutor` background thread; callbacks run on the consumer's Face thread.
 
 ## 4 Issue Report
 

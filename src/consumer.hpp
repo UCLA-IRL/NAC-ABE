@@ -131,6 +131,20 @@ private:
              const ConsumptionCallback& successCallBack,
              const ErrorCallback& errorCallback);
 
+  /**
+   * @brief Run the ABE pairing decrypt (cpDecrypt/kpDecrypt) on
+   *        CryptoExecutor's shared crypto thread and invoke the callback
+   *        back on this Consumer's own Face (m_face) io_context.
+   *
+   *        cpDecrypt/kpDecrypt is a pairing operation and must not run on the
+   *        Face's io_context thread, or Interest/Data processing (including
+   *        the CK SegmentFetcher itself) stalls for its duration.
+   */
+  void
+  decryptCipherTextAsync(std::shared_ptr<algo::CipherText> cipherText,
+                         ConsumptionCallback successCallBack,
+                         ErrorCallback errorCallback);
+
   void
   handleNack(const Interest& interest, const lp::Nack& nack,
              const ErrorCallback& errorCallback, std::string message);
