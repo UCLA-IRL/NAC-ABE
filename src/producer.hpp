@@ -39,6 +39,10 @@ public:
   using PolicyTuple = std::pair<Name, std::string>;
   using AttributeTuple = std::pair<Name, std::vector<std::string>>;
 
+  using ProduceSuccessCallback =
+    std::function<void (SPtrVector<Data> content, SPtrVector<Data> ck)>;
+  using ProduceErrorCallback = std::function<void (const std::string&)>;
+
 public:
   /**
    * @brief Initialize a producer. Use when no data owner defined.
@@ -110,6 +114,37 @@ public:
           std::shared_ptr<Data> ckTemplate = getDefaultCkTemplate(),
           shared_ptr<Data> dataTemplate = getDefaultEncryptedDataTemplate(),
           size_t maxSegmentSize = 1500);
+
+  /**
+   * @brief Asynchronous version of the KP-ABE produce() overload above.
+   *
+   * Content-key generation (a pairing operation, only actually run when the
+   * CK for this attribute set/policy isn't already cached by a subclass such
+   * as CacheProducer) and the AES encryption run on CryptoExecutor's shared
+   * thread instead of the caller's thread. @p onSuccess or @p onError is
+   * invoked on this Producer's own Face (the @p face passed to the
+   * constructor) io_context, i.e. wherever the caller already runs its Face
+   * event loop.
+   */
+  void
+  produceAsync(const Name& dataNameSuffix, const std::vector<std::string>& attributes,
+               span<const uint8_t> content, const security::SigningInfo& info,
+               ProduceSuccessCallback onSuccess, ProduceErrorCallback onError,
+               std::shared_ptr<Data> ckTemplate = getDefaultCkTemplate(),
+               shared_ptr<Data> dataTemplate = getDefaultEncryptedDataTemplate(),
+               size_t maxSegmentSize = 1500);
+
+  /**
+   * @brief Asynchronous version of the CP-ABE produce() overload above.
+   *        See produceAsync() (KP-ABE overload) for the threading contract.
+   */
+  void
+  produceAsync(const Name& dataNameSuffix, const Policy& accessPolicy,
+               span<const uint8_t> content, const security::SigningInfo& info,
+               ProduceSuccessCallback onSuccess, ProduceErrorCallback onError,
+               std::shared_ptr<Data> ckTemplate = getDefaultCkTemplate(),
+               shared_ptr<Data> dataTemplate = getDefaultEncryptedDataTemplate(),
+               size_t maxSegmentSize = 1500);
 
   /**
    * @brief Produce KP-encrypted CK Data

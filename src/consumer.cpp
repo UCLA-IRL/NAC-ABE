@@ -21,10 +21,13 @@
 #include "consumer.hpp"
 #include "attribute-authority.hpp"
 #include "algo/abe-support.hpp"
+#include "crypto-executor.hpp"
 #include "ndn-crypto/data-enc-dec.hpp"
 
 #include <ndn-cxx/security/verification-helpers.hpp>
 #include <ndn-cxx/util/segment-fetcher.hpp>
+
+#include <boost/asio/post.hpp>
 
 #include <cmath>
 #include <unordered_map>
@@ -67,8 +70,11 @@ Consumer::obtainDecryptionKey()
   Interest interest(interestName);
   interest.setMustBeFresh(true);
   interest.setCanBePrefix(true);
+  ndn::SegmentFetcher::Options fetchOptions;
 
-  auto fetcher = SegmentFetcher::start(m_face, interest, m_validator);
+  fetchOptions.interestLifetime = ndn::time::seconds(4);
+  fetchOptions.maxTimeout = ndn::time::seconds(120);
+  auto fetcher = SegmentFetcher::start(m_face, interest, m_validator, fetchOptions);
   fetcher->afterSegmentValidated.connect([](Data seg) {
     NDN_LOG_DEBUG("Validated " << seg.getName());
   });
@@ -191,18 +197,7 @@ Consumer::decryptContent(const Name& dataObjName,
     NDN_LOG_DEBUG("CK encAES cache hit for " << ckKey);
     cipherText->m_contentKey = std::make_shared<algo::ContentKey>();
     cipherText->m_contentKey->m_encAesKey = cacheIt->second;
-    try {
-      Buffer result;
-      if (m_paramFetcher.getAbeType() == ABE_TYPE_CP_ABE)
-        result = algo::ABESupport::getInstance().cpDecrypt(m_paramFetcher.getPublicParams(), m_keyCache, *cipherText);
-      else if (m_paramFetcher.getAbeType() == ABE_TYPE_KP_ABE)
-        result = algo::ABESupport::getInstance().kpDecrypt(m_paramFetcher.getPublicParams(), m_keyCache, *cipherText);
-      else { errorCallback("Unsupported ABE type"); return; }
-      successCallBack(result);
-    }
-    catch (const std::exception& e) {
-      errorCallback(e.what());
-    }
+    decryptCipherTextAsync(cipherText, successCallBack, errorCallback);
     return;
   }
 
@@ -281,22 +276,49 @@ Consumer::onCkeyData(const Name& ckObjName, const Block& content,
   NDN_LOG_DEBUG("Content size : " << cipherText->m_content.size());
   NDN_LOG_DEBUG("Plaintext size : " << cipherText->m_plainTextSize);
   NDN_LOG_DEBUG("Encrypted aes key size : " << cipherText->m_contentKey->m_encAesKey.size());
-  try {
-    Buffer result;
-    if (m_paramFetcher.getAbeType() == ABE_TYPE_CP_ABE)
-      result = algo::ABESupport::getInstance().cpDecrypt(m_paramFetcher.getPublicParams(), m_keyCache, *cipherText);
-    else if (m_paramFetcher.getAbeType() == ABE_TYPE_KP_ABE)
-      result = algo::ABESupport::getInstance().kpDecrypt(m_paramFetcher.getPublicParams(), m_keyCache, *cipherText);
-    else {
-      errorCallback("Unsupported ABE type");
-      return;
-    }
-    NDN_LOG_INFO("Result length : " << result.size());
-    successCallBack(result);
-  }
-  catch (const std::exception& e) {
-    errorCallback(e.what());
-  }
+  decryptCipherTextAsync(cipherText, successCallBack, errorCallback);
+}
+
+void
+Consumer::decryptCipherTextAsync(std::shared_ptr<algo::CipherText> cipherText,
+                                 ConsumptionCallback successCallBack,
+                                 ErrorCallback errorCallback)
+{
+  boost::asio::post(CryptoExecutor::getInstance().ioContext(),
+    [this, cipherText,
+     successCallBack = std::move(successCallBack),
+     errorCallback = std::move(errorCallback)]() mutable {
+      // ---- CRYPTO THREAD: pairing decrypt only, no Face access ----
+      Buffer result;
+      std::string error;
+      try {
+        if (m_paramFetcher.getAbeType() == ABE_TYPE_CP_ABE)
+          result = algo::ABESupport::getInstance().cpDecrypt(
+              m_paramFetcher.getPublicParams(), m_keyCache, *cipherText);
+        else if (m_paramFetcher.getAbeType() == ABE_TYPE_KP_ABE)
+          result = algo::ABESupport::getInstance().kpDecrypt(
+              m_paramFetcher.getPublicParams(), m_keyCache, *cipherText);
+        else
+          error = "Unsupported ABE type";
+        if (error.empty())
+          NDN_LOG_INFO("Result length : " << result.size());
+      }
+      catch (const std::exception& e) {
+        error = e.what();
+      }
+
+      // ---- back to this Consumer's own Face thread ----
+      boost::asio::post(m_face.getIoContext(),
+        [successCallBack = std::move(successCallBack),
+         errorCallback = std::move(errorCallback),
+         result = std::move(result), error = std::move(error)]() mutable {
+          if (!error.empty()) {
+            if (errorCallback) errorCallback(error);
+            return;
+          }
+          if (successCallBack) successCallBack(result);
+        });
+    });
 }
 
 void
